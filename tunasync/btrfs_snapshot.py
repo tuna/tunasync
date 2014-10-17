@@ -1,6 +1,7 @@
 #!/usr/bin/env python2
 # -*- coding:utf-8 -*-
 import sh
+import os
 
 
 class BtrfsVolumeError(Exception):
@@ -33,8 +34,11 @@ class BtrfsHook(object):
 
     def _create_working_snapshot(self):
         self._ensure_subvolume()
-        # print("btrfs subvolume snapshot {} {}".format(self.service_dir, self.working_dir))
-        sh.btrfs("subvolume", "snapshot", self.service_dir, self.working_dir)
+        if os.path.exists(self.working_dir):
+            print("Warning: working dir existed, are you sure no rsync job is running?")
+        else:
+            # print("btrfs subvolume snapshot {} {}".format(self.service_dir, self.working_dir))
+            sh.btrfs("subvolume", "snapshot", self.service_dir, self.working_dir)
 
     def _commit_changes(self):
         self._ensure_subvolume()
