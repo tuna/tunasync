@@ -7,13 +7,15 @@ import signal
 from multiprocessing import Process, Semaphore
 from . import jobs
 from .mirror_provider import RsyncProvider, ShellProvider
+from .btrfs_snapshot import BtrfsHook
 
 
 class MirrorConfig(object):
 
     _valid_providers = set(("rsync", "debmirror", "shell", ))
 
-    def __init__(self, name, cfgParser, section):
+    def __init__(self, parent, name, cfgParser, section):
+        self._parent = parent
         self._cp = cfgParser
         self._sec = section
 
@@ -34,10 +36,13 @@ class MirrorConfig(object):
         elif provider == "shell":
             assert "command" in self.options
 
-        if "local_dir" not in self.options:
-            self.options["local_dir"] = os.path.join(
-                self._cp.get("global", "local_dir"),
-                self.name)
+        local_dir_tmpl = self.options.get(
+            "local_dir", self._cp.get("global", "local_dir"))
+
+        self.options["local_dir"] = local_dir_tmpl.format(
+            mirror_root=self._cp.get("global", "mirror_root"),
+            mirror_name=self.name,
+        )
 
         self.options["interval"] = int(
             self.options.get("interval",
@@ -49,6 +54,12 @@ class MirrorConfig(object):
             "log_file",
             os.path.join(log_dir, self.name, "{date}.log")
         )
+
+        try:
+            self.options["use_btrfs"] = self._cp.getboolean(
+                self._sec, "use_btrfs")
+        except ConfigParser.NoOptionError:
+            self.options["use_btrfs"] = self._parent.use_btrfs
 
 
 class TUNASync(object):
@@ -73,6 +84,15 @@ class TUNASync(object):
         self.processes = []
         self.semaphore = Semaphore(self._settings.getint("global", "concurrent"))
 
+        self.mirror_root = self._settings.get("global", "mirror_root")
+        self.use_btrfs = self._settings.getboolean("global", "use_btrfs")
+        self.btrfs_service_dir_tmpl = self._settings.get(
+            "btrfs", "service_dir")
+        self.btrfs_working_dir_tmpl = self._settings.get(
+            "btrfs", "working_dir")
+        self.btrfs_tmp_dir_tmpl = self._settings.get(
+            "btrfs", "tmp_dir")
+
     @property
     def mirrors(self):
         if self._mirrors:
@@ -83,7 +103,7 @@ class TUNASync(object):
 
             _, name = section.split(":")
             self._mirrors.append(
-                MirrorConfig(name, self._settings, section))
+                MirrorConfig(self, name, self._settings, section))
         return self._mirrors
 
     @property
@@ -92,6 +112,22 @@ class TUNASync(object):
             return self._providers
 
         for mirror in self.mirrors:
+            hooks = []
+            if mirror.options["use_btrfs"]:
+                working_dir = self.btrfs_working_dir_tmpl.format(
+                    mirror_root=self.mirror_root,
+                    mirror_name=mirror.name
+                )
+                service_dir = self.btrfs_service_dir_tmpl.format(
+                    mirror_root=self.mirror_root,
+                    mirror_name=mirror.name
+                )
+                tmp_dir = self.btrfs_tmp_dir_tmpl.format(
+                    mirror_root=self.mirror_root,
+                    mirror_name=mirror.name
+                )
+                hooks.append(BtrfsHook(service_dir, working_dir, tmp_dir))
+
             if mirror.options["provider"] == "rsync":
                 self._providers.append(
                     RsyncProvider(
@@ -101,7 +137,8 @@ class TUNASync(object):
                         mirror.options["use_ipv6"],
                         mirror.options.get("exclude_file", None),
                         mirror.options["log_file"],
-                        mirror.options["interval"]
+                        mirror.options["interval"],
+                        hooks,
                     )
                 )
             elif mirror.options["provider"] == "shell":
@@ -111,7 +148,8 @@ class TUNASync(object):
                         mirror.options["command"],
                         mirror.options["local_dir"],
                         mirror.options["log_file"],
-                        mirror.options["interval"]
+                        mirror.options["interval"],
+                        hooks,
                     )
                 )
 

@@ -10,6 +10,14 @@ class MirrorProvider(object):
     Mirror method class, can be `rsync', `debmirror', etc.
     '''
 
+    def __init__(self, name, local_dir, log_file="/dev/null",
+                 interval=120, hooks=[]):
+        self.name = name
+        self.local_dir = local_dir
+        self.log_file = log_file
+        self.interval = interval
+        self.hooks = hooks
+
     def run(self):
         raise NotImplementedError("run method should be implemented")
 
@@ -19,15 +27,14 @@ class RsyncProvider(MirrorProvider):
     _default_options = "-av --delete-after"
 
     def __init__(self, name, upstream_url, local_dir, useIPv6=True,
-                 exclude_file=None, log_file="/dev/null", interval=120):
+                 exclude_file=None, log_file="/dev/null", interval=120,
+                 hooks=[]):
+        super(RsyncProvider, self).__init__(name, local_dir, log_file,
+                                            interval, hooks)
 
-        self.name = name
         self.upstream_url = upstream_url
-        self.local_dir = local_dir
         self.useIPv6 = useIPv6
         self.exclude_file = exclude_file
-        self.log_file = log_file
-        self.interval = interval
 
     @property
     def options(self):
@@ -46,26 +53,27 @@ class RsyncProvider(MirrorProvider):
         return _options
 
     def run(self):
+
         _args = self.options
         _args.append(self.upstream_url)
         _args.append(self.local_dir)
         now = datetime.now().strftime("%Y-%m-%d_%H")
         log_file = self.log_file.format(date=now)
 
-        sh.rsync(*_args, _out=log_file, _err=log_file)
+        sh.rsync(*_args, _out=log_file, _err=log_file, _out_bufsize=1)
 
 
 class ShellProvider(MirrorProvider):
 
     def __init__(self, name, command, local_dir,
-                 log_file="/dev/null", interval=120):
-        self.name = name
+                 log_file="/dev/null", interval=120, hooks=[]):
+
+        super(ShellProvider, self).__init__(name, local_dir, log_file,
+                                            interval, hooks)
         self.command = command.split()
-        self.local_dir = local_dir
-        self.log_file = log_file
-        self.interval = interval
 
     def run(self):
+
         now = datetime.now().strftime("%Y-%m-%d_%H")
         log_file = self.log_file.format(date=now)
 
@@ -77,7 +85,7 @@ class ShellProvider(MirrorProvider):
         _args = [] if len(self.command) == 1 else self.command[1:]
 
         cmd = sh.Command(_cmd)
-        cmd(*_args, _env=new_env, _out=log_file, _err=log_file)
+        cmd(*_args, _env=new_env, _out=log_file, _err=log_file, _out_bufsize=1)
 
 
 # vim: ts=4 sw=4 sts=4 expandtab
