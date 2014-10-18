@@ -1,5 +1,6 @@
 #!/usr/bin/env python2
 # -*- coding:utf-8 -*-
+import sh
 import sys
 import signal
 
@@ -28,10 +29,20 @@ def run_job(sema, child_q, manager_q, provider):
             hook.before_job()
 
         provider.run()
-        provider.wait()
+
+        try:
+            provider.wait()
+        except sh.ErrorReturnCode:
+            status = "fail"
+        else:
+            status = "success"
 
         for hook in provider.hooks[::-1]:
-            hook.after_job()
+            try:
+                hook.after_job(status=status)
+            except Exception:
+                import traceback
+                traceback.print_exc()
 
         sema.release()
         aquired = False

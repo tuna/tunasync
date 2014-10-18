@@ -4,10 +4,10 @@
 
 class JobHook(object):
 
-    def before_job(self):
+    def before_job(self, *args, **kwargs):
         raise NotImplementedError("")
 
-    def after_job(self):
+    def after_job(self, *args, **kwargs):
         raise NotImplementedError("")
 
 # vim: ts=4 sw=4 sts=4 expandtab

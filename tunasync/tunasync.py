@@ -9,6 +9,7 @@ from multiprocessing import Process, Semaphore, Queue
 from . import jobs
 from .mirror_provider import RsyncProvider, ShellProvider
 from .btrfs_snapshot import BtrfsHook
+from .hook import JobHook
 
 
 class MirrorConfig(object):
@@ -145,6 +146,7 @@ class TUNASync(object):
         self.processes = {}
         self.semaphore = Semaphore(self._settings.getint("global", "concurrent"))
         self.channel = Queue()
+        self._hooks = []
 
         self.mirror_root = self._settings.get("global", "mirror_root")
         self.use_btrfs = self._settings.getboolean("global", "use_btrfs")
@@ -155,8 +157,12 @@ class TUNASync(object):
         self.btrfs_gc_dir_tmpl = self._settings.get(
             "btrfs", "gc_dir")
 
+    def add_hook(self, h):
+        assert isinstance(h, JobHook)
+        self._hooks.append(h)
+
     def hooks(self):
-        return []
+        return self._hooks
 
     @property
     def mirrors(self):
