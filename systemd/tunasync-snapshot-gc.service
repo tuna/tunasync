@@ -5,7 +5,7 @@ After = network.target
 
 [Service]
 Type=simple
-ExecStart=/home/tuna/.virtualenvs/tunasync/bin/python -u /home/tuna/tunasync/tunasync_snapshot_gc.py %i
+ExecStart=/home/tuna/.virtualenvs/tunasync/bin/python -u /home/tuna/tunasync/tunasync_snapshot_gc.py -c /etc/tunasync.ini
 
 [Install]
 WantedBy = multi-user.target

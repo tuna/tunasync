@@ -3,7 +3,6 @@ Description=TUNAsync GC every 10 minutes
 
 [Timer]
 OnUnitActiveSec=10min
-Unit=tunasync-snapshot-gc@%i.service
 
 [Install]
 WantedBy=multi-user.target

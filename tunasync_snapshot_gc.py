@@ -3,13 +3,14 @@
 import re
 import sh
 import os
+import ConfigParser
 import argparse
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(prog="tunasync_snapshot_gc")
     parser.add_argument("--max-level", type=int, default=2, help="max walk level to find garbage snapshots")
     parser.add_argument("--pattern", default=r"^_gc_\d+", help="pattern to match garbage snapshots")
-    parser.add_argument("mirror_root", help="tunasync mirror root")
+    parser.add_argument("-c", "--config", help="tunasync config file")
 
     args = parser.parse_args()
 
@@ -31,6 +32,10 @@ if __name__ == "__main__":
                 else:
                     walk(abs_fname, level+1)
 
-    walk(args.mirror_root)
+    settings = ConfigParser.ConfigParser()
+    settings.read(args.config)
+    mirror_root = settings.get("global", "mirror_root")
+
+    walk(mirror_root)
 
 # vim: ts=4 sw=4 sts=4 expandtab
