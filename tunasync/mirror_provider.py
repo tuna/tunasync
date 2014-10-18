@@ -19,6 +19,11 @@ class MirrorProvider(object):
         self.hooks = hooks
         self.p = None
 
+    def ensure_log_dir(self):
+        log_dir = os.path.dirname(self.log_file)
+        if not os.path.exists(log_dir):
+            sh.mkdir("-p", log_dir)
+
     def run(self):
         raise NotImplementedError("run method should be implemented")
 
@@ -65,7 +70,7 @@ class RsyncProvider(MirrorProvider):
         return _options
 
     def run(self):
-
+        self.ensure_log_dir()
         _args = self.options
         _args.append(self.upstream_url)
         _args.append(self.local_dir)
@@ -86,7 +91,7 @@ class ShellProvider(MirrorProvider):
         self.command = command.split()
 
     def run(self):
-
+        self.ensure_log_dir()
         now = datetime.now().strftime("%Y-%m-%d_%H")
         log_file = self.log_file.format(date=now)
 
