@@ -1,7 +1,6 @@
 #!/usr/bin/env python2
 # -*- coding:utf-8 -*-
 import sys
-import time
 import signal
 
 
@@ -36,18 +35,18 @@ def run_job(sema, child_q, manager_q, provider):
 
         sema.release()
         aquired = False
+
+        print("syncing {} finished, sleep {} minutes for the next turn".format(
+            provider.name, provider.interval
+        ))
+
         try:
-            msg = child_q.get(timeout=1)
+            msg = child_q.get(timeout=provider.interval * 60)
             if msg == "terminate":
                 manager_q.put((provider.name, "QUIT"))
                 break
         except:
             pass
-
-        print("syncing {} finished, sleep {} minutes for the next turn".format(
-            provider.name, provider.interval
-        ))
-        time.sleep(provider.interval * 60)
 
 
 # vim: ts=4 sw=4 sts=4 expandtab
