@@ -49,6 +49,7 @@ class BtrfsHook(JobHook):
         out = sh.mv(self.working_dir, self.service_dir)
         assert out.exit_code == 0 and out.stderr == ""
         # print("btrfs subvolume delete {}".format(self.tmp_dir))
+        sh.sleep(3)
         out = sh.btrfs("subvolume", "delete", self.tmp_dir)
         assert out.exit_code == 0 and out.stderr == ""
 
