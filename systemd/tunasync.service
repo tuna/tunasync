@@ -1,0 +1,13 @@
+[Unit]
+Description = TUNA mirrors sync daemon
+Requires = network.target
+After = network.target
+
+[Service]
+ExecStart = /home/tuna/.virtualenvs/tunasync/bin/python -u /home/tuna/tunasync/tunasync.py -c /etc/tunasync.ini
+KillSignal = SIGTERM
+ExecReload = /bin/kill -SIGUSR1 $MAINPID
+Environment = "HOME=/home/tuna"
+
+[Install]
+WantedBy = multi-user.target

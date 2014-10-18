@@ -113,11 +113,11 @@ class MirrorConfig(object):
                 mirror_root=parent.mirror_root,
                 mirror_name=self.name
             )
-            tmp_dir = parent.btrfs_tmp_dir_tmpl.format(
+            gc_dir = parent.btrfs_gc_dir_tmpl.format(
                 mirror_root=parent.mirror_root,
                 mirror_name=self.name
             )
-            hooks.append(BtrfsHook(service_dir, working_dir, tmp_dir))
+            hooks.append(BtrfsHook(service_dir, working_dir, gc_dir))
 
         return hooks
 
@@ -152,8 +152,8 @@ class TUNASync(object):
             "btrfs", "service_dir")
         self.btrfs_working_dir_tmpl = self._settings.get(
             "btrfs", "working_dir")
-        self.btrfs_tmp_dir_tmpl = self._settings.get(
-            "btrfs", "tmp_dir")
+        self.btrfs_gc_dir_tmpl = self._settings.get(
+            "btrfs", "gc_dir")
 
     def hooks(self):
         return []

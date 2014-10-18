@@ -2,6 +2,7 @@
 # -*- coding:utf-8 -*-
 import sh
 import os
+from datetime import datetime
 from .hook import JobHook
 
 
@@ -11,10 +12,10 @@ class BtrfsVolumeError(Exception):
 
 class BtrfsHook(JobHook):
 
-    def __init__(self, service_dir, working_dir, tmp_dir):
+    def __init__(self, service_dir, working_dir, gc_dir):
         self.service_dir = service_dir
         self.working_dir = working_dir
-        self.tmp_dir = tmp_dir
+        self.gc_dir = gc_dir
 
     def before_job(self):
         self._create_working_snapshot()
@@ -44,13 +45,15 @@ class BtrfsHook(JobHook):
     def _commit_changes(self):
         self._ensure_subvolume()
         self._ensure_subvolume()
-        out = sh.mv(self.service_dir, self.tmp_dir)
+        gc_dir = self.gc_dir.format(timestamp=datetime.now().strftime("%s"))
+
+        out = sh.mv(self.service_dir, gc_dir)
         assert out.exit_code == 0 and out.stderr == ""
         out = sh.mv(self.working_dir, self.service_dir)
         assert out.exit_code == 0 and out.stderr == ""
         # print("btrfs subvolume delete {}".format(self.tmp_dir))
-        sh.sleep(3)
-        out = sh.btrfs("subvolume", "delete", self.tmp_dir)
-        assert out.exit_code == 0 and out.stderr == ""
+        # sh.sleep(3)
+        # out = sh.btrfs("subvolume", "delete", self.tmp_dir)
+        # assert out.exit_code == 0 and out.stderr == ""
 
 # vim: ts=4 sw=4 sts=4 expandtab
