@@ -2,13 +2,14 @@
 # -*- coding:utf-8 -*-
 import sh
 import os
+from .hook import JobHook
 
 
 class BtrfsVolumeError(Exception):
     pass
 
 
-class BtrfsHook(object):
+class BtrfsHook(JobHook):
 
     def __init__(self, service_dir, working_dir, tmp_dir):
         self.service_dir = service_dir

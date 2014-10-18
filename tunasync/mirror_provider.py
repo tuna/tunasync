@@ -17,9 +17,21 @@ class MirrorProvider(object):
         self.log_file = log_file
         self.interval = interval
         self.hooks = hooks
+        self.p = None
 
     def run(self):
         raise NotImplementedError("run method should be implemented")
+
+    def terminate(self):
+        if self.p is not None:
+            self.p.process.terminate()
+            print("{} terminated".format(self.name))
+            self.p = None
+
+    def wait(self):
+        if self.p is not None:
+            self.p.wait()
+            self.p = None
 
 
 class RsyncProvider(MirrorProvider):
@@ -60,7 +72,8 @@ class RsyncProvider(MirrorProvider):
         now = datetime.now().strftime("%Y-%m-%d_%H")
         log_file = self.log_file.format(date=now)
 
-        sh.rsync(*_args, _out=log_file, _err=log_file, _out_bufsize=1)
+        self.p = sh.rsync(*_args, _out=log_file, _err=log_file,
+                          _out_bufsize=1, _bg=True)
 
 
 class ShellProvider(MirrorProvider):
@@ -78,6 +91,7 @@ class ShellProvider(MirrorProvider):
         log_file = self.log_file.format(date=now)
 
         new_env = os.environ.copy()
+        new_env["TUNASYNC_MIRROR_NAME"] = self.name
         new_env["TUNASYNC_LOCAL_DIR"] = self.local_dir
         new_env["TUNASYNC_LOG_FILE"] = log_file
 
@@ -85,7 +99,8 @@ class ShellProvider(MirrorProvider):
         _args = [] if len(self.command) == 1 else self.command[1:]
 
         cmd = sh.Command(_cmd)
-        cmd(*_args, _env=new_env, _out=log_file, _err=log_file, _out_bufsize=1)
+        self.p = cmd(*_args, _env=new_env, _out=log_file,
+                     _err=log_file, _out_bufsize=1, _bg=True)
 
 
 # vim: ts=4 sw=4 sts=4 expandtab
