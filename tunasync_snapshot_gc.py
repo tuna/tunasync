@@ -27,8 +27,8 @@ if __name__ == "__main__":
                     print("GC: {}".format(abs_fname))
                     try:
                         ret = sh.btrfs("subvolume", "delete", abs_fname)
-                    except sh.ErrorReturnCode:
-                        print("Error: {}".format(ret.stderr))
+                    except sh.ErrorReturnCode, e:
+                        print("Error: {}".format(e.stderr))
                 else:
                     walk(abs_fname, level+1)
 
