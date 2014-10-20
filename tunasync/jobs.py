@@ -40,7 +40,7 @@ def run_job(sema, child_q, manager_q, provider):
 
         for hook in provider.hooks[::-1]:
             try:
-                hook.after_job(status=status)
+                hook.after_job(name=provider.name, status=status)
             except Exception:
                 import traceback
                 traceback.print_exc()
