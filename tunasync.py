@@ -15,27 +15,54 @@ class IndexPageHook(JobHook):
         self.parent = parent
         self.dbfile = dbfile
 
-        self.mirrors = {}
+    @property
+    def mirrors(self):
+        mirrors = {}
         try:
             with open(self.dbfile) as f:
                 _mirrors = json.load(f)
                 for m in _mirrors:
-                    self.mirrors[m["name"]] = m
+                    mirrors[m["name"]] = m
         except:
             for name, _ in self.parent.mirrors.iteritems():
-                self.mirrors[name] = {
+                mirrors[name] = {
                     'name': name,
                     'last_update': '-',
                     'status': 'unknown',
                 }
+        return mirrors
 
-    def before_job(self, *args, **kwargs):
-        pass
+    def before_job(self, name=None, *args, **kwargs):
+        if name is None:
+            return
+        mirrors = self.mirrors
+        _m = mirrors.get(name, {
+            'name': name,
+            'last_update': '-',
+            'status': '-',
+        })
 
-    def after_job(self, name='unknown', status="unknown", *args, **kwargs):
+        mirrors[name] = {
+            'name': name,
+            'last_update': _m['last_update'],
+            'status': 'syncing'
+        }
+        with open(self.dbfile, 'wb') as f:
+            _mirrors = sorted(
+                [m for _, m in mirrors.items()],
+                key=lambda x: x['name']
+            )
+
+            json.dump(_mirrors, f)
+
+    def after_job(self, name=None, status="unknown", *args, **kwargs):
+        if name is None:
+            return
+
         print("Updating tunasync.json")
         now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        self.mirrors[name] = {
+        mirrors = self.mirrors
+        mirrors[name] = {
             'name': name,
             'last_update': now,
             'status': status
@@ -43,7 +70,7 @@ class IndexPageHook(JobHook):
         with open(self.dbfile, 'wb') as f:
 
             _mirrors = sorted(
-                [m for _, m in self.mirrors.items()],
+                [m for _, m in mirrors.items()],
                 key=lambda x: x['name']
             )
 

@@ -27,16 +27,15 @@ def run_job(sema, child_q, manager_q, provider):
         print("start syncing {}".format(provider.name))
 
         for hook in provider.hooks:
-            hook.before_job()
+            hook.before_job(name=provider.name)
 
         provider.run()
 
+        status = "success"
         try:
             provider.wait()
         except sh.ErrorReturnCode:
             status = "fail"
-        else:
-            status = "success"
 
         for hook in provider.hooks[::-1]:
             try:
