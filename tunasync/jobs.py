@@ -3,6 +3,7 @@
 import sh
 import sys
 import signal
+import Queue
 
 
 def run_job(sema, child_q, manager_q, provider):
@@ -56,7 +57,7 @@ def run_job(sema, child_q, manager_q, provider):
             if msg == "terminate":
                 manager_q.put((provider.name, "QUIT"))
                 break
-        except:
+        except Queue.Empty:
             pass
 
 
