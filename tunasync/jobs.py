@@ -2,12 +2,14 @@
 # -*- coding:utf-8 -*-
 import sh
 import sys
+from setproctitle import setproctitle
 import signal
 import Queue
 
 
 def run_job(sema, child_q, manager_q, provider):
     aquired = False
+    setproctitle("tunasync-{}".format(provider.name))
 
     def before_quit(*args):
         provider.terminate()
