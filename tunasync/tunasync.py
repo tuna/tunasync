@@ -207,7 +207,10 @@ class TUNASync(object):
         signal.signal(signal.SIGUSR2, self.reload_mirrors_force)
 
         while 1:
-            name, status = self.channel.get()
+            try:
+                name, status = self.channel.get()
+            except IOError:
+                continue
 
             if status == "QUIT":
                 print("New configuration applied to {}".format(name))
