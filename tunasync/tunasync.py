@@ -1,9 +1,9 @@
 #!/usr/bin/env python2
 # -*- coding:utf-8 -*-
-import ConfigParser
 import os.path
 import signal
 import sys
+import toml
 
 from multiprocessing import Process, Semaphore, Queue
 from . import jobs
@@ -16,13 +16,10 @@ class MirrorConfig(object):
 
     _valid_providers = set(("rsync", "debmirror", "shell", ))
 
-    def __init__(self, parent, name, cfgParser, section):
+    def __init__(self, parent, options):
         self._parent = parent
-        self._cp = cfgParser
-        self._sec = section
-
-        self.name = name
-        self.options = dict(self._cp.items(self._sec))
+        self._popt = self._parent._settings
+        self.options = dict(options.items())  # copy
         self._validate()
 
     def _validate(self):
@@ -31,37 +28,31 @@ class MirrorConfig(object):
 
         if provider == "rsync":
             assert "upstream" in self.options
-            if "use_ipv6" in self.options:
-                self.options["use_ipv6"] = self._cp.getboolean(self._sec,
-                                                               "use_ipv6")
 
         elif provider == "shell":
             assert "command" in self.options
 
         local_dir_tmpl = self.options.get(
-            "local_dir", self._cp.get("global", "local_dir"))
+            "local_dir", self._popt["global"]["local_dir"])
 
         self.options["local_dir"] = local_dir_tmpl.format(
-            mirror_root=self._cp.get("global", "mirror_root"),
+            mirror_root=self._popt["global"]["mirror_root"],
             mirror_name=self.name,
         )
 
-        self.options["interval"] = int(
-            self.options.get("interval",
-                             self._cp.getint("global", "interval"))
-        )
+        if "interval" not in self.options:
+            self.options["interval"] = self._popt["global"]["interval"]
 
-        log_dir = self._cp.get("global", "log_dir")
-        self.options["log_file"] = self.options.get(
-            "log_file",
-            os.path.join(log_dir, self.name, "{date}.log")
-        )
+        assert isinstance(self.options["interval"], int)
 
-        try:
-            self.options["use_btrfs"] = self._cp.getboolean(
-                self._sec, "use_btrfs")
-        except ConfigParser.NoOptionError:
+        log_dir = self._popt["global"]["log_dir"]
+        if "log_file" not in self.options:
+            self.options["log_file"] = os.path.join(
+                log_dir, self.name, "{date}.log")
+
+        if "use_btrfs" not in self.options:
             self.options["use_btrfs"] = self._parent.use_btrfs
+        assert self.options["use_btrfs"] in (True, False)
 
     def __getattr__(self, key):
         if key in self.__dict__:
@@ -137,25 +128,23 @@ class TUNASync(object):
 
     def read_config(self, config_file):
         self._config_file = config_file
-        self._settings = ConfigParser.ConfigParser()
-        self._settings.read(config_file)
+        with open(self._config_file) as f:
+            self._settings = toml.loads(f.read())
 
         self._inited = True
         self._mirrors = {}
         self._providers = {}
         self.processes = {}
-        self.semaphore = Semaphore(self._settings.getint("global", "concurrent"))
+        self.semaphore = Semaphore(self._settings["global"]["concurrent"])
         self.channel = Queue()
         self._hooks = []
 
-        self.mirror_root = self._settings.get("global", "mirror_root")
-        self.use_btrfs = self._settings.getboolean("global", "use_btrfs")
-        self.btrfs_service_dir_tmpl = self._settings.get(
-            "btrfs", "service_dir")
-        self.btrfs_working_dir_tmpl = self._settings.get(
-            "btrfs", "working_dir")
-        self.btrfs_gc_dir_tmpl = self._settings.get(
-            "btrfs", "gc_dir")
+        self.mirror_root = self._settings["global"]["mirror_root"]
+
+        self.use_btrfs = self._settings["global"]["use_btrfs"]
+        self.btrfs_service_dir_tmpl = self._settings["btrfs"]["service_dir"]
+        self.btrfs_working_dir_tmpl = self._settings["btrfs"]["working_dir"]
+        self.btrfs_gc_dir_tmpl = self._settings["btrfs"]["gc_dir"]
 
     def add_hook(self, h):
         assert isinstance(h, JobHook)
@@ -169,12 +158,11 @@ class TUNASync(object):
         if self._mirrors:
             return self._mirrors
 
-        for section in filter(lambda s: s.startswith("mirror:"),
-                              self._settings.sections()):
-
-            _, name = section.split(":")
+        for mirror_opt in self._settings["mirrors"]:
+            name = mirror_opt["name"]
             self._mirrors[name] = \
-                MirrorConfig(self, name, self._settings, section)
+                MirrorConfig(self, mirror_opt)
+
         return self._mirrors
 
     @property
