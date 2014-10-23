@@ -213,7 +213,8 @@ class TUNASync(object):
         child_queue = Queue()
         p = Process(
             target=jobs.run_job,
-            args=(self.semaphore, child_queue, self.channel, provider, )
+            args=(self.semaphore, child_queue, self.channel, provider, ),
+            kwargs={'max_retry': self._settings['global']['max_retry']}
         )
         p.start()
         self.processes[name] = (child_queue, p)

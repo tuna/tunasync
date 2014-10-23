@@ -7,7 +7,7 @@ import signal
 import Queue
 
 
-def run_job(sema, child_q, manager_q, provider):
+def run_job(sema, child_q, manager_q, provider, **settings):
     aquired = False
     setproctitle("tunasync-{}".format(provider.name))
 
@@ -20,24 +20,29 @@ def run_job(sema, child_q, manager_q, provider):
 
     signal.signal(signal.SIGTERM, before_quit)
 
+    max_retry = settings.get("max_retry", 1)
     while 1:
         try:
             sema.acquire(True)
         except:
             break
         aquired = True
-        print("start syncing {}".format(provider.name))
 
         for hook in provider.hooks:
             hook.before_job(name=provider.name)
 
-        provider.run()
+        for retry in range(max_retry):
+            print("start syncing {}, retry: {}".format(provider.name, retry))
+            provider.run()
 
-        status = "success"
-        try:
-            provider.wait()
-        except sh.ErrorReturnCode:
-            status = "fail"
+            status = "success"
+            try:
+                provider.wait()
+            except sh.ErrorReturnCode:
+                status = "fail"
+
+            if status == "success":
+                break
 
         for hook in provider.hooks[::-1]:
             try:
