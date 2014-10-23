@@ -20,8 +20,9 @@ class BtrfsHook(JobHook):
     def before_job(self, *args, **kwargs):
         self._create_working_snapshot()
 
-    def after_job(self, *args, **kwargs):
-        self._commit_changes()
+    def after_job(self, status=None, *args, **kwargs):
+        if status == "success":
+            self._commit_changes()
 
     def _ensure_subvolume(self):
         # print(self.service_dir)
