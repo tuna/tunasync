@@ -3,12 +3,12 @@
 import re
 import sh
 import os
-import ConfigParser
 import argparse
+import toml
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(prog="tunasync_snapshot_gc")
-    parser.add_argument("--max-level", type=int, default=2, help="max walk level to find garbage snapshots")
+    parser.add_argument("--max-level", type=int, default=1, help="max walk level to find garbage snapshots")
     parser.add_argument("--pattern", default=r"^_gc_\d+", help="pattern to match garbage snapshots")
     parser.add_argument("-c", "--config", help="tunasync config file")
 
@@ -17,7 +17,7 @@ if __name__ == "__main__":
     pattern = re.compile(args.pattern)
 
     def walk(_dir, level=1):
-        if level > 2:
+        if level > args.max_level:
             return
 
         for fname in os.listdir(_dir):
@@ -26,16 +26,18 @@ if __name__ == "__main__":
                 if pattern.match(fname):
                     print("GC: {}".format(abs_fname))
                     try:
-                        ret = sh.btrfs("subvolume", "delete", abs_fname)
+                        sh.btrfs("subvolume", "delete", abs_fname)
                     except sh.ErrorReturnCode, e:
                         print("Error: {}".format(e.stderr))
                 else:
                     walk(abs_fname, level+1)
 
-    settings = ConfigParser.ConfigParser()
-    settings.read(args.config)
-    mirror_root = settings.get("global", "mirror_root")
+    with open(args.config) as f:
+        settings = toml.loads(f.read())
 
-    walk(mirror_root)
+    mirror_root = settings["global"]["mirror_root"]
+    gc_root = settings["btrfs"]["gc_root"].format(mirror_root=mirror_root)
+
+    walk(gc_root)
 
 # vim: ts=4 sw=4 sts=4 expandtab
