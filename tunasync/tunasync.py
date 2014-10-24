@@ -233,13 +233,13 @@ class TUNASync(object):
 
     def _reload_mirrors(self, signum, frame, force=False):
         print("reload mirror configs, force restart: {}".format(force))
-        self._settings.read(self._config_file)
 
-        for section in filter(lambda s: s.startswith("mirror:"),
-                              self._settings.sections()):
+        with open(self._config_file) as f:
+            self._settings = toml.loads(f.read())
 
-            _, name = section.split(":")
-            newMirCfg = MirrorConfig(self, name, self._settings, section)
+        for mirror_opt in self._settings["mirrors"]:
+            name = mirror_opt["name"]
+            newMirCfg = MirrorConfig(self, mirror_opt)
 
             if name in self._mirrors:
                 if newMirCfg.compare(self._mirrors[name]):
@@ -264,11 +264,6 @@ class TUNASync(object):
             else:
                 print("New mirror: {}".format(name))
                 self.run_provider(name)
-
-    # def config(self, option):
-    #     if self._settings is None:
-    #         raise TUNASyncException("Config not inited")
-    #
 
 
 # vim: ts=4 sw=4 sts=4 expandtab
