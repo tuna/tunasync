@@ -9,6 +9,7 @@ from . import jobs
 from .hook import JobHook
 from .mirror_config import MirrorConfig
 from .status_manager import StatusManager
+from .clt_server import run_control_server
 
 
 class TUNASync(object):
@@ -45,6 +46,15 @@ class TUNASync(object):
 
         self.status_file = self._settings["global"]["status_file"]
         self.status_manager = StatusManager(self, self.status_file)
+
+        self.ctrl_addr = self._settings["global"]["ctrl_addr"]
+        self.ctrl_channel = Queue()
+        p = Process(
+            target=run_control_server,
+            args=(self.ctrl_addr, self.channel, self.ctrl_channel),
+        )
+        p.start()
+        self.processes["CTRL_SERVER"] = (self.ctrl_channel, p)
 
     def add_hook(self, h):
         assert isinstance(h, JobHook)
@@ -94,20 +104,7 @@ class TUNASync(object):
         signal.signal(signal.SIGUSR1, self.reload_mirrors)
         signal.signal(signal.SIGUSR2, self.reload_mirrors_force)
 
-        while 1:
-            try:
-                name, status = self.channel.get()
-            except IOError:
-                continue
-
-            if status == "QUIT":
-                print("New configuration applied to {}".format(name))
-                self.run_provider(name)
-            else:
-                try:
-                    self.status_manager.update_status(name, status)
-                except Exception as e:
-                    print(e)
+        self.run_forever()
 
     def run_provider(self, name):
         if name not in self.providers:
@@ -170,5 +167,59 @@ class TUNASync(object):
                 print("New mirror: {}".format(name))
                 self.run_provider(name)
 
+    def run_forever(self):
+        while 1:
 
+            try:
+                msg_hdr, msg_body = self.channel.get()
+            except IOError:
+                continue
+
+            if msg_hdr == "UPDATE":
+                name, status = msg_body
+                try:
+                    self.status_manager.update_status(name, status)
+                except Exception as e:
+                    print(e)
+
+            elif msg_hdr == "CONFIG_ACK":
+                name, status = msg_body
+                if status == "QUIT":
+                    print("New configuration applied to {}".format(name))
+                    self.run_provider(name)
+
+            elif msg_hdr == "CMD":
+                cmd, name = msg_body
+                if name not in self.mirrors:
+                    self.ctrl_channel.put("Invalid target")
+                    continue
+
+                if cmd == "restart":
+                    _, p = self.processes[name]
+                    p.terminate()
+                    self.run_provider(name)
+                    res = "Restarted Job: {}".format(name)
+
+                elif cmd == "stop":
+                    if name not in self.processes:
+                        res = "{} not running".format(name)
+                        self.ctrl_channel.put(res)
+                        continue
+
+                    _, p = self.processes.pop(name)
+                    p.terminate()
+                    res = "Stopped Job: {}".format(name)
+
+                elif cmd == "start":
+                    if name in self.processes:
+                        res = "{} already running".format(name)
+                        self.ctrl_channel.put(res)
+                        continue
+
+                    self.run_provider(name)
+                    res = "Started Job: {}".format(name)
+                else:
+                    res = "Invalid command"
+
+                self.ctrl_channel.put(res)
 # vim: ts=4 sw=4 sts=4 expandtab

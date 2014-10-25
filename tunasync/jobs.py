@@ -29,7 +29,7 @@ def run_job(sema, child_q, manager_q, provider, **settings):
         aquired = True
 
         status = "syncing"
-        manager_q.put((provider.name, status))
+        manager_q.put(("UPDATE", (provider.name, status)))
         try:
             for hook in provider.hooks:
                 hook.before_job(name=provider.name)
@@ -66,12 +66,12 @@ def run_job(sema, child_q, manager_q, provider, **settings):
             provider.name, provider.interval
         ))
 
-        manager_q.put((provider.name, status))
+        manager_q.put(("UPDATE", (provider.name, status)))
 
         try:
             msg = child_q.get(timeout=provider.interval * 60)
             if msg == "terminate":
-                manager_q.put((provider.name, "QUIT"))
+                manager_q.put(("CONFIG_ACK", (provider.name, "QUIT")))
                 break
         except Queue.Empty:
             pass
