@@ -28,28 +28,35 @@ def run_job(sema, child_q, manager_q, provider, **settings):
             break
         aquired = True
 
-        for hook in provider.hooks:
-            hook.before_job(name=provider.name)
+        status = "unkown"
+        try:
+            for hook in provider.hooks:
+                hook.before_job(name=provider.name)
+        except Exception:
+            import traceback
+            traceback.print_exc()
+            status = "fail"
+        else:
+            for retry in range(max_retry):
+                print("start syncing {}, retry: {}".format(provider.name, retry))
+                provider.run()
 
-        for retry in range(max_retry):
-            print("start syncing {}, retry: {}".format(provider.name, retry))
-            provider.run()
+                status = "success"
+                try:
+                    provider.wait()
+                except sh.ErrorReturnCode:
+                    status = "fail"
 
-            status = "success"
-            try:
-                provider.wait()
-            except sh.ErrorReturnCode:
-                status = "fail"
+                if status == "success":
+                    break
 
-            if status == "success":
-                break
-
-        for hook in provider.hooks[::-1]:
-            try:
+        try:
+            for hook in provider.hooks[::-1]:
                 hook.after_job(name=provider.name, status=status)
-            except Exception:
-                import traceback
-                traceback.print_exc()
+        except Exception:
+            import traceback
+            traceback.print_exc()
+            status = "fail"
 
         sema.release()
         aquired = False
