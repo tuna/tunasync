@@ -28,7 +28,8 @@ def run_job(sema, child_q, manager_q, provider, **settings):
             break
         aquired = True
 
-        status = "unkown"
+        status = "syncing"
+        manager_q.put((provider.name, status))
         try:
             for hook in provider.hooks:
                 hook.before_job(name=provider.name)
@@ -64,6 +65,8 @@ def run_job(sema, child_q, manager_q, provider, **settings):
         print("syncing {} finished, sleep {} minutes for the next turn".format(
             provider.name, provider.interval
         ))
+
+        manager_q.put((provider.name, status))
 
         try:
             msg = child_q.get(timeout=provider.interval * 60)
