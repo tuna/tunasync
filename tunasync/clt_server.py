@@ -3,6 +3,7 @@
 import socket
 import os
 import json
+import struct
 
 
 class ControlServer(object):
@@ -16,9 +17,9 @@ class ControlServer(object):
         except OSError:
             if os.path.exists(self.address):
                 raise Exception("file exists: {}".format(self.address))
-
         self.sock = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
         self.sock.bind(self.address)
+        os.chmod(address, 0700)
 
         print("Control Server listening on: {}".format(self.address))
         self.sock.listen(1)
@@ -28,7 +29,7 @@ class ControlServer(object):
             conn, _ = self.sock.accept()
 
             try:
-                length = ord(conn.recv(1))
+                length = struct.unpack('!H', conn.recv(2))[0]
                 content = conn.recv(length)
                 cmd = json.loads(content)
                 self.mgr_chan.put(("CMD", (cmd['cmd'], cmd['target'])))
@@ -38,7 +39,8 @@ class ControlServer(object):
             else:
                 res = self.cld_chan.get()
 
-            conn.sendall(chr(len(res)) + res)
+            conn.sendall(struct.pack('!H', len(res)))
+            conn.sendall(res)
             conn.close()
 
 

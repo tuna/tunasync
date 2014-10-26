@@ -4,13 +4,14 @@ import sys
 import socket
 import argparse
 import json
+import struct
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(prog="tunasynctl")
     parser.add_argument("-s", "--socket",
                         default="/var/run/tunasync.sock", help="socket file")
     parser.add_argument("command", help="command")
-    parser.add_argument("target", help="target")
+    parser.add_argument("target", nargs="?", default="__ALL__", help="target")
 
     args = parser.parse_args()
 
@@ -28,8 +29,8 @@ if __name__ == "__main__":
     })
 
     try:
-        sock.sendall(chr(len(pack)) + pack)
-        length = ord(sock.recv(1))
+        sock.sendall(struct.pack('!H', len(pack)) + pack)
+        length = struct.unpack('!H', sock.recv(2))[0]
         print(sock.recv(length))
 
     except Exception as e:

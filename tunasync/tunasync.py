@@ -190,7 +190,7 @@ class TUNASync(object):
 
             elif msg_hdr == "CMD":
                 cmd, name = msg_body
-                if name not in self.mirrors:
+                if (name not in self.mirrors) and (name != "__ALL__"):
                     self.ctrl_channel.put("Invalid target")
                     continue
 
@@ -218,6 +218,11 @@ class TUNASync(object):
 
                     self.run_provider(name)
                     res = "Started Job: {}".format(name)
+                elif cmd == "status":
+                    if name == "__ALL__":
+                        res = self.status_manager.list_status(_format=True)
+                    else:
+                        res = self.status_manager.get_status(name, _format=True)
                 else:
                     res = "Invalid command"
 
