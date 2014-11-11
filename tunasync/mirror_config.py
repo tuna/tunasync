@@ -60,6 +60,7 @@ class MirrorConfig(object):
                 self.upstream,
                 self.local_dir,
                 self.use_ipv6,
+                self.password,
                 self.exclude_file,
                 self.log_file,
                 self.interval,

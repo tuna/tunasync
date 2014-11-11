@@ -41,17 +41,19 @@ class MirrorProvider(object):
 
 class RsyncProvider(MirrorProvider):
 
-    _default_options = "-av --delete-after"
+    _default_options = \
+        "-aHvh --stats --delete-after --timeout=120 --contimeout=120"
 
     def __init__(self, name, upstream_url, local_dir, useIPv6=True,
-                 exclude_file=None, log_file="/dev/null", interval=120,
-                 hooks=[]):
+                 password=None, exclude_file=None, log_file="/dev/null",
+                 interval=120, hooks=[]):
         super(RsyncProvider, self).__init__(name, local_dir, log_file,
                                             interval, hooks)
 
         self.upstream_url = upstream_url
         self.useIPv6 = useIPv6
         self.exclude_file = exclude_file
+        self.password = password
 
     @property
     def options(self):
@@ -60,8 +62,6 @@ class RsyncProvider(MirrorProvider):
 
         if self.useIPv6:
             _options.append("-6")
-        else:
-            _options.append("-4")
 
         if self.exclude_file:
             _options.append("--exclude-from")
@@ -77,7 +77,11 @@ class RsyncProvider(MirrorProvider):
         now = datetime.now().strftime("%Y-%m-%d_%H")
         log_file = self.log_file.format(date=now)
 
-        self.p = sh.rsync(*_args, _out=log_file, _err=log_file,
+        new_env = os.environ.copy()
+        if self.password is not None:
+            new_env["RSYNC_PASSWORD"] = self.password
+
+        self.p = sh.rsync(*_args, _env=new_env, _out=log_file, _err=log_file,
                           _out_bufsize=1, _bg=True)
 
 
