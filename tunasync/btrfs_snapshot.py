@@ -17,12 +17,14 @@ class BtrfsHook(JobHook):
         self.working_dir = working_dir
         self.gc_dir = gc_dir
 
-    def before_job(self, *args, **kwargs):
+    def before_job(self, ctx={}, *args, **kwargs):
         self._create_working_snapshot()
+        ctx['current_dir'] = self.working_dir
 
-    def after_job(self, status=None, *args, **kwargs):
+    def after_job(self, status=None, ctx={}, *args, **kwargs):
         if status == "success":
             self._commit_changes()
+        ctx['current_dir'] = self.service_dir
 
     def _ensure_subvolume(self):
         # print(self.service_dir)

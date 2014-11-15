@@ -3,6 +3,7 @@
 import os
 from .mirror_provider import RsyncProvider, ShellProvider
 from .btrfs_snapshot import BtrfsHook
+from .loglimit import LogLimitHook
 
 
 class MirrorConfig(object):
@@ -38,10 +39,13 @@ class MirrorConfig(object):
 
         assert isinstance(self.options["interval"], int)
 
-        log_dir = self._popt["global"]["log_dir"]
+        log_dir = self.options.get(
+            "log_dir", self._popt["global"]["log_dir"])
         if "log_file" not in self.options:
             self.options["log_file"] = os.path.join(
-                log_dir, self.name, "{date}.log")
+                log_dir, self.name, self.name + "_{date}.log")
+
+        self.log_dir = os.path.dirname(self.log_file)
 
         if "use_btrfs" not in self.options:
             self.options["use_btrfs"] = self._parent.use_btrfs
@@ -59,6 +63,7 @@ class MirrorConfig(object):
                 self.name,
                 self.upstream,
                 self.local_dir,
+                self.log_dir,
                 self.use_ipv6,
                 self.password,
                 self.exclude_file,
@@ -71,6 +76,7 @@ class MirrorConfig(object):
                 self.name,
                 self.command,
                 self.local_dir,
+                self.log_dir,
                 self.log_file,
                 self.interval,
                 hooks
@@ -105,6 +111,7 @@ class MirrorConfig(object):
             )
             hooks.append(BtrfsHook(service_dir, working_dir, gc_dir))
 
+        hooks.append(LogLimitHook())
         return hooks
 
 # vim: ts=4 sw=4 sts=4 expandtab

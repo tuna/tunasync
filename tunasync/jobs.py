@@ -30,9 +30,10 @@ def run_job(sema, child_q, manager_q, provider, **settings):
 
         status = "syncing"
         manager_q.put(("UPDATE", (provider.name, status)))
+        ctx = {}   # put context info in it
         try:
             for hook in provider.hooks:
-                hook.before_job(name=provider.name)
+                hook.before_job(provider=provider, ctx=ctx)
         except Exception:
             import traceback
             traceback.print_exc()
@@ -40,7 +41,7 @@ def run_job(sema, child_q, manager_q, provider, **settings):
         else:
             for retry in range(max_retry):
                 print("start syncing {}, retry: {}".format(provider.name, retry))
-                provider.run()
+                provider.run(ctx=ctx)
 
                 status = "success"
                 try:
@@ -53,7 +54,7 @@ def run_job(sema, child_q, manager_q, provider, **settings):
 
         try:
             for hook in provider.hooks[::-1]:
-                hook.after_job(name=provider.name, status=status)
+                hook.after_job(provider=provider, status=status, ctx=ctx)
         except Exception:
             import traceback
             traceback.print_exc()

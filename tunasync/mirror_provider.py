@@ -10,21 +10,32 @@ class MirrorProvider(object):
     Mirror method class, can be `rsync', `debmirror', etc.
     '''
 
-    def __init__(self, name, local_dir, log_file="/dev/null",
+    def __init__(self, name, local_dir, log_dir, log_file="/dev/null",
                  interval=120, hooks=[]):
         self.name = name
         self.local_dir = local_dir
         self.log_file = log_file
+        self.log_dir = log_dir
         self.interval = interval
         self.hooks = hooks
         self.p = None
 
+    # deprecated
     def ensure_log_dir(self):
         log_dir = os.path.dirname(self.log_file)
         if not os.path.exists(log_dir):
             sh.mkdir("-p", log_dir)
 
-    def run(self):
+    def get_log_file(self, ctx={}):
+        if 'log_file' in ctx:
+            log_file = ctx['log_file']
+        else:
+            now = datetime.now().strftime("%Y-%m-%d_%H")
+            log_file = self.log_file.format(date=now)
+            ctx['log_file'] = log_file
+        return log_file
+
+    def run(self, ctx={}):
         raise NotImplementedError("run method should be implemented")
 
     def terminate(self):
@@ -44,10 +55,10 @@ class RsyncProvider(MirrorProvider):
     _default_options = \
         "-aHvh --stats --delete-after --timeout=120 --contimeout=120"
 
-    def __init__(self, name, upstream_url, local_dir, useIPv6=True,
-                 password=None, exclude_file=None, log_file="/dev/null",
-                 interval=120, hooks=[]):
-        super(RsyncProvider, self).__init__(name, local_dir, log_file,
+    def __init__(self, name, upstream_url, local_dir, log_dir,
+                 useIPv6=True, password=None, exclude_file=None,
+                 log_file="/dev/null", interval=120, hooks=[]):
+        super(RsyncProvider, self).__init__(name, local_dir, log_dir, log_file,
                                             interval, hooks)
 
         self.upstream_url = upstream_url
@@ -69,14 +80,12 @@ class RsyncProvider(MirrorProvider):
 
         return _options
 
-    def run(self):
-        self.ensure_log_dir()
+    def run(self, ctx={}):
         _args = self.options
         _args.append(self.upstream_url)
         _args.append(self.local_dir)
-        now = datetime.now().strftime("%Y-%m-%d_%H")
-        log_file = self.log_file.format(date=now)
 
+        log_file = self.get_log_file(ctx)
         new_env = os.environ.copy()
         if self.password is not None:
             new_env["RSYNC_PASSWORD"] = self.password
@@ -87,17 +96,16 @@ class RsyncProvider(MirrorProvider):
 
 class ShellProvider(MirrorProvider):
 
-    def __init__(self, name, command, local_dir,
+    def __init__(self, name, command, local_dir, log_dir,
                  log_file="/dev/null", interval=120, hooks=[]):
 
-        super(ShellProvider, self).__init__(name, local_dir, log_file,
+        super(ShellProvider, self).__init__(name, local_dir, log_dir, log_file,
                                             interval, hooks)
         self.command = command.split()
 
-    def run(self):
-        self.ensure_log_dir()
-        now = datetime.now().strftime("%Y-%m-%d_%H")
-        log_file = self.log_file.format(date=now)
+    def run(self, ctx={}):
+
+        log_file = self.get_log_file(ctx)
 
         new_env = os.environ.copy()
         new_env["TUNASYNC_MIRROR_NAME"] = self.name
