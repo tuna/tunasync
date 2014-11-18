@@ -53,7 +53,7 @@ class MirrorProvider(object):
 class RsyncProvider(MirrorProvider):
 
     _default_options = \
-        "-aHvh --stats --delete-after --timeout=120 --contimeout=120"
+        "-aHvh --stats --delete --delete-delay --safe-links --timeout=120 --contimeout=120"
 
     def __init__(self, name, upstream_url, local_dir, log_dir,
                  useIPv6=True, password=None, exclude_file=None,
