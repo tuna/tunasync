@@ -43,7 +43,7 @@ class LogLimitHook(JobHook):
 
         # create a soft link
         if log_link != log_file:
-            if os.path.exists(log_link):
+            if os.path.lexists(log_link):
                 try:
                     sh.rm(log_link)
                 except:
