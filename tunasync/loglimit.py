@@ -21,6 +21,7 @@ class LogLimitHook(JobHook):
             return
 
         log_link = os.path.join(log_dir, "latest")
+        ctx['log_link'] = log_link
 
         lfiles = [os.path.join(log_dir, lfile)
                   for lfile in os.listdir(log_dir)
@@ -42,19 +43,11 @@ class LogLimitHook(JobHook):
                 pass
 
         # create a soft link
-        if log_link != log_file:
-            if os.path.lexists(log_link):
-                try:
-                    sh.rm(log_link)
-                except:
-                    return
-            try:
-                sh.ln('-s', log_file, log_link)
-            except:
-                return
+        self.create_link(log_link, log_file)
 
     def after_job(self, status=None, ctx={}, *args, **kwargs):
         log_file = ctx.get('log_file', None)
+        log_link = ctx.get('log_link', None)
         if log_file == "/dev/null":
             return
         if status == "fail":
@@ -63,9 +56,27 @@ class LogLimitHook(JobHook):
                 sh.mv(log_file, log_file_save)
             except:
                 pass
+            self.create_lin(log_link, log_file_save)
 
     def ensure_log_dir(self, log_dir):
         if not os.path.exists(log_dir):
             sh.mkdir("-p", log_dir)
+
+    def create_link(self, log_link, log_file):
+        if log_link == log_file:
+            return
+        if not (log_link and log_file):
+            return
+
+        if os.path.lexists(log_link):
+            try:
+                sh.rm(log_link)
+            except:
+                return
+        try:
+            sh.ln('-s', log_file, log_link)
+        except:
+            return
+
 
 # vim: ts=4 sw=4 sts=4 expandtab
