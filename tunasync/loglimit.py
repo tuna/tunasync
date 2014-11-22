@@ -56,7 +56,7 @@ class LogLimitHook(JobHook):
                 sh.mv(log_file, log_file_save)
             except:
                 pass
-            self.create_lin(log_link, log_file_save)
+            self.create_link(log_link, log_file_save)
 
     def ensure_log_dir(self, log_dir):
         if not os.path.exists(log_dir):

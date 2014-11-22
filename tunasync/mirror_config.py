@@ -60,26 +60,27 @@ class MirrorConfig(object):
     def to_provider(self, hooks=[]):
         if self.provider == "rsync":
             provider = RsyncProvider(
-                self.name,
-                self.upstream,
-                self.local_dir,
-                self.log_dir,
-                self.use_ipv6,
-                self.password,
-                self.exclude_file,
-                self.log_file,
-                self.interval,
-                hooks,
+                name=self.name,
+                upstream_url=self.upstream,
+                local_dir=self.local_dir,
+                log_dir=self.log_dir,
+                useIPv6=self.use_ipv6,
+                password=self.password,
+                exclude_file=self.exclude_file,
+                log_file=self.log_file,
+                interval=self.interval,
+                hooks=hooks,
             )
         elif self.options["provider"] == "shell":
             provider = ShellProvider(
-                self.name,
-                self.command,
-                self.local_dir,
-                self.log_dir,
-                self.log_file,
-                self.interval,
-                hooks
+                name=self.name,
+                command=self.command,
+                upstream_url=self.upstream,
+                local_dir=self.local_dir,
+                log_dir=self.log_dir,
+                log_file=self.log_file,
+                interval=self.interval,
+                hooks=hooks
             )
 
         return provider

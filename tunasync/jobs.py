@@ -31,6 +31,8 @@ def run_job(sema, child_q, manager_q, provider, **settings):
         status = "syncing"
         manager_q.put(("UPDATE", (provider.name, status)))
         ctx = {}   # put context info in it
+        ctx['current_dir'] = provider.local_dir
+
         try:
             for hook in provider.hooks:
                 hook.before_job(provider=provider, ctx=ctx)

@@ -1,5 +1,6 @@
 #!/bin/bash
-echo $TUNASYNC_LOCAL_DIR
+echo $TUNASYNC_WORKING_DIR
 echo $TUNASYNC_LOG_FILE
+echo $TUNASYNC_UPSTREAM_URL
 sleep 5
 exit 1

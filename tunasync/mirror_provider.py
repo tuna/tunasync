@@ -83,7 +83,9 @@ class RsyncProvider(MirrorProvider):
     def run(self, ctx={}):
         _args = self.options
         _args.append(self.upstream_url)
-        _args.append(self.local_dir)
+
+        working_dir = ctx.get("current_dir", self.local_dir)
+        _args.append(working_dir)
 
         log_file = self.get_log_file(ctx)
         new_env = os.environ.copy()
@@ -96,11 +98,12 @@ class RsyncProvider(MirrorProvider):
 
 class ShellProvider(MirrorProvider):
 
-    def __init__(self, name, command, local_dir, log_dir,
+    def __init__(self, name, command, upstream_url, local_dir, log_dir,
                  log_file="/dev/null", interval=120, hooks=[]):
 
         super(ShellProvider, self).__init__(name, local_dir, log_dir, log_file,
                                             interval, hooks)
+        self.upstream_url = str(upstream_url)
         self.command = command.split()
 
     def run(self, ctx={}):
@@ -110,6 +113,8 @@ class ShellProvider(MirrorProvider):
         new_env = os.environ.copy()
         new_env["TUNASYNC_MIRROR_NAME"] = self.name
         new_env["TUNASYNC_LOCAL_DIR"] = self.local_dir
+        new_env["TUNASYNC_WORKING_DIR"] = ctx.get("current_dir", self.local_dir)
+        new_env["TUNASYNC_UPSTREAM_URL"] = self.upstream_url
         new_env["TUNASYNC_LOG_FILE"] = log_file
 
         _cmd = self.command[0]
