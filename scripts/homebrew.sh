@@ -6,7 +6,7 @@ fi
 
 function update_homebrew_git() {
 	cd $TUNASYNC_WORKING_DIR
-	git remote -v update
+	/usr/bin/timeout -s INT 3600 git remote -v update
 }
 
 update_homebrew_git
