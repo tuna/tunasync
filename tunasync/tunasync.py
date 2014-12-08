@@ -144,6 +144,7 @@ class TUNASync(object):
         for mirror_opt in self._settings["mirrors"]:
             name = mirror_opt["name"]
             newMirCfg = MirrorConfig(self, mirror_opt)
+            self.status_manager.refresh_mirror(name)
 
             if name in self._mirrors:
                 if newMirCfg.compare(self._mirrors[name]):

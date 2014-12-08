@@ -13,32 +13,42 @@ class StatusManager(object):
 
     def init_mirrors(self):
         mirrors = {}
+        for name, cfg in self.parent.mirrors.iteritems():
+            mirrors[name] = {
+                'name': name,
+                'last_update': '-',
+                'status': 'unknown',
+                'upstream': cfg.upstream or '-',
+            }
+
         try:
             with open(self.dbfile) as f:
                 _mirrors = json.load(f)
                 for m in _mirrors:
-                    mirrors[m["name"]] = m
+                    name = m["name"]
+                    mirrors[name]["last_update"] = m["last_update"]
+                    mirrors[name]["status"] = m["status"]
         except:
-            for name, _ in self.parent.mirrors.iteritems():
-                mirrors[name] = {
-                    'name': name,
-                    'last_update': '-',
-                    'status': 'unknown',
-                }
+            pass
+
         self.mirrors = mirrors
 
     def get_info(self, name, key):
         _m = self.mirrors.get(name, {})
         return _m.get(key, None)
 
-    def update_info(self, name, key, value):
+    def refresh_mirror(self, name):
+        cfg = self.parent.mirrors.get(name, None)
+        if cfg is None:
+            return
         _m = self.mirrors.get(name, {
             'name': name,
             'last_update': '-',
             'status': '-',
         })
-        _m[key] = value
+        _m['upstream'] = cfg.upstream or '-'
         self.mirrors[name] = dict(_m.items())
+        self.commit_db()
 
     def update_status(self, name, status):
 
@@ -59,10 +69,8 @@ class StatusManager(object):
         _m['status'] = status
         self.mirrors[name] = dict(_m.items())
 
-        with open(self.dbfile, 'wb') as f:
-            _mirrors = self.list_status()
-            print("Updated status file, {}:{}".format(name, status))
-            json.dump(_mirrors, f, indent=2, separators=(',', ':'))
+        self.commit_db()
+        print("Updated status file, {}:{}".format(name, status))
 
     def list_status(self, _format=False):
         _mirrors = sorted(
@@ -103,5 +111,9 @@ class StatusManager(object):
         tmpl = "{name}  last_update: {last_update}  status: {status}"
         return tmpl.format(**mir)
 
+    def commit_db(self):
+        with open(self.dbfile, 'wb') as f:
+            _mirrors = self.list_status()
+            json.dump(_mirrors, f, indent=2, separators=(',', ':'))
 
 # vim: ts=4 sw=4 sts=4 expandtab
