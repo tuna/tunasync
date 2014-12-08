@@ -27,6 +27,19 @@ class StatusManager(object):
                 }
         self.mirrors = mirrors
 
+    def get_info(self, name, key):
+        _m = self.mirrors.get(name, {})
+        return _m.get(key, None)
+
+    def update_info(self, name, key, value):
+        _m = self.mirrors.get(name, {
+            'name': name,
+            'last_update': '-',
+            'status': '-',
+        })
+        _m[key] = value
+        self.mirrors[name] = dict(_m.items())
+
     def update_status(self, name, status):
 
         _m = self.mirrors.get(name, {
@@ -42,16 +55,14 @@ class StatusManager(object):
         else:
             print("Invalid status: {}, from {}".format(status, name))
 
-        self.mirrors[name] = {
-            'name': name,
-            'last_update': update_time,
-            'status': status,
-        }
+        _m['last_update'] = update_time
+        _m['status'] = status
+        self.mirrors[name] = dict(_m.items())
 
         with open(self.dbfile, 'wb') as f:
             _mirrors = self.list_status()
             print("Updated status file, {}:{}".format(name, status))
-            json.dump(_mirrors, f)
+            json.dump(_mirrors, f, indent=2, separators=(',', ':'))
 
     def list_status(self, _format=False):
         _mirrors = sorted(

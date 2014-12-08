@@ -19,6 +19,14 @@ def run_job(sema, child_q, manager_q, provider, **settings):
         sys.exit(0)
 
     signal.signal(signal.SIGTERM, before_quit)
+    if provider.delay > 0:
+        try:
+            msg = child_q.get(timeout=provider.delay)
+            if msg == "terminate":
+                manager_q.put(("CONFIG_ACK", (provider.name, "QUIT")))
+                return
+        except Queue.Empty:
+            pass
 
     max_retry = settings.get("max_retry", 1)
     while 1:

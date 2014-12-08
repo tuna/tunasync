@@ -1,6 +1,7 @@
 #!/usr/bin/env python2
 # -*- coding:utf-8 -*-
 import os
+from datetime import datetime
 from .mirror_provider import RsyncProvider, ShellProvider
 from .btrfs_snapshot import BtrfsHook
 from .loglimit import LogLimitHook
@@ -82,6 +83,16 @@ class MirrorConfig(object):
                 interval=self.interval,
                 hooks=hooks
             )
+
+        sm = self._parent.status_manager
+        last_update = sm.get_info(self.name, 'last_update')
+        if last_update not in (None, '-'):
+            last_update = datetime.strptime(last_update, '%Y-%m-%d %H:%M:%S')
+            delay = int(last_update.strftime("%s")) \
+                + self.interval * 60 - int(datetime.now().strftime("%s"))
+            if delay < 0:
+                delay = 0
+            provider.set_delay(delay)
 
         return provider
 

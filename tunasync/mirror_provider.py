@@ -19,6 +19,7 @@ class MirrorProvider(object):
         self.interval = interval
         self.hooks = hooks
         self.p = None
+        self.delay = 0
 
     # deprecated
     def ensure_log_dir(self):
@@ -34,6 +35,10 @@ class MirrorProvider(object):
             log_file = self.log_file.format(date=now)
             ctx['log_file'] = log_file
         return log_file
+
+    def set_delay(self, sec):
+        ''' Set start delay '''
+        self.delay = sec
 
     def run(self, ctx={}):
         raise NotImplementedError("run method should be implemented")
