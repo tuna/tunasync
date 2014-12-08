@@ -201,7 +201,7 @@ class TUNASync(object):
                 if cmd == "restart":
                     _, p = self.processes[name]
                     p.terminate()
-                    self.provides[name].set_delay(0)
+                    self.providers[name].set_delay(0)
                     self.run_provider(name)
                     res = "Restarted Job: {}".format(name)
 
