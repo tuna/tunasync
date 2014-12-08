@@ -116,9 +116,11 @@ class TUNASync(object):
         p = Process(
             target=jobs.run_job,
             args=(self.semaphore, child_queue, self.channel, provider, ),
-            kwargs={'max_retry': self._settings['global']['max_retry']}
+            kwargs={
+                'max_retry': self._settings['global']['max_retry']}
         )
         p.start()
+        provider.set_delay(0)  # clear delay after first start
         self.processes[name] = (child_queue, p)
 
     def reload_mirrors(self, signum, frame):
@@ -150,7 +152,7 @@ class TUNASync(object):
             self._mirrors[name] = newMirCfg
 
             hooks = newMirCfg.hooks() + self.hooks()
-            newProvider = newMirCfg.to_provider(hooks)
+            newProvider = newMirCfg.to_provider(hooks, no_delay=True)
             self._providers[name] = newProvider
 
             if name in self.processes:
@@ -197,6 +199,7 @@ class TUNASync(object):
                 if cmd == "restart":
                     _, p = self.processes[name]
                     p.terminate()
+                    self.provides[name].set_delay(0)
                     self.run_provider(name)
                     res = "Restarted Job: {}".format(name)
 

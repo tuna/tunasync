@@ -58,7 +58,7 @@ class MirrorConfig(object):
         else:
             return self.__dict__["options"].get(key, None)
 
-    def to_provider(self, hooks=[]):
+    def to_provider(self, hooks=[], no_delay=False):
         if self.provider == "rsync":
             provider = RsyncProvider(
                 name=self.name,
@@ -84,15 +84,17 @@ class MirrorConfig(object):
                 hooks=hooks
             )
 
-        sm = self._parent.status_manager
-        last_update = sm.get_info(self.name, 'last_update')
-        if last_update not in (None, '-'):
-            last_update = datetime.strptime(last_update, '%Y-%m-%d %H:%M:%S')
-            delay = int(last_update.strftime("%s")) \
-                + self.interval * 60 - int(datetime.now().strftime("%s"))
-            if delay < 0:
-                delay = 0
-            provider.set_delay(delay)
+        if not no_delay:
+            sm = self._parent.status_manager
+            last_update = sm.get_info(self.name, 'last_update')
+            if last_update not in (None, '-'):
+                last_update = datetime.strptime(last_update,
+                                                '%Y-%m-%d %H:%M:%S')
+                delay = int(last_update.strftime("%s")) \
+                    + self.interval * 60 - int(datetime.now().strftime("%s"))
+                if delay < 0:
+                    delay = 0
+                provider.set_delay(delay)
 
         return provider
 
