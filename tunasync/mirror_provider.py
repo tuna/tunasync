@@ -2,6 +2,7 @@
 # -*- coding:utf-8 -*-
 import sh
 import os
+import shlex
 from datetime import datetime
 
 
@@ -110,7 +111,7 @@ class ShellProvider(MirrorProvider):
         super(ShellProvider, self).__init__(name, local_dir, log_dir, log_file,
                                             interval, hooks)
         self.upstream_url = str(upstream_url)
-        self.command = command.split()
+        self.command = shlex.split(command)
 
     def run(self, ctx={}):
 
