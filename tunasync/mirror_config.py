@@ -81,6 +81,7 @@ class MirrorConfig(object):
                 local_dir=self.local_dir,
                 log_dir=self.log_dir,
                 log_file=self.log_file,
+                log_stdout=self.options.get("log_stdout", True),
                 interval=self.interval,
                 hooks=hooks
             )
