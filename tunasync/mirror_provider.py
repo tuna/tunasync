@@ -2,6 +2,7 @@
 # -*- coding:utf-8 -*-
 import sh
 import os
+import shlex
 from datetime import datetime
 
 
@@ -105,12 +106,13 @@ class RsyncProvider(MirrorProvider):
 class ShellProvider(MirrorProvider):
 
     def __init__(self, name, command, upstream_url, local_dir, log_dir,
-                 log_file="/dev/null", interval=120, hooks=[]):
+                 log_file="/dev/null", log_stdout=True, interval=120, hooks=[]):
 
         super(ShellProvider, self).__init__(name, local_dir, log_dir, log_file,
                                             interval, hooks)
         self.upstream_url = str(upstream_url)
-        self.command = command.split()
+        self.command = shlex.split(command)
+        self.log_stdout = log_stdout
 
     def run(self, ctx={}):
 
@@ -127,8 +129,13 @@ class ShellProvider(MirrorProvider):
         _args = [] if len(self.command) == 1 else self.command[1:]
 
         cmd = sh.Command(_cmd)
-        self.p = cmd(*_args, _env=new_env, _out=log_file,
-                     _err=log_file, _out_bufsize=1, _bg=True)
+
+        if self.log_stdout:
+            self.p = cmd(*_args, _env=new_env, _out=log_file,
+                         _err=log_file, _out_bufsize=1, _bg=True)
+        else:
+            self.p = cmd(*_args, _env=new_env, _out='/dev/null',
+                         _err='/dev/null', _out_bufsize=1, _bg=True)
 
 
 # vim: ts=4 sw=4 sts=4 expandtab

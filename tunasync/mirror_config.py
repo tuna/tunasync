@@ -5,6 +5,7 @@ from datetime import datetime
 from .mirror_provider import RsyncProvider, ShellProvider
 from .btrfs_snapshot import BtrfsHook
 from .loglimit import LogLimitHook
+from .exec_pre_post import CmdExecHook
 
 
 class MirrorConfig(object):
@@ -80,6 +81,7 @@ class MirrorConfig(object):
                 local_dir=self.local_dir,
                 log_dir=self.log_dir,
                 log_file=self.log_file,
+                log_stdout=self.options.get("log_stdout", True),
                 interval=self.interval,
                 hooks=hooks
             )
@@ -126,6 +128,15 @@ class MirrorConfig(object):
             hooks.append(BtrfsHook(service_dir, working_dir, gc_dir))
 
         hooks.append(LogLimitHook())
+
+        if self.exec_pre_sync:
+            hooks.append(
+                CmdExecHook(self.exec_pre_sync, CmdExecHook.PRE_SYNC))
+
+        if self.exec_post_sync:
+            hooks.append(
+                CmdExecHook(self.exec_post_sync, CmdExecHook.POST_SYNC))
+
         return hooks
 
 # vim: ts=4 sw=4 sts=4 expandtab

@@ -32,8 +32,11 @@ class StatusManager(object):
             pass
 
         self.mirrors = mirrors
+        self.mirrors_ctx = {key: {} for key in self.mirrors}
 
     def get_info(self, name, key):
+        if key == "ctx":
+            return self.mirrors_ctx.get(name, {})
         _m = self.mirrors.get(name, {})
         return _m.get(key, None)
 
@@ -50,7 +53,7 @@ class StatusManager(object):
         self.mirrors[name] = dict(_m.items())
         self.commit_db()
 
-    def update_status(self, name, status):
+    def update_status(self, name, status, ctx={}):
 
         _m = self.mirrors.get(name, {
             'name': name,
@@ -58,7 +61,7 @@ class StatusManager(object):
             'status': '-',
         })
 
-        if status in ("syncing", "fail"):
+        if status in ("syncing", "fail", "pre-syncing"):
             update_time = _m["last_update"]
         elif status == "success":
             update_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
@@ -68,6 +71,7 @@ class StatusManager(object):
         _m['last_update'] = update_time
         _m['status'] = status
         self.mirrors[name] = dict(_m.items())
+        self.mirrors_ctx[name] = ctx
 
         self.commit_db()
         print("Updated status file, {}:{}".format(name, status))
