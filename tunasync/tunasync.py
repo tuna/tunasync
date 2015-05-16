@@ -173,63 +173,99 @@ class TUNASync(object):
 
     def run_forever(self):
         while 1:
-
             try:
                 msg_hdr, msg_body = self.channel.get()
             except IOError:
                 continue
 
             if msg_hdr == "UPDATE":
-                name, status = msg_body
+                mirror_name, status, ctx = msg_body
                 try:
-                    self.status_manager.update_status(name, status)
+                    self.status_manager.update_status(
+                        mirror_name, status, dict(ctx.items()))
                 except Exception as e:
                     print(e)
 
             elif msg_hdr == "CONFIG_ACK":
-                name, status = msg_body
+                mirror_name, status = msg_body
                 if status == "QUIT":
-                    print("New configuration applied to {}".format(name))
-                    self.run_provider(name)
+                    print("New configuration applied to {}".format(mirror_name))
+                    self.run_provider(mirror_name)
 
             elif msg_hdr == "CMD":
-                cmd, name = msg_body
-                if (name not in self.mirrors) and (name != "__ALL__"):
+                cmd, mirror_name, kwargs = msg_body
+                if (mirror_name not in self.mirrors) and (mirror_name != "__ALL__"):
                     self.ctrl_channel.put("Invalid target")
                     continue
-
-                if cmd == "restart":
-                    _, p = self.processes[name]
-                    p.terminate()
-                    self.providers[name].set_delay(0)
-                    self.run_provider(name)
-                    res = "Restarted Job: {}".format(name)
-
-                elif cmd == "stop":
-                    if name not in self.processes:
-                        res = "{} not running".format(name)
-                        self.ctrl_channel.put(res)
-                        continue
-
-                    _, p = self.processes.pop(name)
-                    p.terminate()
-                    res = "Stopped Job: {}".format(name)
-
-                elif cmd == "start":
-                    if name in self.processes:
-                        res = "{} already running".format(name)
-                        self.ctrl_channel.put(res)
-                        continue
-
-                    self.run_provider(name)
-                    res = "Started Job: {}".format(name)
-                elif cmd == "status":
-                    if name == "__ALL__":
-                        res = self.status_manager.list_status(_format=True)
-                    else:
-                        res = self.status_manager.get_status(name, _format=True)
-                else:
-                    res = "Invalid command"
-
+                res = self.handle_cmd(cmd, mirror_name, kwargs)
                 self.ctrl_channel.put(res)
+
+    def handle_cmd(self, cmd, mirror_name, kwargs):
+        if cmd == "restart":
+            _, p = self.processes[mirror_name]
+            p.terminate()
+            self.providers[mirror_name].set_delay(0)
+            self.run_provider(mirror_name)
+            res = "Restarted Job: {}".format(mirror_name)
+
+        elif cmd == "stop":
+            if mirror_name not in self.processes:
+                res = "{} not running".format(mirror_name)
+                return res
+
+            _, p = self.processes.pop(mirror_name)
+            p.terminate()
+            res = "Stopped Job: {}".format(mirror_name)
+
+        elif cmd == "start":
+            if mirror_name in self.processes:
+                res = "{} already running".format(mirror_name)
+                return res
+
+            self.run_provider(mirror_name)
+            res = "Started Job: {}".format(mirror_name)
+
+        elif cmd == "status":
+            if mirror_name == "__ALL__":
+                res = self.status_manager.list_status(_format=True)
+            else:
+                res = self.status_manager.get_status(mirror_name, _format=True)
+
+        elif cmd == "log":
+            job_ctx = self.status_manager.get_info(mirror_name, "ctx")
+            n = kwargs.get("n", 0)
+            if n == 0:
+                res = job_ctx.get("log_file", "/dev/null")
+            else:
+                import os
+                log_file = job_ctx.get("log_file", None)
+                if log_file is None:
+                    return "/dev/null"
+
+                log_dir = os.path.dirname(log_file)
+                lfiles = [
+                    os.path.join(log_dir, lfile)
+                    for lfile in os.listdir(log_dir)
+                    if lfile.startswith(mirror_name) and lfile != "latest"
+                ]
+
+                if len(lfiles) <= n:
+                    res = "Only {} log files available".format(len(lfiles))
+                    return res
+
+                lfiles_set = set(lfiles)
+                # sort to get the newest 10 files
+                lfiles_ts = sorted(
+                    [(os.path.getmtime(lfile), lfile) for lfile in lfiles],
+                    key=lambda x: x[0],
+                    reverse=True,
+                )
+                return lfiles_ts[n][1]
+
+        else:
+            res = "Invalid command"
+
+        return res
+
+
 # vim: ts=4 sw=4 sts=4 expandtab

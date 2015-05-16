@@ -8,6 +8,10 @@ import struct
 
 class ControlServer(object):
 
+    valid_commands = set((
+        "start", "stop", "restart", "status", "log",
+    ))
+
     def __init__(self, address, mgr_chan, cld_chan):
         self.address = address
         self.mgr_chan = mgr_chan
@@ -19,7 +23,7 @@ class ControlServer(object):
                 raise Exception("file exists: {}".format(self.address))
         self.sock = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
         self.sock.bind(self.address)
-        os.chmod(address, 0700)
+        os.chmod(address, 0o700)
 
         print("Control Server listening on: {}".format(self.address))
         self.sock.listen(1)
@@ -32,7 +36,9 @@ class ControlServer(object):
                 length = struct.unpack('!H', conn.recv(2))[0]
                 content = conn.recv(length)
                 cmd = json.loads(content)
-                self.mgr_chan.put(("CMD", (cmd['cmd'], cmd['target'])))
+                if cmd['cmd'] not in self.valid_commands:
+                    raise Exception("Invalid Command")
+                self.mgr_chan.put(("CMD", (cmd['cmd'], cmd['target'], cmd["kwargs"])))
             except Exception as e:
                 print(e)
                 res = "Invalid Command"

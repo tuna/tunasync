@@ -36,11 +36,11 @@ def run_job(sema, child_q, manager_q, provider, **settings):
             break
         aquired = True
 
-        status = "syncing"
-        manager_q.put(("UPDATE", (provider.name, status)))
         ctx = {}   # put context info in it
         ctx['current_dir'] = provider.local_dir
         ctx['mirror_name'] = provider.name
+        status = "pre-syncing"
+        manager_q.put(("UPDATE", (provider.name, status, ctx)))
 
         try:
             for hook in provider.hooks:
@@ -50,7 +50,9 @@ def run_job(sema, child_q, manager_q, provider, **settings):
             traceback.print_exc()
             status = "fail"
         else:
+            status = "syncing"
             for retry in range(max_retry):
+                manager_q.put(("UPDATE", (provider.name, status, ctx)))
                 print("start syncing {}, retry: {}".format(provider.name, retry))
                 provider.run(ctx=ctx)
 
@@ -78,7 +80,7 @@ def run_job(sema, child_q, manager_q, provider, **settings):
             provider.name, provider.interval
         ))
 
-        manager_q.put(("UPDATE", (provider.name, status)))
+        manager_q.put(("UPDATE", (provider.name, status, ctx)))
 
         try:
             msg = child_q.get(timeout=provider.interval * 60)
