@@ -61,7 +61,7 @@ class StatusManager(object):
             'status': '-',
         })
 
-        if status in ("syncing", "fail"):
+        if status in ("syncing", "fail", "pre-syncing"):
             update_time = _m["last_update"]
         elif status == "success":
             update_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
