@@ -59,8 +59,9 @@ class MirrorProvider(object):
 class RsyncProvider(MirrorProvider):
 
     _default_options = ['-aHvh', '--no-o', '--no-g', '--stats',
-                        '--delete', '--delete-delay', '--safe-links',
-                        '--timeout=120', '--contimeout=120']
+                        '--delete', '--delete-after', '--delay-updates',
+                        '--exclude .~tmp~/',
+                        '--safe-links', '--timeout=120', '--contimeout=120']
 
     def __init__(self, name, upstream_url, local_dir, log_dir,
                  useIPv6=True, password=None, exclude_file=None,
