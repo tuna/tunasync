@@ -54,13 +54,14 @@ def run_job(sema, child_q, manager_q, provider, **settings):
             for retry in range(max_retry):
                 manager_q.put(("UPDATE", (provider.name, status, ctx)))
                 print("start syncing {}, retry: {}".format(provider.name, retry))
-                provider.run(ctx=ctx)
 
-                status = "success"
                 try:
+                    provider.run(ctx=ctx)
                     provider.wait()
                 except sh.ErrorReturnCode:
                     status = "fail"
+                else:
+                    status = "success"
 
                 if status == "success":
                     break

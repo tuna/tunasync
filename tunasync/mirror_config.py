@@ -2,7 +2,7 @@
 # -*- coding:utf-8 -*-
 import os
 from datetime import datetime
-from .mirror_provider import RsyncProvider, ShellProvider
+from .mirror_provider import RsyncProvider, TwoStageRsyncProvider, ShellProvider
 from .btrfs_snapshot import BtrfsHook
 from .loglimit import LogLimitHook
 from .exec_pre_post import CmdExecHook
@@ -10,7 +10,7 @@ from .exec_pre_post import CmdExecHook
 
 class MirrorConfig(object):
 
-    _valid_providers = set(("rsync", "debmirror", "shell", ))
+    _valid_providers = set(("rsync", "two-stage-rsync", "shell", ))
 
     def __init__(self, parent, options):
         self._parent = parent
@@ -60,38 +60,48 @@ class MirrorConfig(object):
             return self.__dict__["options"].get(key, None)
 
     def to_provider(self, hooks=[], no_delay=False):
+
+        kwargs = {
+            'name': self.name,
+            'upstream_url': self.upstream,
+            'local_dir': self.local_dir,
+            'log_dir': self.log_dir,
+            'log_file': self.log_file,
+            'interval': self.interval,
+            'hooks': hooks,
+        }
+
         if self.provider == "rsync":
-            provider = RsyncProvider(
-                name=self.name,
-                upstream_url=self.upstream,
-                local_dir=self.local_dir,
-                log_dir=self.log_dir,
-                useIPv6=self.use_ipv6,
-                password=self.password,
-                exclude_file=self.exclude_file,
-                log_file=self.log_file,
-                interval=self.interval,
-                hooks=hooks,
-            )
+            kwargs.update({
+                'useIPv6': self.use_ipv6,
+                'password': self.password,
+                'exclude_file': self.exclude_file,
+            })
+            provider = RsyncProvider(**kwargs)
+
+        elif self.provider == "two-stage-rsync":
+            kwargs.update({
+                'useIPv6': self.use_ipv6,
+                'password': self.password,
+                'exclude_file': self.exclude_file,
+            })
+            provider = TwoStageRsyncProvider(**kwargs)
+            provider.set_stage1_profile(self.stage1_profile)
+
         elif self.options["provider"] == "shell":
-            provider = ShellProvider(
-                name=self.name,
-                command=self.command,
-                upstream_url=self.upstream,
-                local_dir=self.local_dir,
-                log_dir=self.log_dir,
-                log_file=self.log_file,
-                log_stdout=self.options.get("log_stdout", True),
-                interval=self.interval,
-                hooks=hooks
-            )
+            kwargs.update({
+                'command': self.command,
+                'log_stdout': self.options.get("log_stdout", True),
+            })
+
+            provider = ShellProvider(**kwargs)
 
         if not no_delay:
             sm = self._parent.status_manager
             last_update = sm.get_info(self.name, 'last_update')
             if last_update not in (None, '-'):
-                last_update = datetime.strptime(last_update,
-                                                '%Y-%m-%d %H:%M:%S')
+                last_update = datetime.strptime(
+                    last_update, '%Y-%m-%d %H:%M:%S')
                 delay = int(last_update.strftime("%s")) \
                     + self.interval * 60 - int(datetime.now().strftime("%s"))
                 if delay < 0:

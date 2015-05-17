@@ -82,7 +82,7 @@ class TUNASync(object):
 
         for name, mirror in self.mirrors.iteritems():
             hooks = mirror.hooks() + self.hooks()
-            provider = mirror.to_provider(hooks)
+            provider = mirror.to_provider(hooks, no_delay=mirror.no_delay)
             self._providers[name] = provider
 
         return self._providers

@@ -59,8 +59,8 @@ class MirrorProvider(object):
 class RsyncProvider(MirrorProvider):
 
     _default_options = ['-aHvh', '--no-o', '--no-g', '--stats',
+                        '--exclude', '.~tmp~/',
                         '--delete', '--delete-after', '--delay-updates',
-                        '--exclude .~tmp~/',
                         '--safe-links', '--timeout=120', '--contimeout=120']
 
     def __init__(self, name, upstream_url, local_dir, log_dir,
@@ -100,8 +100,76 @@ class RsyncProvider(MirrorProvider):
         if self.password is not None:
             new_env["RSYNC_PASSWORD"] = self.password
 
-        self.p = sh.rsync(*_args, _env=new_env, _out=log_file, _err=log_file,
-                          _out_bufsize=1, _bg=True)
+        self.p = sh.rsync(*_args, _env=new_env, _out=log_file,
+                          _err_to_out=True, _out_bufsize=1, _bg=True)
+
+
+class TwoStageRsyncProvider(RsyncProvider):
+
+    _stage1_options = ['-aHvh', '--no-o', '--no-g',
+                       '--exclude', '.~tmp~/',
+                       '--safe-links', '--timeout=120', '--contimeout=120']
+
+    _stage2_options = ['-aHvh', '--no-o', '--no-g', '--stats',
+                       '--exclude', '.~tmp~/',
+                       '--delete', '--delete-after', '--delay-updates',
+                       '--safe-links', '--timeout=120', '--contimeout=120']
+
+    _stage1_profiles = {
+        "debian": [
+            'Packages*', 'Sources*', 'Release*',
+            'InRelease', 'i18n/*', 'ls-lR*',
+        ]
+    }
+
+    def set_stage1_profile(self, profile):
+        if profile not in self._stage1_profiles:
+            raise Exception("Profile Undefined!")
+
+        self._stage1_excludes = self._stage1_profiles[profile]
+
+    def options(self, stage):
+        _default_options = self._stage1_options \
+            if stage == 1 else self._stage2_options
+        _options = [o for o in _default_options]  # copy
+
+        if stage == 1:
+            for _exc in self._stage1_excludes:
+                _options.append("--exclude")
+                _options.append(_exc)
+
+        if self.useIPv6:
+            _options.append("-6")
+
+        if self.exclude_file:
+            _options.append("--exclude-from")
+            _options.append(self.exclude_file)
+
+        return _options
+
+    def run(self, ctx={}):
+        working_dir = ctx.get("current_dir", self.local_dir)
+        log_file = self.get_log_file(ctx)
+        new_env = os.environ.copy()
+        if self.password is not None:
+            new_env["RSYNC_PASSWORD"] = self.password
+
+        with open(log_file, 'w', buffering=1) as f:
+            def log_output(line):
+                f.write(line)
+
+            for stage in (1, 2):
+
+                _args = self.options(stage)
+                _args.append(self.upstream_url)
+                _args.append(working_dir)
+                f.write("==== Stage {} Begins ====\n\n".format(stage))
+
+                self.p = sh.rsync(
+                    *_args, _env=new_env, _out=log_output,
+                    _err_to_out=True, _out_bufsize=1, _bg=False
+                )
+                self.p.wait()
 
 
 class ShellProvider(MirrorProvider):
@@ -133,7 +201,7 @@ class ShellProvider(MirrorProvider):
 
         if self.log_stdout:
             self.p = cmd(*_args, _env=new_env, _out=log_file,
-                         _err=log_file, _out_bufsize=1, _bg=True)
+                         _err_to_out=True, _out_bufsize=1, _bg=True)
         else:
             self.p = cmd(*_args, _env=new_env, _out='/dev/null',
                          _err='/dev/null', _out_bufsize=1, _bg=True)
