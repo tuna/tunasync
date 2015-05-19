@@ -124,7 +124,7 @@ class TwoStageRsyncProvider(RsyncProvider):
 
     def set_stage1_profile(self, profile):
         if profile not in self._stage1_profiles:
-            raise Exception("Profile Undefined!")
+            raise Exception("Profile Undefined: %s, %s" % (profile, self.name))
 
         self._stage1_excludes = self._stage1_profiles[profile]
 

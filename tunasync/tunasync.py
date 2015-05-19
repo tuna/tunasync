@@ -235,7 +235,10 @@ class TUNASync(object):
             job_ctx = self.status_manager.get_info(mirror_name, "ctx")
             n = kwargs.get("n", 0)
             if n == 0:
-                res = job_ctx.get("log_file", "/dev/null")
+                res = job_ctx.get(
+                    "log_link",
+                    job_ctx.get("log_file", "/dev/null"),
+                )
             else:
                 import os
                 log_file = job_ctx.get("log_file", None)
