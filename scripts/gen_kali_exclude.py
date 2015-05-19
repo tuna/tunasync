@@ -1,10 +1,10 @@
 #!/usr/bin/env python
 
-ARCH_EXCLUDE = ['armel', 'alpha', 'hurd-i386', 'ia64', 'kfreebsd-amd64', 'kfreebsd-i386', 'mips', 'powerpc', 'ppc64el',  's390', 's390x', 'sparc']
+ARCH_EXCLUDE = ['armel', 'armhf']
 
 CONTENT_EXCLUDE = ['binary-{arch}', 'installer-{arch}', 'Contents-{arch}.gz', 'Contents-udeb-{arch}.gz', 'Contents-{arch}.diff', 'arch-{arch}.files', 'arch-{arch}.list.gz', '*_{arch}.deb', '*_{arch}.udeb', '*_{arch}.changes']
 
-with open("debian-exclude.txt", 'wb') as f:
+with open("kali-exclude.txt", 'wb') as f:
 	f.write(".~tmp~/\n")
 	f.write(".*\n")
 	for arch in ARCH_EXCLUDE:

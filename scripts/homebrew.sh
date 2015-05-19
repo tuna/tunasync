@@ -5,8 +5,13 @@ if [ ! -d "$TUNASYNC_WORKING_DIR" ]; then
 fi
 
 function update_homebrew_git() {
-	cd $TUNASYNC_WORKING_DIR
+	repo_dir="$1"
+	cd $repo_dir
+	echo "==== SYNC $repo_dir START ===="
 	/usr/bin/timeout -s INT 3600 git remote -v update
+	echo "==== SYNC $repo_dir DONE ===="
 }
 
-update_homebrew_git
+update_homebrew_git "$TUNASYNC_WORKING_DIR/homebrew.git"
+update_homebrew_git "$TUNASYNC_WORKING_DIR/homebrew-python.git"
+update_homebrew_git "$TUNASYNC_WORKING_DIR/homebrew-science.git"
