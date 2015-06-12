@@ -26,6 +26,7 @@ class CmdExecHook(JobHook):
         new_env = os.environ.copy()
         new_env["TUNASYNC_MIRROR_NAME"] = ctx["mirror_name"]
         new_env["TUNASYNC_WORKING_DIR"] = ctx["current_dir"]
+        new_env["TUNASYNC_JOB_EXIT_STATUS"] = kwargs.get("status", "")
 
         _cmd = self.command[0]
         _args = [] if len(self.command) == 1 else self.command[1:]
