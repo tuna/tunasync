@@ -11,7 +11,13 @@ class LogLimitHook(JobHook):
     def __init__(self, limit=10):
         self.limit = limit
 
-    def before_job(self, provider, ctx={}, *args, **kwargs):
+    def before_job(self, *args, **kwargs):
+        pass
+
+    def after_job(self, *args, **kwargs):
+        pass
+
+    def before_exec(self, provider, ctx={}, *args, **kwargs):
         log_dir = provider.log_dir
         self.ensure_log_dir(log_dir)
         log_file = provider.log_file.format(
@@ -45,7 +51,7 @@ class LogLimitHook(JobHook):
         # create a soft link
         self.create_link(log_link, log_file)
 
-    def after_job(self, status=None, ctx={}, *args, **kwargs):
+    def after_exec(self, status=None, ctx={}, *args, **kwargs):
         log_file = ctx.get('log_file', None)
         log_link = ctx.get('log_link', None)
         if log_file == "/dev/null":

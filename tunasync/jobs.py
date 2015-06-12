@@ -43,15 +43,16 @@ def run_job(sema, child_q, manager_q, provider, **settings):
         manager_q.put(("UPDATE", (provider.name, status, ctx)))
 
         try:
+            # before_job hooks
             for hook in provider.hooks:
                 hook.before_job(provider=provider, ctx=ctx)
-        except Exception:
-            import traceback
-            traceback.print_exc()
-            status = "fail"
-        else:
-            status = "syncing"
+
             for retry in range(max_retry):
+                # before_exec hooks
+                for hook in provider.hooks:
+                    hook.before_exec(provider=provider, ctx=ctx)
+
+                status = "syncing"
                 manager_q.put(("UPDATE", (provider.name, status, ctx)))
                 print("start syncing {}, retry: {}".format(provider.name, retry))
 
@@ -63,19 +64,25 @@ def run_job(sema, child_q, manager_q, provider, **settings):
                 else:
                     status = "success"
 
+                # after_exec hooks
+                for hook in provider.hooks:
+                    hook.after_exec(provider=provider, status=status, ctx=ctx)
+
                 if status == "success":
                     break
 
-        try:
+            # after_job hooks
             for hook in provider.hooks[::-1]:
                 hook.after_job(provider=provider, status=status, ctx=ctx)
+
         except Exception:
             import traceback
             traceback.print_exc()
             status = "fail"
 
-        sema.release()
-        aquired = False
+        finally:
+            sema.release()
+            aquired = False
 
         print("syncing {} finished, sleep {} minutes for the next turn".format(
             provider.name, provider.interval

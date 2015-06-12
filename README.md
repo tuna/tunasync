@@ -4,7 +4,7 @@ tunasync
 ## TODO
 
 - [ ] use context manager to handle job contexts
-- [ ] Hooks need "pre_try", "post_try"
+- [x] Hooks need "before_exec", "after_exec"
 - [x] implement `tunasynctl tail` and `tunasynctl log` or equivalent feature
 - [x] status file
     - [ ] mirror size
