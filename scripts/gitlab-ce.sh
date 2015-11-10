@@ -3,11 +3,12 @@ set -e
 
 BASE_PATH="${TUNASYNC_WORKING_DIR}"
 
-UBUNTU_PATH="${BASE_PATH}/ubuntu"
-UBUNTU_VERSIONS=("trusty" "utopic" "vivid" "wily")
-DEBIAN_PATH="${BASE_PATH}/debian"
-DEBIAN_VERSIONS=("wheezy" "jessie" "stretch")
+
+APT_PATH="${BASE_PATH}/apt"
 YUM_PATH="${BASE_PATH}/yum"
+
+UBUNTU_VERSIONS=("trusty" "utopic" "vivid" "wily")
+DEBIAN_VERSIONS=("wheezy" "jessie" "stretch")
 
 mkdir -p $UBUNTU_PATH $DEBIAN_PATH $YUM_PATH
 
@@ -33,7 +34,7 @@ gpgkey=https://packages.gitlab.com/gpg.key
 sslverify=0
 EOF
 
-reposync -c $cfg -d -p ${YUM_PATH}
+reposync -c $cfg -d -n -p ${YUM_PATH}
 createrepo -o ${YUM_PATH}/el6 ${YUM_PATH}/el6
 createrepo -o ${YUM_PATH}/el7 ${YUM_PATH}/el7
 rm $cfg
@@ -41,7 +42,7 @@ rm $cfg
 
 cfg="/tmp/gitlab-ce-ubuntu.list"
 cat << EOF > ${cfg}
-set mirror_path ${UBUNTU_PATH}
+set mirror_path ${APT_PATH}
 set nthreds 5
 set _tilde 0
 
@@ -57,7 +58,7 @@ rm $cfg
 
 cfg="/tmp/gitlab-ce-debian.list"
 cat << EOF > ${cfg}
-set mirror_path ${DEBIAN_PATH}
+set mirror_path ${APT_PATH}
 set nthreds 5
 set _tilde 0
 
