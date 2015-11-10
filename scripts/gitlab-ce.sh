@@ -7,8 +7,8 @@ BASE_PATH="${TUNASYNC_WORKING_DIR}"
 APT_PATH="${BASE_PATH}/apt"
 YUM_PATH="${BASE_PATH}/yum"
 
-UBUNTU_VERSIONS=("trusty" "utopic" "vivid" "wily")
-DEBIAN_VERSIONS=("wheezy" "jessie" "stretch")
+UBUNTU_VERSIONS=("trusty")
+DEBIAN_VERSIONS=("wheezy" "jessie")
 
 mkdir -p $UBUNTU_PATH $DEBIAN_PATH $YUM_PATH
 
