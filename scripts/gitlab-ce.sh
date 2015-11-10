@@ -7,8 +7,8 @@ BASE_PATH="${TUNASYNC_WORKING_DIR}"
 APT_PATH="${BASE_PATH}/apt"
 YUM_PATH="${BASE_PATH}/yum"
 
-UBUNTU_VERSIONS=("trusty")
-DEBIAN_VERSIONS=("wheezy" "jessie")
+UBUNTU_VERSIONS=("trusty" "wily")
+DEBIAN_VERSIONS=("wheezy" "jessie" "stretch")
 
 mkdir -p $UBUNTU_PATH $DEBIAN_PATH $YUM_PATH
 
@@ -34,7 +34,7 @@ gpgkey=https://packages.gitlab.com/gpg.key
 sslverify=0
 EOF
 
-reposync -c $cfg -d -n -p ${YUM_PATH}
+reposync -c $cfg -d -p ${YUM_PATH}
 createrepo -o ${YUM_PATH}/el6 ${YUM_PATH}/el6
 createrepo -o ${YUM_PATH}/el7 ${YUM_PATH}/el7
 rm $cfg
