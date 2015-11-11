@@ -49,6 +49,8 @@ set _tilde 0
 EOF
 for version in ${UBUNTU_VERSIONS[@]}; do
 		echo "deb https://packages.gitlab.com/gitlab/gitlab-ce/ubuntu/ $version main" >> $cfg
+		echo "deb-i386 https://packages.gitlab.com/gitlab/gitlab-ce/ubuntu/ $version main" >> $cfg
+		echo "deb-amd64 https://packages.gitlab.com/gitlab/gitlab-ce/ubuntu/ $version main" >> $cfg
 		echo "deb-src https://packages.gitlab.com/gitlab/gitlab-ce/ubuntu/ $version main" >> $cfg
 done
 
@@ -65,6 +67,8 @@ set _tilde 0
 EOF
 for version in ${DEBIAN_VERSIONS[@]}; do
 		echo "deb https://packages.gitlab.com/gitlab/gitlab-ce/debian/ $version main" >> $cfg
+		echo "deb-i386 https://packages.gitlab.com/gitlab/gitlab-ce/debian/ $version main" >> $cfg
+		echo "deb-amd64 https://packages.gitlab.com/gitlab/gitlab-ce/debian/ $version main" >> $cfg
 		echo "deb-src https://packages.gitlab.com/gitlab/gitlab-ce/debian/ $version main" >> $cfg
 done
 
