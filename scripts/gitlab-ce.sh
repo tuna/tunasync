@@ -46,15 +46,15 @@ rm $cfg
 
 base_url="https://packages.gitlab.com/gitlab/gitlab-ce/ubuntu"
 for version in ${UBUNTU_VERSIONS[@]}; do
-	apt-download-binary ${base_url} "$version" "main" "amd64" "${UBUNTU_PATH}"
-	apt-download-binary ${base_url} "$version" "main" "i386" "${UBUNTU_PATH}"
+	apt-download-binary ${base_url} "$version" "main" "amd64" "${UBUNTU_PATH}" || true
+	apt-download-binary ${base_url} "$version" "main" "i386" "${UBUNTU_PATH}" || true
 done
 echo "Ubuntu finished"
 
 base_url="https://packages.gitlab.com/gitlab/gitlab-ce/debian"
 for version in ${DEBIAN_VERSIONS[@]}; do
-	apt-download-binary ${base_url} "$version" "main" "amd64" "${DEBIAN_PATH}"
-	apt-download-binary ${base_url} "$version" "main" "i386" "${DEBIAN_PATH}"
+	apt-download-binary ${base_url} "$version" "main" "amd64" "${DEBIAN_PATH}" || true
+	apt-download-binary ${base_url} "$version" "main" "i386" "${DEBIAN_PATH}" || true
 done
 echo "Debian finished"
 
