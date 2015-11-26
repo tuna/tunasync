@@ -1,0 +1,78 @@
+#!/bin/bash
+set -e
+LOADED_APT_DOWNLOAD="yes"
+
+function check-and-download() {
+	remote_file=$1
+	local_file=$2
+	wget -q --spider ${remote_file}
+	if [ $? -eq 0 ]; then
+		echo "downloading ${remote_file}"
+		wget -q -N -O ${local_file} ${remote_file}
+		return
+	fi
+	return 0
+}
+
+
+function apt-download-binary() {
+	base_url=$1
+	dist=$2
+	repo=$3
+	arch=$4
+	dest_base_dir=$5
+	
+	dest_dir="${dest_base_dir}/dists/${dist}"
+	[ ! -d "$dest_dir" ] && mkdir -p "$dest_dir"
+	check-and-download "${base_url}/dists/${dist}/Contents-${arch}.gz" "${dest_dir}/Contents-${arch}.gz"
+	check-and-download "${base_url}/dists/${dist}/InRelease"  "${dest_dir}/InRelease" || true
+	check-and-download "${base_url}/dists/${dist}/Release" "${dest_dir}/Release"
+	check-and-download "${base_url}/dists/${dist}/Release.gpg" "${dest_dir}/Release.gpg" || true
+
+	dest_dir="${dest_base_dir}/dists/${dist}/${repo}/binary-${arch}"
+	[ ! -d "$dest_dir" ] && mkdir -p "$dest_dir"
+
+	pkgidxes=('Packages' 'Packages.gz' 'Packages.bz2' 'Packages.xz')
+	pkgidx_content=""
+	for pkgidx in ${pkgidxes[@]}; do
+		pkgidx_file="${dest_dir}/${pkgidx}"
+		pkglist_url="${base_url}/dists/${dist}/${repo}/binary-${arch}/${pkgidx}"
+		check-and-download "${pkglist_url}" ${pkgidx_file} || true
+		if [ -z "${pkgidx_content}" -a -f ${pkgidx_file} ]; then
+			echo "getting packages index content"
+			case $pkgidx in
+				"*.bz2")
+					pkgidx_content=`bunzip2 -c ${pkgidx_file}`
+					;;
+				"*.gz")
+					pkgidx_content=`gunzip -c ${pkgidx_file}`
+					;;
+				*)
+					pkgidx_content=`cat ${pkgidx_file}`
+					;;
+			esac
+		fi
+	done
+
+	if [ -z "${pkgidx_content}" ]; then
+		echo "index is empty, failed"
+		return 1
+	fi
+	
+	(echo -e "${pkgidx_content}" | grep '^Filename' | cut -d' ' -f 2) | while read pkg_filename; do
+		dest_filename="${dest_base_dir}/${pkg_filename}"
+		dest_dir=`dirname ${dest_filename}`
+		[ ! -d "$dest_dir" ] && mkdir -p "$dest_dir"
+		pkg_url="${base_url}/${pkg_filename}"
+
+		if [ -f ${dest_filename} ]; then
+			echo "Skipping ${pkg_filename}"
+		else
+			echo "downloading ${pkg_url}"
+			# touch ${dest_filename}
+			wget -q -O ${dest_filename} ${pkg_url} || true
+		fi
+
+	done
+
+}
