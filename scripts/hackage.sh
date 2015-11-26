@@ -54,7 +54,7 @@ function hackage_mirror() {
 	
 	echo "building download list"
 	# substract local list from remote list
-	comm <(sort $remote_pklist) <(sort $local_pklist) -3 | while read pk; do
+	comm <(sort $remote_pklist) <(sort $local_pklist) -23 | while read pk; do
 		# limit concurrent level
 		bgcount=`jobs | wc -l`
 		while [[ $bgcount -ge 5 ]]; do
@@ -63,11 +63,18 @@ function hackage_mirror() {
 		done
 		
 		name="$pk.tar.gz"
-		if [[ ! -a package/$name ]]; then
+		if [ ! -a package/$name ]; then
 			must_download "http://hackage.haskell.org/package/$pk/$name" "package/$name" &
 		else
 			echo "skip existed: $name"
 		fi
+	done
+	
+	# delete redundanty files
+	comm <(sort $remote_pklist) <(sort $local_pklist) -13 | while read pk; do
+		name="$pk.tar.gz"
+		echo "deleting ${name}"
+		rm "package/$name"
 	done
 
 	cp index.tar.gz 00-index.tar.gz
