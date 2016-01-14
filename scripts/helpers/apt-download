@@ -24,7 +24,7 @@ function apt-download-binary() {
 	
 	dest_dir="${dest_base_dir}/dists/${dist}"
 	[ ! -d "$dest_dir" ] && mkdir -p "$dest_dir"
-	check-and-download "${base_url}/dists/${dist}/Contents-${arch}.gz" "${dest_dir}/Contents-${arch}.gz"
+	check-and-download "${base_url}/dists/${dist}/Contents-${arch}.gz" "${dest_dir}/Contents-${arch}.gz" || true
 	check-and-download "${base_url}/dists/${dist}/InRelease"  "${dest_dir}/InRelease" || true
 	check-and-download "${base_url}/dists/${dist}/Release" "${dest_dir}/Release"
 	check-and-download "${base_url}/dists/${dist}/Release.gpg" "${dest_dir}/Release.gpg" || true
