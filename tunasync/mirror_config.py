@@ -53,6 +53,9 @@ class MirrorConfig(object):
             self.options["use_btrfs"] = self._parent.use_btrfs
         assert self.options["use_btrfs"] in (True, False)
 
+        if "env" in self.options:
+            assert isinstance(self.options["env"], dict)
+
     def __getattr__(self, key):
         if key in self.__dict__:
             return self.__dict__[key]
@@ -68,6 +71,7 @@ class MirrorConfig(object):
             'log_dir': self.log_dir,
             'log_file': self.log_file,
             'interval': self.interval,
+            'env': self.env,
             'hooks': hooks,
         }
 

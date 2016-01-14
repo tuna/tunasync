@@ -65,7 +65,7 @@ class RsyncProvider(MirrorProvider):
 
     def __init__(self, name, upstream_url, local_dir, log_dir,
                  useIPv6=True, password=None, exclude_file=None,
-                 log_file="/dev/null", interval=120, hooks=[]):
+                 log_file="/dev/null", interval=120, env=None, hooks=[]):
         super(RsyncProvider, self).__init__(name, local_dir, log_dir, log_file,
                                             interval, hooks)
 
@@ -73,6 +73,7 @@ class RsyncProvider(MirrorProvider):
         self.useIPv6 = useIPv6
         self.exclude_file = exclude_file
         self.password = password
+        self.env = env
 
     @property
     def options(self):
@@ -99,6 +100,9 @@ class RsyncProvider(MirrorProvider):
         new_env = os.environ.copy()
         if self.password is not None:
             new_env["RSYNC_PASSWORD"] = self.password
+        if self.env is not None and isinstance(self.env, dict):
+            for k, v in self.env.items():
+                new_env[k] = v
 
         self.p = sh.rsync(*_args, _env=new_env, _out=log_file,
                           _err_to_out=True, _out_bufsize=1, _bg=True)
@@ -153,6 +157,9 @@ class TwoStageRsyncProvider(RsyncProvider):
         new_env = os.environ.copy()
         if self.password is not None:
             new_env["RSYNC_PASSWORD"] = self.password
+        if self.env is not None and isinstance(self.env, dict):
+            for k, v in self.env.items():
+                new_env[k] = v
 
         with open(log_file, 'w', buffering=1) as f:
             def log_output(line):
@@ -175,13 +182,15 @@ class TwoStageRsyncProvider(RsyncProvider):
 class ShellProvider(MirrorProvider):
 
     def __init__(self, name, command, upstream_url, local_dir, log_dir,
-                 log_file="/dev/null", log_stdout=True, interval=120, hooks=[]):
+                 log_file="/dev/null", log_stdout=True, interval=120, env=None,
+                 hooks=[]):
 
         super(ShellProvider, self).__init__(name, local_dir, log_dir, log_file,
                                             interval, hooks)
         self.upstream_url = str(upstream_url)
         self.command = shlex.split(command)
         self.log_stdout = log_stdout
+        self.env = env
 
     def run(self, ctx={}):
 
@@ -193,6 +202,10 @@ class ShellProvider(MirrorProvider):
         new_env["TUNASYNC_WORKING_DIR"] = ctx.get("current_dir", self.local_dir)
         new_env["TUNASYNC_UPSTREAM_URL"] = self.upstream_url
         new_env["TUNASYNC_LOG_FILE"] = log_file
+
+        if self.env is not None and isinstance(self.env, dict):
+            for k, v in self.env.items():
+                new_env[k] = v
 
         _cmd = self.command[0]
         _args = [] if len(self.command) == 1 else self.command[1:]
