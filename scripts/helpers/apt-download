@@ -59,20 +59,26 @@ function apt-download-binary() {
 		return 1
 	fi
 	
-	(echo -e "${pkgidx_content}" | grep '^Filename' | cut -d' ' -f 2) | while read pkg_filename; do
+	(echo -e "${pkgidx_content}" | grep -e '^Filename' -e '^Size' -e '^MD5sum' | cut -d' ' -f 2) | \
+	while read pkg_filename; read pkg_size; read pkg_md5; do
 		dest_filename="${dest_base_dir}/${pkg_filename}"
 		dest_dir=`dirname ${dest_filename}`
 		[ ! -d "$dest_dir" ] && mkdir -p "$dest_dir"
 		pkg_url="${base_url}/${pkg_filename}"
-
+		let downloaded="false"
 		if [ -f ${dest_filename} ]; then
-			echo "Skipping ${pkg_filename}"
-		else
-			echo "downloading ${pkg_url}"
-			# touch ${dest_filename}
-			wget -q -O ${dest_filename} ${pkg_url} || true
+			rsize=`stat -c "%s" ${dest_filename}`
+			if [ ${rsize} -eq ${pkg_size} ]; then
+				downloaded="true"
+				echo "Skipping ${pkg_filename}, size ${pkg_size}"
+			fi
 		fi
-
+		while [ $downloaded != "true" ]; do
+			echo "downloading ${pkg_url}"
+			wget -q -O ${dest_filename} ${pkg_url} && {
+				echo "${pkg_md5}  ${dest_filename}" | md5sum -c - && downloaded=true # two space for md5sum check format
+			}
+		done
 	done
 
 }
