@@ -17,9 +17,12 @@ DEBIAN_PATH="${BASE_PATH}/debian/"
 
 mkdir -p $UBUNTU_PATH $DEBIAN_PATH $YUM_PATH
 
-
+cache_dir="/tmp/yum-gitlab-ce-cache/"
 cfg="/tmp/gitlab-ce-yum.conf"
 cat <<EOF > ${cfg}
+[main]
+keepcache=0
+
 [el6]
 name=el6
 baseurl=https://packages.gitlab.com/gitlab/gitlab-ce/el/6/x86_64
@@ -39,9 +42,9 @@ gpgkey=https://packages.gitlab.com/gpg.key
 sslverify=0
 EOF
 
-reposync -c $cfg -d -p ${YUM_PATH}
-createrepo --update -o ${YUM_PATH}/el6 ${YUM_PATH}/el6
-createrepo --update -o ${YUM_PATH}/el7 ${YUM_PATH}/el7
+reposync -c $cfg -d -p ${YUM_PATH}  -e $cache_dir
+createrepo --update -v -c $cache_dir -o ${YUM_PATH}/el6 ${YUM_PATH}/el6
+createrepo --update -v -c $cache_dir -o ${YUM_PATH}/el7 ${YUM_PATH}/el7
 rm $cfg
 
 base_url="https://packages.gitlab.com/gitlab/gitlab-ce/ubuntu"

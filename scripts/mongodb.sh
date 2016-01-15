@@ -51,8 +51,8 @@ done
 
 reposync -c $cfg -d -p ${YUM_PATH} -e $cache_dir
 for mgver in ${MONGO_VERSIONS[@]}; do
-	createrepo -v --update -o ${YUM_PATH}/el6-$mgver/ -c $cache_dir ${YUM_PATH}/el6-$mgver/
-	createrepo -v --update -o ${YUM_PATH}/el7-$mgver/ -c $cache_dir ${YUM_PATH}/el7-$mgver/
+	createrepo --update -v -c $cache_dir -o ${YUM_PATH}/el6-$mgver/ ${YUM_PATH}/el6-$mgver/
+	createrepo --update -v -c $cache_dir -o ${YUM_PATH}/el7-$mgver/ ${YUM_PATH}/el7-$mgver/
 done
 
 [ -e ${YUM_PATH}/el6 ] || (cd ${YUM_PATH}; ln -s el6-${STABLE_VERSION} el6)
