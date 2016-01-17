@@ -28,44 +28,64 @@ function apt-download-binary() {
 	check-and-download "${base_url}/dists/${dist}/InRelease"  "${dest_dir}/InRelease" || true
 	check-and-download "${base_url}/dists/${dist}/Release" "${dest_dir}/Release"
 	check-and-download "${base_url}/dists/${dist}/Release.gpg" "${dest_dir}/Release.gpg" || true
-
+	
+	# Load Package Index URLs from Release file
+	release_file="${dest_dir}/Release"
 	dest_dir="${dest_base_dir}/dists/${dist}/${repo}/binary-${arch}"
 	[ ! -d "$dest_dir" ] && mkdir -p "$dest_dir"
 
-	pkgidxes=('Packages' 'Packages.gz' 'Packages.bz2' 'Packages.xz')
-	pkgidx_content=""
-	for pkgidx in ${pkgidxes[@]}; do
-		pkgidx_file="${dest_dir}/${pkgidx}"
-		pkglist_url="${base_url}/dists/${dist}/${repo}/binary-${arch}/${pkgidx}"
-		check-and-download "${pkglist_url}" ${pkgidx_file} || true
-		if [ -z "${pkgidx_content}" -a -f ${pkgidx_file} ]; then
-			echo "getting packages index content"
-			case $pkgidx in
-				"*.bz2")
-					pkgidx_content=`bunzip2 -c ${pkgidx_file}`
-					;;
-				"*.gz")
-					pkgidx_content=`gunzip -c ${pkgidx_file}`
-					;;
-				*)
-					pkgidx_content=`cat ${pkgidx_file}`
-					;;
-			esac
+	declare pkgidx_content=""
+	declare cnt_start=false
+	while read line; do
+		if [[ ${cnt_start} = true ]]; then
+			read -a tokens <<< $line
+			md5=${tokens[0]}
+			if [[ ${#md5} != 32 ]]; then
+				break
+			fi
+			filesize=${tokens[1]}
+			filename=${tokens[2]}
+			if [[ "$filename" =~ ${repo}/binary-${arch} ]]; then
+				# Load package list from Packages file
+				pkgidx_file="${dest_base_dir}/dists/${dist}/${filename}"
+				pkglist_url="${base_url}/dists/${dist}/${filename}"
+				check-and-download "${pkglist_url}" ${pkgidx_file} || true
+				echo "${md5}  ${pkgidx_file}" | md5sum -c -
+				if [ -z "${pkgidx_content}" -a -f ${pkgidx_file} ]; then
+					echo "getting packages index content"
+					case $filename in
+						"*.bz2")
+							pkgidx_content=`bunzip2 -c ${pkgidx_file}`
+							;;
+						"*.gz")
+							pkgidx_content=`gunzip -c ${pkgidx_file}`
+							;;
+						*)
+							pkgidx_content=`cat ${pkgidx_file}`
+							;;
+					esac
+				fi
+			fi
+		else
+			if [[ "$line" =~ ^MD5Sum:$ ]]; then
+				cnt_start=true
+			fi
 		fi
-	done
+	done < ${release_file}
 
 	if [ -z "${pkgidx_content}" ]; then
 		echo "index is empty, failed"
 		return 1
 	fi
 	
+	# Download packages
 	(echo -e "${pkgidx_content}" | grep -e '^Filename' -e '^Size' -e '^MD5sum' | cut -d' ' -f 2) | \
 	while read pkg_filename; read pkg_size; read pkg_md5; do
 		dest_filename="${dest_base_dir}/${pkg_filename}"
 		dest_dir=`dirname ${dest_filename}`
 		[ ! -d "$dest_dir" ] && mkdir -p "$dest_dir"
 		pkg_url="${base_url}/${pkg_filename}"
-		let downloaded="false"
+		declare downloaded="false"
 		if [ -f ${dest_filename} ]; then
 			rsize=`stat -c "%s" ${dest_filename}`
 			if [ ${rsize} -eq ${pkg_size} ]; then
@@ -82,3 +102,5 @@ function apt-download-binary() {
 	done
 
 }
+
+# vim: ts=4 sts=4 sw=4
