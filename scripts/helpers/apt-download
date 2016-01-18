@@ -36,11 +36,20 @@ function apt-download-binary() {
 
 	declare pkgidx_content=""
 	declare cnt_start=false
+	declare -i checksum_len
+	if (grep -e '^SHA256:$' ${release_file} &>/dev/null); then
+		checksum_cmd="sha256sum"; checksum_regex="^SHA256:$"; checksum_len=64
+	elif (grep -e '^SHA1:$' ${release_file} &>/dev/null); then
+		checksum_cmd="sha1sum"; checksum_regex="^SHA1:$"; checksum_len=40
+	elif (grep -e '^MD5Sum:$' ${release_file} &>/dev/null); then
+		checksum_cmd="md5sum"; checksum_regex="^MD5sum:$"; checksum_len=32
+	fi
+
 	while read line; do
 		if [[ ${cnt_start} = true ]]; then
 			read -a tokens <<< $line
-			md5=${tokens[0]}
-			if [[ ${#md5} != 32 ]]; then
+			checksum=${tokens[0]}
+			if [[ ${#checksum} != ${checksum_len} ]]; then
 				break
 			fi
 			filesize=${tokens[1]}
@@ -50,7 +59,7 @@ function apt-download-binary() {
 				pkgidx_file="${dest_base_dir}/dists/${dist}/${filename}"
 				pkglist_url="${base_url}/dists/${dist}/${filename}"
 				check-and-download "${pkglist_url}" ${pkgidx_file} || true
-				echo "${md5}  ${pkgidx_file}" | md5sum -c -
+				echo "${checksum}  ${pkgidx_file}" | ${checksum_cmd} -c -
 				if [ -z "${pkgidx_content}" -a -f ${pkgidx_file} ]; then
 					echo "getting packages index content"
 					case $filename in
@@ -67,7 +76,7 @@ function apt-download-binary() {
 				fi
 			fi
 		else
-			if [[ "$line" =~ ^MD5Sum:$ ]]; then
+			if [[ "$line" =~ ${checksum_regex} ]]; then
 				cnt_start=true
 			fi
 		fi
@@ -78,25 +87,34 @@ function apt-download-binary() {
 		return 1
 	fi
 	
+	# Set checksum method
+	if (echo -e "${pkgidx_content}" | grep -e '^SHA256' &>/dev/null); then
+		checksum_cmd="sha256sum"; checksum_regex="^SHA256"
+	elif (echo -e "${pkgidx_content}" | grep -e '^SHA1' &>/dev/null); then
+		checksum_cmd="sha1sum"; checksum_regex="^SHA1" 
+	elif (echo -e "${pkgidx_content}" | grep -e '^MD5sum' &>/dev/null); then
+		checksum_cmd="md5sum"; checksum_regex="^MD5sum"
+	fi
+
 	# Download packages
-	(echo -e "${pkgidx_content}" | grep -e '^Filename' -e '^Size' -e '^MD5sum' | cut -d' ' -f 2) | \
-	while read pkg_filename; read pkg_size; read pkg_md5; do
+	(echo -e "${pkgidx_content}" | grep -e '^Filename' -e '^Size' -e ${checksum_regex} | cut -d' ' -f 2) | \
+	while read pkg_filename; read pkg_size; read pkg_checksum; do
 		dest_filename="${dest_base_dir}/${pkg_filename}"
 		dest_dir=`dirname ${dest_filename}`
 		[ ! -d "$dest_dir" ] && mkdir -p "$dest_dir"
 		pkg_url="${base_url}/${pkg_filename}"
-		declare downloaded="false"
+		declare downloaded=false
 		if [ -f ${dest_filename} ]; then
 			rsize=`stat -c "%s" ${dest_filename}`
 			if [ ${rsize} -eq ${pkg_size} ]; then
-				downloaded="true"
+				downloaded=true
 				echo "Skipping ${pkg_filename}, size ${pkg_size}"
 			fi
 		fi
-		while [ $downloaded != "true" ]; do
+		while [ $downloaded != true ]; do
 			echo "downloading ${pkg_url}"
 			wget -q -O ${dest_filename} ${pkg_url} && {
-				echo "${pkg_md5}  ${dest_filename}" | md5sum -c - && downloaded=true # two space for md5sum check format
+				echo "${pkg_checksum}  ${dest_filename}" | ${checksum_cmd} -c - && downloaded=true # two space for md5sum/sha1sum/sha256sum check format
 			}
 		done
 	done
