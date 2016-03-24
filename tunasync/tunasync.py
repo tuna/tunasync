@@ -126,13 +126,13 @@ class TUNASync(object):
     def reload_mirrors(self, signum, frame):
         try:
             return self._reload_mirrors(signum, frame, force=False)
-        except Exception, e:
+        except Exception as e:
             print(e)
 
     def reload_mirrors_force(self, signum, frame):
         try:
             return self._reload_mirrors(signum, frame, force=True)
-        except Exception, e:
+        except Exception as e:
             print(e)
 
     def _reload_mirrors(self, signum, frame, force=False):
@@ -202,8 +202,13 @@ class TUNASync(object):
 
     def handle_cmd(self, cmd, mirror_name, kwargs):
         if cmd == "restart":
-            _, p = self.processes[mirror_name]
-            p.terminate()
+            if mirror_name not in self.providers:
+                res = "Invalid job: {}".format(mirror_name)
+                return res
+
+            if mirror_name in self.processes:
+                _, p = self.processes[mirror_name]
+                p.terminate()
             self.providers[mirror_name].set_delay(0)
             self.run_provider(mirror_name)
             res = "Restarted Job: {}".format(mirror_name)
@@ -259,7 +264,7 @@ class TUNASync(object):
                 lfiles_set = set(lfiles)
                 # sort to get the newest 10 files
                 lfiles_ts = sorted(
-                    [(os.path.getmtime(lfile), lfile) for lfile in lfiles],
+                    [(os.path.getmtime(lfile), lfile) for lfile in lfiles_set],
                     key=lambda x: x[0],
                     reverse=True,
                 )
