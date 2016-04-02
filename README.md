@@ -1,6 +1,10 @@
 tunasync
 ========
 
+## Ideas
+
+- use [etcd](https://github.com/coreos/etcd) to store configurations and state variables
+
 ## Design
 
 ```
