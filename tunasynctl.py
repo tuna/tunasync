@@ -9,7 +9,7 @@ import struct
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(prog="tunasynctl")
     parser.add_argument("-s", "--socket",
-                        default="/var/run/tunasync.sock", help="socket file")
+                        default="/run/tunasync/tunasync.sock", help="socket file")
 
     subparsers = parser.add_subparsers(dest="command", help='sub-command help')
 

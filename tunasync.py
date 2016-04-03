@@ -12,7 +12,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(prog="tunasync")
     parser.add_argument("-c", "--config",
                         default="tunasync.ini", help="config file")
-    parser.add_argument("--pidfile", default="/var/run/tunasync.pid",
+    parser.add_argument("--pidfile", default="/run/tunasync/tunasync.pid",
                         help="pidfile")
 
     args = parser.parse_args()
