@@ -15,7 +15,6 @@ CONDA_ARCHES=("linux-64" "linux-32" "linux-armv6l" "linux-armv7l" "linux-ppc64le
 function check-and-download() {
 	remote_file=$1
 	local_file=$2
-	echo ${remote_file}
 	wget -q --spider ${remote_file}
 	if [ $? -eq 0 ]; then
 		echo "downloading ${remote_file}"
@@ -40,7 +39,7 @@ echo ${TMP_DIR}
 
 for repo in ${CONDA_REPOS[@]}; do
 	for arch in ${CONDA_ARCHES[@]}; do
-		PKG_REPO_BASE="${CONDA_REPO_BASE}/pkgs/$repo/$arch/"
+		PKG_REPO_BASE="${CONDA_REPO_BASE}/pkgs/$repo/$arch"
 		repodata_url="${PKG_REPO_BASE}/repodata.json"
 		bz2_repodata_url="${PKG_REPO_BASE}/repodata.json.bz2"
 		LOCAL_DIR="${LOCAL_DIR_BASE}/$repo/$arch"
