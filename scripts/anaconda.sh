@@ -78,8 +78,8 @@ for repo in ${CONDA_REPOS[@]}; do
 			done
 		done
 		
-		mv "${TMP_DIR}/repodata.json" "${LOCAL_DIR}/repodata.json"
-		mv "${TMP_DIR}/repodata.json.bz2" "${LOCAL_DIR}/repodata.json.bz2"
+		mv -f "${TMP_DIR}/repodata.json" "${LOCAL_DIR}/repodata.json"
+		mv -f "${TMP_DIR}/repodata.json.bz2" "${LOCAL_DIR}/repodata.json.bz2"
 	done
 done
 
