@@ -25,7 +25,7 @@ cat <<EOF > ${cfg}
 [main]
 keepcache=0
 
-[gitlab-ci-multi-runner-el6]
+[el6]
 name=gitlab-ci-multi-runner-el6
 baseurl=https://packages.gitlab.com/runner/gitlab-ci-multi-runner/el/6/x86_64
 repo_gpgcheck=0
@@ -34,7 +34,7 @@ enabled=1
 gpgkey=https://packages.gitlab.com/gpg.key
 sslverify=0
 
-[gitlab-ci-multi-runner-el7]
+[el7]
 name=gitlab-ci-multi-runner-el7
 baseurl=https://packages.gitlab.com/runner/gitlab-ci-multi-runner/el/7/x86_64
 repo_gpgcheck=0
