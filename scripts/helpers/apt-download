@@ -21,6 +21,10 @@ function apt-download-binary() {
 	repo=$3
 	arch=$4
 	dest_base_dir=$5
+	if [ -z $dest_base_dir ]; then
+		echo "Destination directory is empty, cannot continue"
+		return 1
+	fi
 	
 	dest_dir="${dest_base_dir}/dists/${dist}"
 	[ ! -d "$dest_dir" ] && mkdir -p "$dest_dir"
@@ -57,6 +61,8 @@ function apt-download-binary() {
 			if [[ "$filename" =~ ${repo}/binary-${arch} ]]; then
 				# Load package list from Packages file
 				pkgidx_file="${dest_base_dir}/dists/${dist}/${filename}"
+				dest_dir=`dirname ${pkgidx_file}`
+				[ ! -d "$dest_dir" ] && mkdir -p "$dest_dir"
 				pkglist_url="${base_url}/dists/${dist}/${filename}"
 				check-and-download "${pkglist_url}" ${pkgidx_file} || true
 				echo "${checksum}  ${pkgidx_file}" | ${checksum_cmd} -c -
@@ -118,6 +124,8 @@ function apt-download-binary() {
 			}
 		done
 	done
+
+	echo "Mirroring ${base_url} ${dist}, ${repo}, ${arch} done!"
 
 }
 
