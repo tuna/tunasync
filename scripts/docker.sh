@@ -6,13 +6,16 @@ set -o pipefail
 
 _here=`dirname $(realpath $0)`
 . ${_here}/helpers/apt-download
-APT_VERSIONS=("debian-wheezy" "debian-jessie" "ubuntu-trusty" "ubuntu-xenial")
+APT_VERSIONS=("debian-wheezy" "debian-jessie" "ubuntu-precise" "ubuntu-trusty" "ubuntu-xenial")
 
 BASE_PATH="${TUNASYNC_WORKING_DIR}"
 APT_PATH="${BASE_PATH}/apt/repo"
 YUM_PATH="${BASE_PATH}/yum/repo"
 
 mkdir -p ${APT_PATH} ${YUM_PATH}
+
+wget -q -N -O ${BASE_PATH}/yum/gpg https://yum.dockerproject.org/gpg
+wget -q -N -O ${BASE_PATH}/apt/gpg https://apt.dockerproject.org/gpg
 
 # YUM mirror
 cache_dir="/tmp/yum-docker-cache/"
