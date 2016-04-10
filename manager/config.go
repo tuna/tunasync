@@ -24,6 +24,8 @@ type ServerConfig struct {
 type FileConfig struct {
 	StatusFile string `toml:"status_file"`
 	DBFile     string `toml:"db_file"`
+	// used to connect to worker
+	CACert string `toml:"ca_cert"`
 }
 
 func loadConfig(cfgFile string, c *cli.Context) (*Config, error) {
