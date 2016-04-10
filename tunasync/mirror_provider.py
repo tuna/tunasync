@@ -122,7 +122,7 @@ class TwoStageRsyncProvider(RsyncProvider):
     _stage1_profiles = {
         "debian": [
             'Packages*', 'Sources*', 'Release*',
-            'InRelease', 'i18n/*', 'ls-lR*',
+            'InRelease', 'i18n/*', 'ls-lR*', 'dep11/*',
         ]
     }
 
