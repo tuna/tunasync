@@ -1,9 +1,8 @@
 tunasync
 ========
 
-## Ideas
-
-- use [etcd](https://github.com/coreos/etcd) to store configurations and state variables
+[![Build Status](https://travis-ci.org/tuna/tunasync.svg?branch=dev)](https://travis-ci.org/tuna/tunasync)
+[![Coverage Status](https://coveralls.io/repos/github/tuna/tunasync/badge.svg?branch=dev)](https://coveralls.io/github/tuna/tunasync?branch=dev)
 
 ## Design
 
@@ -39,7 +38,9 @@ tunasync
 ## TODO
 
 - [ ] split to `tunasync-manager` and `tunasync-worker` instances
-	- use HTTP as communication protocol
+	- [ ] use HTTP as communication protocol
+	- [ ] implement manager as status server first, and use python worker
+	- [ ] implement go worker
 - Web frontend for `tunasync-manager`
 	- [ ] start/stop/restart job
 	- [ ] enable/disable mirror
