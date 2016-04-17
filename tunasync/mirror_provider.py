@@ -121,6 +121,9 @@ class TwoStageRsyncProvider(RsyncProvider):
 
     _stage1_profiles = {
         "debian": [
+            'dists/',
+        ],
+        "debian-oldstyle": [
             'Packages*', 'Sources*', 'Release*',
             'InRelease', 'i18n/*', 'ls-lR*', 'dep11/*',
         ]
