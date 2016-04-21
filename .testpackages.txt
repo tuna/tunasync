@@ -1,3 +1,2 @@
 github.com/tuna/tunasync/internal
-github.com/tuna/tunasync/internal/status
 github.com/tuna/tunasync/manager
