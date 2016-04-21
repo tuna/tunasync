@@ -1,9 +1,11 @@
-package status
+package manager
 
 import (
 	"encoding/json"
 	"testing"
 	"time"
+
+	tunasync "github.com/tuna/tunasync/internal"
 
 	. "github.com/smartystreets/goconvey/convey"
 )
@@ -14,9 +16,9 @@ func TestStatus(t *testing.T) {
 		loc, err := time.LoadLocation(tz)
 		So(err, ShouldBeNil)
 
-		m := MirrorStatus{
+		m := mirrorStatus{
 			Name:       "tunalinux",
-			Status:     Success,
+			Status:     tunasync.Success,
 			LastUpdate: time.Date(2016, time.April, 16, 23, 8, 10, 0, loc),
 			Size:       "5GB",
 			Upstream:   "rsync://mirrors.tuna.tsinghua.edu.cn/tunalinux/",
@@ -25,7 +27,7 @@ func TestStatus(t *testing.T) {
 		b, err := json.Marshal(m)
 		So(err, ShouldBeNil)
 		// fmt.Println(string(b))
-		var m2 MirrorStatus
+		var m2 mirrorStatus
 		err = json.Unmarshal(b, &m2)
 		So(err, ShouldBeNil)
 		// fmt.Printf("%#v", m2)

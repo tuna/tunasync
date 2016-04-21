@@ -1,35 +1,24 @@
-package status
+package manager
 
 import (
 	"encoding/json"
 	"errors"
 	"fmt"
 	"strconv"
-	"strings"
 	"time"
+
+	. "github.com/tuna/tunasync/internal"
 )
 
-type syncStatus uint8
-
-const (
-	None syncStatus = iota
-	Failed
-	Success
-	Syncing
-	PreSyncing
-	Paused
-	Disabled
-)
-
-type MirrorStatus struct {
+type mirrorStatus struct {
 	Name       string
-	Status     syncStatus
+	Status     SyncStatus
 	LastUpdate time.Time
 	Upstream   string
 	Size       string // approximate size
 }
 
-func (s MirrorStatus) MarshalJSON() ([]byte, error) {
+func (s mirrorStatus) MarshalJSON() ([]byte, error) {
 	m := map[string]interface{}{
 		"name":           s.Name,
 		"status":         s.Status,
@@ -41,7 +30,7 @@ func (s MirrorStatus) MarshalJSON() ([]byte, error) {
 	return json.Marshal(m)
 }
 
-func (s *MirrorStatus) UnmarshalJSON(v []byte) error {
+func (s *mirrorStatus) UnmarshalJSON(v []byte) error {
 	var m map[string]interface{}
 
 	err := json.Unmarshal(v, &m)
@@ -96,49 +85,6 @@ func (s *MirrorStatus) UnmarshalJSON(v []byte) error {
 		}
 	} else {
 		return errors.New("key `last_update_ts` does not exist in the json")
-	}
-	return nil
-}
-
-func (s syncStatus) MarshalJSON() ([]byte, error) {
-	var strStatus string
-	switch s {
-	case None:
-		strStatus = "none"
-	case Success:
-		strStatus = "success"
-	case Syncing:
-		strStatus = "syncing"
-	case PreSyncing:
-		strStatus = "pre-syncing"
-	case Paused:
-		strStatus = "paused"
-	case Disabled:
-		strStatus = "disabled"
-	default:
-		return []byte{}, errors.New("Invalid status value")
-	}
-
-	return json.Marshal(strStatus)
-}
-
-func (s *syncStatus) UnmarshalJSON(v []byte) error {
-	sv := strings.Trim(string(v), `"`)
-	switch sv {
-	case "none":
-		*s = None
-	case "success":
-		*s = Success
-	case "syncing":
-		*s = Syncing
-	case "pre-syncing":
-		*s = PreSyncing
-	case "paused":
-		*s = Paused
-	case "disabled":
-		*s = Disabled
-	default:
-		return fmt.Errorf("Invalid status value: %s", string(v))
 	}
 	return nil
 }
