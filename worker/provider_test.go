@@ -26,6 +26,7 @@ func TestRsyncProvider(t *testing.T) {
 		So(provider.WorkingDir(), ShouldEqual, c.workingDir)
 		So(provider.LogDir(), ShouldEqual, c.logDir)
 		So(provider.LogFile(), ShouldEqual, c.logFile)
+		So(provider.Interval(), ShouldEqual, c.interval)
 
 		Convey("When entering a context (auto exit)", func() {
 			func() {
