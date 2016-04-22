@@ -20,7 +20,8 @@ type cmdConfig struct {
 type cmdProvider struct {
 	baseProvider
 	cmdConfig
-	cmd     []string
+	command []string
+	cmd     *exec.Cmd
 	session *sh.Session
 }
 
@@ -43,7 +44,7 @@ func newCmdProvider(c cmdConfig) (*cmdProvider, error) {
 	if err != nil {
 		return nil, err
 	}
-	provider.cmd = cmd
+	provider.command = cmd
 
 	return provider, nil
 }
@@ -70,17 +71,16 @@ func newEnviron(env map[string]string, inherit bool) []string { //map[string]str
 
 // TODO: implement this
 func (p *cmdProvider) Run() error {
-	var cmd *exec.Cmd
-	if len(p.cmd) == 1 {
-		cmd = exec.Command(p.cmd[0])
-	} else if len(p.cmd) > 1 {
-		c := p.cmd[0]
-		args := p.cmd[1:]
-		cmd = exec.Command(c, args...)
-	} else if len(p.cmd) == 0 {
+	if len(p.command) == 1 {
+		p.cmd = exec.Command(p.command[0])
+	} else if len(p.command) > 1 {
+		c := p.command[0]
+		args := p.command[1:]
+		p.cmd = exec.Command(c, args...)
+	} else if len(p.command) == 0 {
 		panic("Command length should be at least 1!")
 	}
-	cmd.Dir = p.WorkingDir()
+	p.cmd.Dir = p.WorkingDir()
 
 	env := map[string]string{
 		"TUNASYNC_MIRROR_NAME":  p.Name(),
@@ -91,16 +91,20 @@ func (p *cmdProvider) Run() error {
 	for k, v := range p.env {
 		env[k] = v
 	}
-	cmd.Env = newEnviron(env, true)
+	p.cmd.Env = newEnviron(env, true)
 
-	logFile, err := os.OpenFile(p.LogFile(), os.O_WRONLY, 0644)
+	logFile, err := os.OpenFile(p.LogFile(), os.O_WRONLY|os.O_CREATE, 0644)
 	if err != nil {
 		return err
 	}
-	cmd.Stdout = logFile
-	cmd.Stderr = logFile
+	p.cmd.Stdout = logFile
+	p.cmd.Stderr = logFile
 
-	return cmd.Start()
+	return p.cmd.Start()
+}
+
+func (p *cmdProvider) Wait() error {
+	return p.cmd.Wait()
 }
 
 // TODO: implement this
