@@ -33,7 +33,7 @@ func newRsyncProvider(c rsyncConfig) (*rsyncProvider, error) {
 }
 
 // TODO: implement this
-func (p *rsyncProvider) Run() {
+func (p *rsyncProvider) Start() {
 
 }
 

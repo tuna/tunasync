@@ -80,6 +80,9 @@ func TestCmdProvider(t *testing.T) {
 			logDir:      tmpDir,
 			logFile:     tmpFile,
 			interval:    600,
+			env: map[string]string{
+				"AOSP_REPO_BIN": "/usr/local/bin/repo",
+			},
 		}
 
 		provider, err := newCmdProvider(c)
@@ -97,13 +100,15 @@ echo $TUNASYNC_WORKING_DIR
 echo $TUNASYNC_MIRROR_NAME
 echo $TUNASYNC_UPSTREAM_URL
 echo $TUNASYNC_LOG_FILE
+echo $AOSP_REPO_BIN
 `
 			exceptedOutput := fmt.Sprintf(
-				"%s\n%s\n%s\n%s\n",
+				"%s\n%s\n%s\n%s\n%s\n",
 				provider.WorkingDir(),
 				provider.Name(),
 				provider.upstreamURL,
 				provider.LogFile(),
+				"/usr/local/bin/repo",
 			)
 			err = ioutil.WriteFile(scriptFile, []byte(scriptContent), 0755)
 			So(err, ShouldBeNil)
@@ -111,7 +116,7 @@ echo $TUNASYNC_LOG_FILE
 			So(err, ShouldBeNil)
 			So(readedScriptContent, ShouldResemble, []byte(scriptContent))
 
-			err = provider.Run()
+			err = provider.Start()
 			So(err, ShouldBeNil)
 			err = provider.Wait()
 			So(err, ShouldBeNil)
@@ -129,7 +134,7 @@ echo $TUNASYNC_LOG_FILE
 			So(err, ShouldBeNil)
 			So(readedScriptContent, ShouldResemble, []byte(scriptContent))
 
-			err = provider.Run()
+			err = provider.Start()
 			So(err, ShouldBeNil)
 			err = provider.Wait()
 			So(err, ShouldNotBeNil)
@@ -143,7 +148,7 @@ sleep 5
 			err = ioutil.WriteFile(scriptFile, []byte(scriptContent), 0755)
 			So(err, ShouldBeNil)
 
-			err = provider.Run()
+			err = provider.Start()
 			So(err, ShouldBeNil)
 
 			go func() {

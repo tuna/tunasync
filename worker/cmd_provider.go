@@ -20,6 +20,7 @@ type cmdProvider struct {
 	cmdConfig
 	command []string
 	cmd     *cmdJob
+	logFile *os.File
 }
 
 func newCmdProvider(c cmdConfig) (*cmdProvider, error) {
@@ -46,10 +47,7 @@ func newCmdProvider(c cmdConfig) (*cmdProvider, error) {
 	return provider, nil
 }
 
-func (p *cmdProvider) InitRunner() {
-}
-
-func (p *cmdProvider) Run() error {
+func (p *cmdProvider) Start() error {
 	env := map[string]string{
 		"TUNASYNC_MIRROR_NAME":  p.Name(),
 		"TUNASYNC_WORKING_DIR":  p.WorkingDir(),
@@ -65,19 +63,25 @@ func (p *cmdProvider) Run() error {
 	if err != nil {
 		return err
 	}
-	// defer logFile.Close()
+	p.logFile = logFile
 	p.cmd.SetLogFile(logFile)
 
 	return p.cmd.Start()
 }
 
 func (p *cmdProvider) Wait() error {
+	if p.logFile != nil {
+		defer p.logFile.Close()
+	}
 	return p.cmd.Wait()
 }
 
 func (p *cmdProvider) Terminate() error {
 	if p.cmd == nil {
 		return errors.New("provider command job not initialized")
+	}
+	if p.logFile != nil {
+		defer p.logFile.Close()
 	}
 	err := p.cmd.Terminate()
 	return err

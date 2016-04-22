@@ -16,8 +16,10 @@ type mirrorProvider interface {
 	Name() string
 
 	// TODO: implement Run, Terminate and Hooks
-	// run mirror job
-	Run()
+	// run mirror job in background
+	Start()
+	// Wait job to finish
+	Wait()
 	// terminate mirror job
 	Terminate()
 	// job hooks

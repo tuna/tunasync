@@ -45,15 +45,6 @@ func newCmdJob(cmdAndArgs []string, workingDir string, env map[string]string) *c
 	}
 }
 
-// start job and wait
-func (c *cmdJob) Run() error {
-	err := c.cmd.Start()
-	if err != nil {
-		return err
-	}
-	return c.Wait()
-}
-
 func (c *cmdJob) Start() error {
 	c.finished = make(chan struct{}, 1)
 	return c.cmd.Start()
