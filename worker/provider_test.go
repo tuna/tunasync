@@ -6,6 +6,7 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
+	"time"
 
 	. "github.com/smartystreets/goconvey/convey"
 )
@@ -64,7 +65,7 @@ func TestRsyncProvider(t *testing.T) {
 }
 
 func TestCmdProvider(t *testing.T) {
-	Convey("Command Provider should work", t, func() {
+	Convey("Command Provider should work", t, func(ctx C) {
 		tmpDir, err := ioutil.TempDir("", "tunasync")
 		defer os.RemoveAll(tmpDir)
 		So(err, ShouldBeNil)
@@ -112,7 +113,7 @@ echo $TUNASYNC_LOG_FILE
 
 			err = provider.Run()
 			So(err, ShouldBeNil)
-			err = provider.cmd.Wait()
+			err = provider.Wait()
 			So(err, ShouldBeNil)
 
 			loggedContent, err := ioutil.ReadFile(provider.LogFile())
@@ -130,8 +131,29 @@ echo $TUNASYNC_LOG_FILE
 
 			err = provider.Run()
 			So(err, ShouldBeNil)
-			err = provider.cmd.Wait()
+			err = provider.Wait()
 			So(err, ShouldNotBeNil)
+
+		})
+
+		Convey("If a long job is killed", func(ctx C) {
+			scriptContent := `#!/bin/bash
+sleep 5
+			`
+			err = ioutil.WriteFile(scriptFile, []byte(scriptContent), 0755)
+			So(err, ShouldBeNil)
+
+			err = provider.Run()
+			So(err, ShouldBeNil)
+
+			go func() {
+				err = provider.Wait()
+				ctx.So(err, ShouldNotBeNil)
+			}()
+
+			time.Sleep(2)
+			err = provider.Terminate()
+			So(err, ShouldBeNil)
 
 		})
 	})
