@@ -1,11 +1,13 @@
 package worker
 
+import "time"
+
 type rsyncConfig struct {
 	name                               string
 	upstreamURL, password, excludeFile string
 	workingDir, logDir, logFile        string
 	useIPv6                            bool
-	interval                           int
+	interval                           time.Duration
 }
 
 // An RsyncProvider provides the implementation to rsync-based syncing jobs
@@ -39,10 +41,5 @@ func (p *rsyncProvider) Start() {
 
 // TODO: implement this
 func (p *rsyncProvider) Terminate() {
-
-}
-
-// TODO: implement this
-func (p *rsyncProvider) Hooks() {
 
 }

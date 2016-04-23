@@ -20,7 +20,7 @@ type cmdJob struct {
 	workingDir string
 	env        map[string]string
 	logFile    *os.File
-	finished   chan struct{}
+	finished   chan empty
 }
 
 func newCmdJob(cmdAndArgs []string, workingDir string, env map[string]string) *cmdJob {
@@ -46,13 +46,13 @@ func newCmdJob(cmdAndArgs []string, workingDir string, env map[string]string) *c
 }
 
 func (c *cmdJob) Start() error {
-	c.finished = make(chan struct{}, 1)
+	c.finished = make(chan empty, 1)
 	return c.cmd.Start()
 }
 
 func (c *cmdJob) Wait() error {
 	err := c.cmd.Wait()
-	c.finished <- struct{}{}
+	c.finished <- empty{}
 	return err
 }
 
@@ -63,10 +63,10 @@ func (c *cmdJob) SetLogFile(logFile *os.File) {
 
 func (c *cmdJob) Terminate() error {
 	if c.cmd == nil {
-		return errors.New("Command not initialized")
+		return nil
 	}
 	if c.cmd.Process == nil {
-		return errors.New("No Process Running")
+		return nil
 	}
 	err := unix.Kill(c.cmd.Process.Pid, syscall.SIGTERM)
 	if err != nil {

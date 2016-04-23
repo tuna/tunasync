@@ -3,6 +3,7 @@ package worker
 import (
 	"errors"
 	"os"
+	"time"
 
 	"github.com/anmitsu/go-shlex"
 )
@@ -11,7 +12,7 @@ type cmdConfig struct {
 	name                        string
 	upstreamURL, command        string
 	workingDir, logDir, logFile string
-	interval                    int
+	interval                    time.Duration
 	env                         map[string]string
 }
 
@@ -77,17 +78,13 @@ func (p *cmdProvider) Wait() error {
 }
 
 func (p *cmdProvider) Terminate() error {
+	logger.Debug("terminating provider: %s", p.Name())
 	if p.cmd == nil {
 		return errors.New("provider command job not initialized")
 	}
 	if p.logFile != nil {
-		defer p.logFile.Close()
+		p.logFile.Close()
 	}
 	err := p.cmd.Terminate()
 	return err
-}
-
-// TODO: implement this
-func (p *cmdProvider) Hooks() {
-
 }

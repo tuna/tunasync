@@ -1,5 +1,7 @@
 package worker
 
+import "time"
+
 // mirror provider is the wrapper of mirror jobs
 
 type providerType uint8
@@ -17,15 +19,15 @@ type mirrorProvider interface {
 
 	// TODO: implement Run, Terminate and Hooks
 	// run mirror job in background
-	Start()
+	Start() error
 	// Wait job to finish
-	Wait()
+	Wait() error
 	// terminate mirror job
-	Terminate()
+	Terminate() error
 	// job hooks
-	Hooks()
+	Hooks() []jobHook
 
-	Interval() int
+	Interval() time.Duration
 
 	WorkingDir() string
 	LogDir() string
@@ -42,7 +44,8 @@ type mirrorProvider interface {
 type baseProvider struct {
 	ctx      *Context
 	name     string
-	interval int
+	interval time.Duration
+	hooks    []jobHook
 }
 
 func (p *baseProvider) Name() string {
@@ -63,7 +66,7 @@ func (p *baseProvider) Context() *Context {
 	return p.ctx
 }
 
-func (p *baseProvider) Interval() int {
+func (p *baseProvider) Interval() time.Duration {
 	return p.interval
 }
 
@@ -92,4 +95,12 @@ func (p *baseProvider) LogFile() string {
 		}
 	}
 	panic("log dir is impossible to be unavailable")
+}
+
+func (p *baseProvider) AddHook(hook jobHook) {
+	p.hooks = append(p.hooks, hook)
+}
+
+func (p *baseProvider) Hooks() []jobHook {
+	return p.hooks
 }
