@@ -15,6 +15,8 @@ import (
 // it's an alternative to python-sh or go-sh
 // TODO: cgroup excution
 
+var errProcessNotStarted = errors.New("Process Not Started")
+
 type cmdJob struct {
 	cmd        *exec.Cmd
 	workingDir string
@@ -62,11 +64,8 @@ func (c *cmdJob) SetLogFile(logFile *os.File) {
 }
 
 func (c *cmdJob) Terminate() error {
-	if c.cmd == nil {
-		return nil
-	}
-	if c.cmd.Process == nil {
-		return nil
+	if c.cmd == nil || c.cmd.Process == nil {
+		return errProcessNotStarted
 	}
 	err := unix.Kill(c.cmd.Process.Pid, syscall.SIGTERM)
 	if err != nil {

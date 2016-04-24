@@ -3,6 +3,7 @@ package worker
 import (
 	"errors"
 	"os"
+	"sync"
 	"time"
 )
 
@@ -21,7 +22,8 @@ type mirrorProvider interface {
 	// name
 	Name() string
 
-	// TODO: implement Run, Terminate and Hooks
+	// run mirror job in background
+	Run() error
 	// run mirror job in background
 	Start() error
 	// Wait job to finish
@@ -46,6 +48,8 @@ type mirrorProvider interface {
 }
 
 type baseProvider struct {
+	sync.Mutex
+
 	ctx      *Context
 	name     string
 	interval time.Duration
@@ -118,21 +122,35 @@ func (p *baseProvider) setLogFile() error {
 		p.cmd.SetLogFile(nil)
 		return nil
 	}
-
-	logFile, err := os.OpenFile(p.LogFile(), os.O_WRONLY|os.O_CREATE, 0644)
-	if err != nil {
-		logger.Error("Error opening logfile %s: %s", p.LogFile(), err.Error())
-		return err
+	if p.logFile == nil {
+		logFile, err := os.OpenFile(p.LogFile(), os.O_WRONLY|os.O_CREATE, 0644)
+		if err != nil {
+			logger.Error("Error opening logfile %s: %s", p.LogFile(), err.Error())
+			return err
+		}
+		p.logFile = logFile
 	}
-	p.logFile = logFile
-	p.cmd.SetLogFile(logFile)
+	p.cmd.SetLogFile(p.logFile)
 	return nil
 }
 
+func (p *baseProvider) Run() error {
+	panic("Not Implemented")
+}
+
+func (p *baseProvider) Start() error {
+	panic("Not Implemented")
+}
+
 func (p *baseProvider) Wait() error {
-	if p.logFile != nil {
-		defer p.logFile.Close()
-	}
+	defer func() {
+		p.Lock()
+		if p.logFile != nil {
+			p.logFile.Close()
+			p.logFile = nil
+		}
+		p.Unlock()
+	}()
 	return p.cmd.Wait()
 }
 
@@ -141,9 +159,14 @@ func (p *baseProvider) Terminate() error {
 	if p.cmd == nil {
 		return errors.New("provider command job not initialized")
 	}
+
+	p.Lock()
 	if p.logFile != nil {
 		p.logFile.Close()
+		p.logFile = nil
 	}
+	p.Unlock()
+
 	err := p.cmd.Terminate()
 	return err
 }

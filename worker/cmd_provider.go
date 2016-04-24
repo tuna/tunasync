@@ -44,6 +44,13 @@ func newCmdProvider(c cmdConfig) (*cmdProvider, error) {
 	return provider, nil
 }
 
+func (p *cmdProvider) Run() error {
+	if err := p.Start(); err != nil {
+		return err
+	}
+	return p.Wait()
+}
+
 func (p *cmdProvider) Start() error {
 	env := map[string]string{
 		"TUNASYNC_MIRROR_NAME":  p.Name(),

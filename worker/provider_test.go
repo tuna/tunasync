@@ -116,9 +116,7 @@ echo $AOSP_REPO_BIN
 			So(err, ShouldBeNil)
 			So(readedScriptContent, ShouldResemble, []byte(scriptContent))
 
-			err = provider.Start()
-			So(err, ShouldBeNil)
-			err = provider.Wait()
+			err = provider.Run()
 			So(err, ShouldBeNil)
 
 			loggedContent, err := ioutil.ReadFile(provider.LogFile())
@@ -134,9 +132,7 @@ echo $AOSP_REPO_BIN
 			So(err, ShouldBeNil)
 			So(readedScriptContent, ShouldResemble, []byte(scriptContent))
 
-			err = provider.Start()
-			So(err, ShouldBeNil)
-			err = provider.Wait()
+			err = provider.Run()
 			So(err, ShouldNotBeNil)
 
 		})
@@ -148,15 +144,12 @@ sleep 5
 			err = ioutil.WriteFile(scriptFile, []byte(scriptContent), 0755)
 			So(err, ShouldBeNil)
 
-			err = provider.Start()
-			So(err, ShouldBeNil)
-
 			go func() {
-				err = provider.Wait()
+				err = provider.Run()
 				ctx.So(err, ShouldNotBeNil)
 			}()
 
-			time.Sleep(2)
+			time.Sleep(1 * time.Second)
 			err = provider.Terminate()
 			So(err, ShouldBeNil)
 

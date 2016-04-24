@@ -103,18 +103,11 @@ func (m *mirrorJob) Run(managerChan chan<- jobMessage, semaphore chan empty) err
 
 			// start syncing
 			managerChan <- jobMessage{tunasync.Syncing, m.Name(), ""}
-			err = provider.Start()
-			if err != nil {
-				logger.Error(
-					"failed to start syncing job for %s: %s",
-					m.Name(), err.Error(),
-				)
-				return err
-			}
+
 			var syncErr error
 			syncDone := make(chan error, 1)
 			go func() {
-				err := provider.Wait()
+				err := provider.Run()
 				if !stopASAP {
 					syncDone <- err
 				}

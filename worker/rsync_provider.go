@@ -55,6 +55,13 @@ func newRsyncProvider(c rsyncConfig) (*rsyncProvider, error) {
 	return provider, nil
 }
 
+func (p *rsyncProvider) Run() error {
+	if err := p.Start(); err != nil {
+		return err
+	}
+	return p.Wait()
+}
+
 func (p *rsyncProvider) Start() error {
 	env := map[string]string{}
 	if p.password != "" {
