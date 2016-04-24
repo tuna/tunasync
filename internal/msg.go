@@ -12,6 +12,7 @@ type StatusUpdateMsg struct {
 	LastUpdate time.Time  `json:"last_update"`
 	Upstream   string     `json:"upstream"`
 	Size       string     `json:"size"`
+	ErrorMsg   string     `json:"error_msg"`
 }
 
 // A WorkerInfoMsg is

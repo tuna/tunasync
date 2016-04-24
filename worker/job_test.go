@@ -64,23 +64,34 @@ func TestMirrorJob(t *testing.T) {
 
 			Convey("If we let it run several times", func(ctx C) {
 				ctrlChan := make(chan ctrlAction)
-				managerChan := make(chan struct{})
+				managerChan := make(chan jobMessage, 10)
 				semaphore := make(chan empty, 1)
 
 				go runMirrorJob(provider, ctrlChan, managerChan, semaphore)
 				for i := 0; i < 2; i++ {
-					<-managerChan
+					msg := <-managerChan
+					So(msg.status, ShouldEqual, PreSyncing)
+					msg = <-managerChan
+					So(msg.status, ShouldEqual, Syncing)
+					msg = <-managerChan
+					So(msg.status, ShouldEqual, Success)
 					loggedContent, err := ioutil.ReadFile(provider.LogFile())
 					So(err, ShouldBeNil)
 					So(string(loggedContent), ShouldEqual, exceptedOutput)
 					ctrlChan <- jobStart
 				}
 				select {
-				case <-managerChan:
-					So(0, ShouldEqual, 0) // made this fail
+				case msg := <-managerChan:
+					So(msg.status, ShouldEqual, PreSyncing)
+					msg = <-managerChan
+					So(msg.status, ShouldEqual, Syncing)
+					msg = <-managerChan
+					So(msg.status, ShouldEqual, Success)
+
 				case <-time.After(2 * time.Second):
 					So(0, ShouldEqual, 1)
 				}
+
 				ctrlChan <- jobDisable
 				select {
 				case <-managerChan:
@@ -102,23 +113,38 @@ echo $TUNASYNC_WORKING_DIR
 			So(err, ShouldBeNil)
 
 			ctrlChan := make(chan ctrlAction)
-			managerChan := make(chan struct{})
+			managerChan := make(chan jobMessage, 10)
 			semaphore := make(chan empty, 1)
 
 			Convey("If we kill it", func(ctx C) {
 				go runMirrorJob(provider, ctrlChan, managerChan, semaphore)
+
 				time.Sleep(1 * time.Second)
+				msg := <-managerChan
+				So(msg.status, ShouldEqual, PreSyncing)
+				msg = <-managerChan
+				So(msg.status, ShouldEqual, Syncing)
+
 				ctrlChan <- jobStop
-				<-managerChan
+
+				msg = <-managerChan
+				So(msg.status, ShouldEqual, Failed)
+
 				exceptedOutput := fmt.Sprintf("%s\n", provider.WorkingDir())
 				loggedContent, err := ioutil.ReadFile(provider.LogFile())
 				So(err, ShouldBeNil)
 				So(string(loggedContent), ShouldEqual, exceptedOutput)
 				ctrlChan <- jobDisable
 			})
+
 			Convey("If we don't kill it", func(ctx C) {
 				go runMirrorJob(provider, ctrlChan, managerChan, semaphore)
-				<-managerChan
+				msg := <-managerChan
+				So(msg.status, ShouldEqual, PreSyncing)
+				msg = <-managerChan
+				So(msg.status, ShouldEqual, Syncing)
+				msg = <-managerChan
+				So(msg.status, ShouldEqual, Success)
 
 				exceptedOutput := fmt.Sprintf(
 					"%s\n%s\n",
