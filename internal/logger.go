@@ -10,9 +10,9 @@ import (
 func InitLogger(verbose, debug, withSystemd bool) {
 	var fmtString string
 	if withSystemd {
-		fmtString = "\r[%{level:.6s}] %{message}"
+		fmtString = "[%{level:.6s}] %{message}"
 	} else {
-		fmtString = "\r%{color}[%{time:06-01-02 15:04:05}][%{level:.6s}]%{color:reset} %{message}"
+		fmtString = "%{color}[%{time:06-01-02 15:04:05}][%{level:.6s}][%{shortfile}]%{color:reset} %{message}"
 	}
 	format := logging.MustStringFormatter(fmtString)
 	logging.SetFormatter(format)

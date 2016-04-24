@@ -1,9 +1,6 @@
 package worker
 
-import (
-	"errors"
-	"time"
-)
+import "errors"
 
 // this file contains the workflow of a mirror jb
 
@@ -41,7 +38,8 @@ func runMirrorJob(provider mirrorProvider, ctrlChan <-chan ctrlAction, managerCh
 	}
 
 	runJobWrapper := func(kill <-chan empty, jobDone chan<- empty) error {
-		defer func() { jobDone <- empty{} }()
+		defer close(jobDone)
+
 		logger.Info("start syncing: %s", provider.Name())
 
 		Hooks := provider.Hooks()
@@ -89,6 +87,7 @@ func runMirrorJob(provider mirrorProvider, ctrlChan <-chan ctrlAction, managerCh
 			case syncErr = <-syncDone:
 				logger.Debug("syncing done")
 			case <-kill:
+				logger.Debug("received kill")
 				stopASAP = true
 				err := provider.Terminate()
 				if err != nil {
@@ -118,15 +117,18 @@ func runMirrorJob(provider mirrorProvider, ctrlChan <-chan ctrlAction, managerCh
 			}
 
 			// syncing failed
-			logger.Info("failed syncing %s: %s", provider.Name(), err.Error())
+			logger.Warning("failed syncing %s: %s", provider.Name(), syncErr.Error())
 			managerChan <- struct{}{}
+
 			// post-fail hooks
+			logger.Debug("post-fail hooks")
 			err = runHooks(rHooks, func(h jobHook) error { return h.postFail() }, "post-fail")
 			if err != nil {
 				return err
 			}
 			// gracefully exit
 			if stopASAP {
+				logger.Debug("No retry, exit directly")
 				return nil
 			}
 			// continue to next retry
@@ -140,6 +142,7 @@ func runMirrorJob(provider mirrorProvider, ctrlChan <-chan ctrlAction, managerCh
 			defer func() { semaphore <- empty{} }()
 			runJobWrapper(kill, jobDone)
 		case <-kill:
+			jobDone <- empty{}
 			return
 		}
 	}
@@ -160,12 +163,15 @@ func runMirrorJob(provider mirrorProvider, ctrlChan <-chan ctrlAction, managerCh
 				case jobStop:
 					enabled = false
 					close(kill)
+					<-jobDone
 				case jobDisable:
 					close(kill)
+					<-jobDone
 					return nil
 				case jobRestart:
 					enabled = true
 					close(kill)
+					<-jobDone
 					continue
 				case jobStart:
 					enabled = true
@@ -178,25 +184,19 @@ func runMirrorJob(provider mirrorProvider, ctrlChan <-chan ctrlAction, managerCh
 			}
 		}
 
-		select {
-		case <-time.After(provider.Interval()):
-			continue
-		case ctrl := <-ctrlChan:
-			switch ctrl {
-			case jobStop:
-				enabled = false
-			case jobDisable:
-				return nil
-			case jobRestart:
-				enabled = true
-			case jobStart:
-				enabled = true
-			default:
-				// TODO
-				return nil
-			}
+		ctrl := <-ctrlChan
+		switch ctrl {
+		case jobStop:
+			enabled = false
+		case jobDisable:
+			return nil
+		case jobRestart:
+			enabled = true
+		case jobStart:
+			enabled = true
+		default:
+			// TODO
+			return nil
 		}
 	}
-
-	return nil
 }

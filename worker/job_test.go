@@ -9,9 +9,12 @@ import (
 	"time"
 
 	. "github.com/smartystreets/goconvey/convey"
+	. "github.com/tuna/tunasync/internal"
 )
 
 func TestMirrorJob(t *testing.T) {
+
+	InitLogger(true, true, false)
 
 	Convey("MirrorJob should work", t, func(ctx C) {
 		tmpDir, err := ioutil.TempDir("", "tunasync")
@@ -71,6 +74,7 @@ func TestMirrorJob(t *testing.T) {
 					loggedContent, err := ioutil.ReadFile(provider.LogFile())
 					So(err, ShouldBeNil)
 					So(string(loggedContent), ShouldEqual, exceptedOutput)
+					ctrlChan <- jobStart
 				}
 				select {
 				case <-managerChan:
@@ -107,7 +111,7 @@ echo $TUNASYNC_WORKING_DIR
 				go runMirrorJob(provider, ctrlChan, managerChan, semaphore)
 				time.Sleep(1 * time.Second)
 				ctrlChan <- jobStop
-				time.Sleep(1 * time.Second)
+				<-managerChan
 				exceptedOutput := fmt.Sprintf("%s\n", provider.WorkingDir())
 				loggedContent, err := ioutil.ReadFile(provider.LogFile())
 				So(err, ShouldBeNil)
