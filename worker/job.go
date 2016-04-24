@@ -138,8 +138,8 @@ func runMirrorJob(provider mirrorProvider, ctrlChan <-chan ctrlAction, managerCh
 
 	runJob := func(kill <-chan empty, jobDone chan<- empty) {
 		select {
-		case <-semaphore:
-			defer func() { semaphore <- empty{} }()
+		case semaphore <- empty{}:
+			defer func() { <-semaphore }()
 			runJobWrapper(kill, jobDone)
 		case <-kill:
 			jobDone <- empty{}

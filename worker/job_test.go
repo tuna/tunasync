@@ -66,7 +66,6 @@ func TestMirrorJob(t *testing.T) {
 				ctrlChan := make(chan ctrlAction)
 				managerChan := make(chan struct{})
 				semaphore := make(chan empty, 1)
-				semaphore <- empty{}
 
 				go runMirrorJob(provider, ctrlChan, managerChan, semaphore)
 				for i := 0; i < 2; i++ {
@@ -105,7 +104,6 @@ echo $TUNASYNC_WORKING_DIR
 			ctrlChan := make(chan ctrlAction)
 			managerChan := make(chan struct{})
 			semaphore := make(chan empty, 1)
-			semaphore <- empty{}
 
 			Convey("If we kill it", func(ctx C) {
 				go runMirrorJob(provider, ctrlChan, managerChan, semaphore)
