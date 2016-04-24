@@ -35,11 +35,16 @@ func newRsyncProvider(c rsyncConfig) (*rsyncProvider, error) {
 }
 
 // TODO: implement this
-func (p *rsyncProvider) Start() {
-
+func (p *rsyncProvider) Start() error {
+	return nil
 }
 
 // TODO: implement this
-func (p *rsyncProvider) Terminate() {
+func (p *rsyncProvider) Terminate() error {
+	return nil
+}
 
+// TODO: implement this
+func (p *rsyncProvider) Wait() error {
+	return nil
 }

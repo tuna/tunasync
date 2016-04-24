@@ -12,11 +12,14 @@ func TestConfig(t *testing.T) {
 	var cfgBlob = `
 [global]
 name = "test_worker"
-token = "some_token"
-log_dir = "/var/log/tunasync"
+log_dir = "/var/log/tunasync/{{.Name}}"
 mirror_dir = "/data/mirrors"
 concurrent = 10
 interval = 240
+
+[manager]
+api_base = "https://127.0.0.1:5000"
+token = "some_token"
 
 [[mirrors]]
 name = "AOSP"
@@ -63,6 +66,8 @@ exclude_file = "/etc/tunasync.d/fedora-exclude.txt"
 		So(cfg.Global.Name, ShouldEqual, "test_worker")
 		So(cfg.Global.Interval, ShouldEqual, 240)
 		So(cfg.Global.MirrorDir, ShouldEqual, "/data/mirrors")
+
+		So(cfg.Manager.APIBase, ShouldEqual, "https://127.0.0.1:5000")
 
 		m := cfg.Mirrors[0]
 		So(m.Name, ShouldEqual, "AOSP")

@@ -48,16 +48,22 @@ func (p *ProviderEnum) UnmarshalText(text []byte) error {
 
 type Config struct {
 	Global  globalConfig   `toml:"global"`
+	Manager managerConfig  `toml:"manager"`
 	Mirrors []mirrorConfig `toml:"mirrors"`
 }
 
 type globalConfig struct {
 	Name       string `toml:"name"`
-	Token      string `toml:"token"`
 	LogDir     string `toml:"log_dir"`
 	MirrorDir  string `toml:"mirror_dir"`
 	Concurrent int    `toml:"concurrent"`
 	Interval   int    `toml:"interval"`
+}
+
+type managerConfig struct {
+	APIBase string `toml:"api_base"`
+	CACert  string `toml:"ca_cert"`
+	Token   string `toml:"token"`
 }
 
 type mirrorConfig struct {
