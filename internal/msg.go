@@ -15,9 +15,10 @@ type StatusUpdateMsg struct {
 	ErrorMsg   string     `json:"error_msg"`
 }
 
-// A WorkerInfoMsg is
+// A WorkerInfoMsg is the information struct that describe
+// a worker, and sent from the manager to clients.
 type WorkerInfoMsg struct {
-	Name string `json:"name"`
+	ID string `json:"id"`
 }
 
 type CmdVerb uint8
@@ -30,11 +31,16 @@ const (
 	CmdPing            // ensure the goroutine is alive
 )
 
+// A WorkerCmd is the command message send from the
+// manager to a worker
 type WorkerCmd struct {
-	Cmd  CmdVerb  `json:"cmd"`
-	Args []string `json:"args"`
+	Cmd      CmdVerb  `json:"cmd"`
+	MirrorID string   `json:"mirror_id"`
+	Args     []string `json:"args"`
 }
 
+// A ClientCmd is the command message send from client
+// to the manager
 type ClientCmd struct {
 	Cmd      CmdVerb  `json:"cmd"`
 	MirrorID string   `json:"mirror_id"`

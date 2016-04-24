@@ -12,6 +12,8 @@ import (
 
 type mirrorStatus struct {
 	Name       string
+	Worker     string
+	IsMaster   bool
 	Status     SyncStatus
 	LastUpdate time.Time
 	Upstream   string
@@ -21,6 +23,8 @@ type mirrorStatus struct {
 func (s mirrorStatus) MarshalJSON() ([]byte, error) {
 	m := map[string]interface{}{
 		"name":           s.Name,
+		"worker":         s.Worker,
+		"is_master":      s.IsMaster,
 		"status":         s.Status,
 		"last_update":    s.LastUpdate.Format("2006-01-02 15:04:05"),
 		"last_update_ts": fmt.Sprintf("%d", s.LastUpdate.Unix()),

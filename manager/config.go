@@ -24,6 +24,7 @@ type ServerConfig struct {
 type FileConfig struct {
 	StatusFile string `toml:"status_file"`
 	DBFile     string `toml:"db_file"`
+	DBType     string `toml:"db_type"`
 	// used to connect to worker
 	CACert string `toml:"ca_cert"`
 }
@@ -36,6 +37,7 @@ func loadConfig(cfgFile string, c *cli.Context) (*Config, error) {
 	cfg.Debug = false
 	cfg.Files.StatusFile = "/var/lib/tunasync/tunasync.json"
 	cfg.Files.DBFile = "/var/lib/tunasync/tunasync.db"
+	cfg.Files.DBType = "bolt"
 
 	if cfgFile != "" {
 		if _, err := toml.DecodeFile(cfgFile, cfg); err != nil {
@@ -59,6 +61,9 @@ func loadConfig(cfgFile string, c *cli.Context) (*Config, error) {
 	}
 	if c.String("db-file") != "" {
 		cfg.Files.DBFile = c.String("db-file")
+	}
+	if c.String("db-type") != "" {
+		cfg.Files.DBFile = c.String("db-type")
 	}
 
 	return cfg, nil
