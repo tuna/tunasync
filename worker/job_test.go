@@ -63,11 +63,11 @@ func TestMirrorJob(t *testing.T) {
 			So(readedScriptContent, ShouldResemble, []byte(scriptContent))
 
 			Convey("If we let it run several times", func(ctx C) {
-				ctrlChan := make(chan ctrlAction)
 				managerChan := make(chan jobMessage, 10)
 				semaphore := make(chan empty, 1)
+				job := newMirrorJob(provider)
 
-				go runMirrorJob(provider, ctrlChan, managerChan, semaphore)
+				go job.Run(managerChan, semaphore)
 				for i := 0; i < 2; i++ {
 					msg := <-managerChan
 					So(msg.status, ShouldEqual, PreSyncing)
@@ -78,7 +78,7 @@ func TestMirrorJob(t *testing.T) {
 					loggedContent, err := ioutil.ReadFile(provider.LogFile())
 					So(err, ShouldBeNil)
 					So(string(loggedContent), ShouldEqual, exceptedOutput)
-					ctrlChan <- jobStart
+					job.ctrlChan <- jobStart
 				}
 				select {
 				case msg := <-managerChan:
@@ -92,7 +92,7 @@ func TestMirrorJob(t *testing.T) {
 					So(0, ShouldEqual, 1)
 				}
 
-				ctrlChan <- jobDisable
+				job.ctrlChan <- jobDisable
 				select {
 				case <-managerChan:
 					So(0, ShouldEqual, 1) // made this fail
@@ -112,12 +112,12 @@ echo $TUNASYNC_WORKING_DIR
 			err = ioutil.WriteFile(scriptFile, []byte(scriptContent), 0755)
 			So(err, ShouldBeNil)
 
-			ctrlChan := make(chan ctrlAction)
 			managerChan := make(chan jobMessage, 10)
 			semaphore := make(chan empty, 1)
+			job := newMirrorJob(provider)
 
 			Convey("If we kill it", func(ctx C) {
-				go runMirrorJob(provider, ctrlChan, managerChan, semaphore)
+				go job.Run(managerChan, semaphore)
 
 				time.Sleep(1 * time.Second)
 				msg := <-managerChan
@@ -125,7 +125,7 @@ echo $TUNASYNC_WORKING_DIR
 				msg = <-managerChan
 				So(msg.status, ShouldEqual, Syncing)
 
-				ctrlChan <- jobStop
+				job.ctrlChan <- jobStop
 
 				msg = <-managerChan
 				So(msg.status, ShouldEqual, Failed)
@@ -134,11 +134,12 @@ echo $TUNASYNC_WORKING_DIR
 				loggedContent, err := ioutil.ReadFile(provider.LogFile())
 				So(err, ShouldBeNil)
 				So(string(loggedContent), ShouldEqual, exceptedOutput)
-				ctrlChan <- jobDisable
+				job.ctrlChan <- jobDisable
 			})
 
 			Convey("If we don't kill it", func(ctx C) {
-				go runMirrorJob(provider, ctrlChan, managerChan, semaphore)
+				go job.Run(managerChan, semaphore)
+
 				msg := <-managerChan
 				So(msg.status, ShouldEqual, PreSyncing)
 				msg = <-managerChan
@@ -154,7 +155,7 @@ echo $TUNASYNC_WORKING_DIR
 				loggedContent, err := ioutil.ReadFile(provider.LogFile())
 				So(err, ShouldBeNil)
 				So(string(loggedContent), ShouldEqual, exceptedOutput)
-				ctrlChan <- jobDisable
+				job.ctrlChan <- jobDisable
 			})
 		})
 

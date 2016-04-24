@@ -25,6 +25,24 @@ type jobMessage struct {
 	msg    string
 }
 
+type mirrorJob struct {
+	provider mirrorProvider
+	ctrlChan chan ctrlAction
+	enabled  bool
+}
+
+func newMirrorJob(provider mirrorProvider) *mirrorJob {
+	return &mirrorJob{
+		provider: provider,
+		ctrlChan: make(chan ctrlAction, 1),
+		enabled:  true,
+	}
+}
+
+func (m *mirrorJob) Name() string {
+	return m.provider.Name()
+}
+
 // runMirrorJob is the goroutine where syncing job runs in
 // arguments:
 //    provider: mirror provider object
@@ -32,7 +50,9 @@ type jobMessage struct {
 //    managerChan: push messages to the manager, this channel should have a larger buffer
 //    sempaphore: make sure the concurrent running syncing job won't explode
 // TODO: message struct for managerChan
-func runMirrorJob(provider mirrorProvider, ctrlChan <-chan ctrlAction, managerChan chan<- jobMessage, semaphore chan empty) error {
+func (m *mirrorJob) Run(managerChan chan<- jobMessage, semaphore chan empty) error {
+
+	provider := m.provider
 
 	// to make code shorter
 	runHooks := func(Hooks []jobHook, action func(h jobHook) error, hookname string) error {
@@ -40,10 +60,10 @@ func runMirrorJob(provider mirrorProvider, ctrlChan <-chan ctrlAction, managerCh
 			if err := action(hook); err != nil {
 				logger.Error(
 					"failed at %s hooks for %s: %s",
-					hookname, provider.Name(), err.Error(),
+					hookname, m.Name(), err.Error(),
 				)
 				managerChan <- jobMessage{
-					tunasync.Failed, provider.Name(),
+					tunasync.Failed, m.Name(),
 					fmt.Sprintf("error exec hook %s: %s", hookname, err.Error()),
 				}
 				return err
@@ -55,8 +75,8 @@ func runMirrorJob(provider mirrorProvider, ctrlChan <-chan ctrlAction, managerCh
 	runJobWrapper := func(kill <-chan empty, jobDone chan<- empty) error {
 		defer close(jobDone)
 
-		managerChan <- jobMessage{tunasync.PreSyncing, provider.Name(), ""}
-		logger.Info("start syncing: %s", provider.Name())
+		managerChan <- jobMessage{tunasync.PreSyncing, m.Name(), ""}
+		logger.Info("start syncing: %s", m.Name())
 
 		Hooks := provider.Hooks()
 		rHooks := []jobHook{}
@@ -74,7 +94,7 @@ func runMirrorJob(provider mirrorProvider, ctrlChan <-chan ctrlAction, managerCh
 			stopASAP := false // stop job as soon as possible
 
 			if retry > 0 {
-				logger.Info("retry syncing: %s, retry: %d", provider.Name(), retry)
+				logger.Info("retry syncing: %s, retry: %d", m.Name(), retry)
 			}
 			err := runHooks(Hooks, func(h jobHook) error { return h.preExec() }, "pre-exec")
 			if err != nil {
@@ -82,12 +102,12 @@ func runMirrorJob(provider mirrorProvider, ctrlChan <-chan ctrlAction, managerCh
 			}
 
 			// start syncing
-			managerChan <- jobMessage{tunasync.Syncing, provider.Name(), ""}
+			managerChan <- jobMessage{tunasync.Syncing, m.Name(), ""}
 			err = provider.Start()
 			if err != nil {
 				logger.Error(
 					"failed to start syncing job for %s: %s",
-					provider.Name(), err.Error(),
+					m.Name(), err.Error(),
 				)
 				return err
 			}
@@ -108,7 +128,7 @@ func runMirrorJob(provider mirrorProvider, ctrlChan <-chan ctrlAction, managerCh
 				stopASAP = true
 				err := provider.Terminate()
 				if err != nil {
-					logger.Error("failed to terminate provider %s: %s", provider.Name(), err.Error())
+					logger.Error("failed to terminate provider %s: %s", m.Name(), err.Error())
 					return err
 				}
 				syncErr = errors.New("killed by manager")
@@ -122,8 +142,8 @@ func runMirrorJob(provider mirrorProvider, ctrlChan <-chan ctrlAction, managerCh
 
 			if syncErr == nil {
 				// syncing success
-				logger.Info("succeeded syncing %s", provider.Name())
-				managerChan <- jobMessage{tunasync.Success, provider.Name(), ""}
+				logger.Info("succeeded syncing %s", m.Name())
+				managerChan <- jobMessage{tunasync.Success, m.Name(), ""}
 				// post-success hooks
 				err := runHooks(rHooks, func(h jobHook) error { return h.postSuccess() }, "post-success")
 				if err != nil {
@@ -134,8 +154,8 @@ func runMirrorJob(provider mirrorProvider, ctrlChan <-chan ctrlAction, managerCh
 			}
 
 			// syncing failed
-			logger.Warning("failed syncing %s: %s", provider.Name(), syncErr.Error())
-			managerChan <- jobMessage{tunasync.Failed, provider.Name(), syncErr.Error()}
+			logger.Warning("failed syncing %s: %s", m.Name(), syncErr.Error())
+			managerChan <- jobMessage{tunasync.Failed, m.Name(), syncErr.Error()}
 
 			// post-fail hooks
 			logger.Debug("post-fail hooks")
@@ -164,9 +184,8 @@ func runMirrorJob(provider mirrorProvider, ctrlChan <-chan ctrlAction, managerCh
 		}
 	}
 
-	enabled := true // whether this job is stopped by the manager
 	for {
-		if enabled {
+		if m.enabled {
 			kill := make(chan empty)
 			jobDone := make(chan empty)
 			go runJob(kill, jobDone)
@@ -175,10 +194,10 @@ func runMirrorJob(provider mirrorProvider, ctrlChan <-chan ctrlAction, managerCh
 			select {
 			case <-jobDone:
 				logger.Debug("job done")
-			case ctrl := <-ctrlChan:
+			case ctrl := <-m.ctrlChan:
 				switch ctrl {
 				case jobStop:
-					enabled = false
+					m.enabled = false
 					close(kill)
 					<-jobDone
 				case jobDisable:
@@ -186,12 +205,12 @@ func runMirrorJob(provider mirrorProvider, ctrlChan <-chan ctrlAction, managerCh
 					<-jobDone
 					return nil
 				case jobRestart:
-					enabled = true
+					m.enabled = true
 					close(kill)
 					<-jobDone
 					continue
 				case jobStart:
-					enabled = true
+					m.enabled = true
 					goto _wait_for_job
 				default:
 					// TODO: implement this
@@ -201,16 +220,16 @@ func runMirrorJob(provider mirrorProvider, ctrlChan <-chan ctrlAction, managerCh
 			}
 		}
 
-		ctrl := <-ctrlChan
+		ctrl := <-m.ctrlChan
 		switch ctrl {
 		case jobStop:
-			enabled = false
+			m.enabled = false
 		case jobDisable:
 			return nil
 		case jobRestart:
-			enabled = true
+			m.enabled = true
 		case jobStart:
-			enabled = true
+			m.enabled = true
 		default:
 			// TODO
 			return nil
