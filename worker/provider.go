@@ -1,6 +1,10 @@
 package worker
 
-import "time"
+import (
+	"errors"
+	"os"
+	"time"
+)
 
 // mirror provider is the wrapper of mirror jobs
 
@@ -45,7 +49,11 @@ type baseProvider struct {
 	ctx      *Context
 	name     string
 	interval time.Duration
-	hooks    []jobHook
+
+	cmd     *cmdJob
+	logFile *os.File
+
+	hooks []jobHook
 }
 
 func (p *baseProvider) Name() string {
@@ -103,4 +111,39 @@ func (p *baseProvider) AddHook(hook jobHook) {
 
 func (p *baseProvider) Hooks() []jobHook {
 	return p.hooks
+}
+
+func (p *baseProvider) setLogFile() error {
+	if p.LogFile() == "/dev/null" {
+		p.cmd.SetLogFile(nil)
+		return nil
+	}
+
+	logFile, err := os.OpenFile(p.LogFile(), os.O_WRONLY|os.O_CREATE, 0644)
+	if err != nil {
+		logger.Error("Error opening logfile %s: %s", p.LogFile(), err.Error())
+		return err
+	}
+	p.logFile = logFile
+	p.cmd.SetLogFile(logFile)
+	return nil
+}
+
+func (p *baseProvider) Wait() error {
+	if p.logFile != nil {
+		defer p.logFile.Close()
+	}
+	return p.cmd.Wait()
+}
+
+func (p *baseProvider) Terminate() error {
+	logger.Debug("terminating provider: %s", p.Name())
+	if p.cmd == nil {
+		return errors.New("provider command job not initialized")
+	}
+	if p.logFile != nil {
+		p.logFile.Close()
+	}
+	err := p.cmd.Terminate()
+	return err
 }
