@@ -31,7 +31,7 @@ func TestBoltAdapter(t *testing.T) {
 		testWorkerIDs := []string{"test_worker1", "test_worker2"}
 		Convey("create worker", func() {
 			for _, id := range testWorkerIDs {
-				w := worker{
+				w := workerStatus{
 					ID:         id,
 					Token:      "token_" + id,
 					LastOnline: time.Now(),

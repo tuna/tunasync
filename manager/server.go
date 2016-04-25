@@ -21,7 +21,7 @@ const (
 	_infoKey  = "message"
 )
 
-type worker struct {
+type workerStatus struct {
 	ID         string    `json:"id"`          // worker name
 	Token      string    `json:"token"`       // session token
 	LastOnline time.Time `json:"last_online"` // last seen
@@ -72,7 +72,7 @@ func (s *managerServer) listWorkers(c *gin.Context) {
 
 // registerWorker register an newly-online worker
 func (s *managerServer) registerWorker(c *gin.Context) {
-	var _worker worker
+	var _worker workerStatus
 	c.BindJSON(&_worker)
 	newWorker, err := s.adapter.CreateWorker(_worker)
 	if err != nil {

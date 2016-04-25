@@ -31,8 +31,8 @@ func TestHTTPServer(t *testing.T) {
 		s := makeHTTPServer(false)
 		So(s, ShouldNotBeNil)
 		s.setDBAdapter(&mockDBAdapter{
-			workerStore: map[string]worker{
-				_magicBadWorkerID: worker{
+			workerStore: map[string]workerStatus{
+				_magicBadWorkerID: workerStatus{
 					ID: _magicBadWorkerID,
 				}},
 			statusStore: make(map[string]mirrorStatus),
@@ -67,7 +67,7 @@ func TestHTTPServer(t *testing.T) {
 		})
 
 		Convey("when register a worker", func() {
-			w := worker{
+			w := workerStatus{
 				ID: "test_worker1",
 			}
 			resp, err := postJSON(baseURL+"/workers", w)
@@ -153,7 +153,7 @@ func TestHTTPServer(t *testing.T) {
 }
 
 type mockDBAdapter struct {
-	workerStore map[string]worker
+	workerStore map[string]workerStatus
 	statusStore map[string]mirrorStatus
 }
 
@@ -161,8 +161,8 @@ func (b *mockDBAdapter) Init() error {
 	return nil
 }
 
-func (b *mockDBAdapter) ListWorkers() ([]worker, error) {
-	workers := make([]worker, len(b.workerStore))
+func (b *mockDBAdapter) ListWorkers() ([]workerStatus, error) {
+	workers := make([]workerStatus, len(b.workerStore))
 	idx := 0
 	for _, w := range b.workerStore {
 		workers[idx] = w
@@ -171,18 +171,18 @@ func (b *mockDBAdapter) ListWorkers() ([]worker, error) {
 	return workers, nil
 }
 
-func (b *mockDBAdapter) GetWorker(workerID string) (worker, error) {
+func (b *mockDBAdapter) GetWorker(workerID string) (workerStatus, error) {
 	w, ok := b.workerStore[workerID]
 	if !ok {
-		return worker{}, fmt.Errorf("invalid workerId")
+		return workerStatus{}, fmt.Errorf("invalid workerId")
 	}
 	return w, nil
 }
 
-func (b *mockDBAdapter) CreateWorker(w worker) (worker, error) {
+func (b *mockDBAdapter) CreateWorker(w workerStatus) (workerStatus, error) {
 	// _, ok := b.workerStore[w.ID]
 	// if ok {
-	// 	return worker{}, fmt.Errorf("duplicate worker name")
+	// 	return workerStatus{}, fmt.Errorf("duplicate worker name")
 	// }
 	b.workerStore[w.ID] = w
 	return w, nil

@@ -10,9 +10,9 @@ import (
 
 type dbAdapter interface {
 	Init() error
-	ListWorkers() ([]worker, error)
-	GetWorker(workerID string) (worker, error)
-	CreateWorker(w worker) (worker, error)
+	ListWorkers() ([]workerStatus, error)
+	GetWorker(workerID string) (workerStatus, error)
+	CreateWorker(w workerStatus) (workerStatus, error)
 	UpdateMirrorStatus(workerID, mirrorID string, status mirrorStatus) (mirrorStatus, error)
 	GetMirrorStatus(workerID, mirrorID string) (mirrorStatus, error)
 	ListMirrorStatus(workerID string) ([]mirrorStatus, error)
@@ -61,11 +61,11 @@ func (b *boltAdapter) Init() (err error) {
 	})
 }
 
-func (b *boltAdapter) ListWorkers() (ws []worker, err error) {
+func (b *boltAdapter) ListWorkers() (ws []workerStatus, err error) {
 	err = b.db.View(func(tx *bolt.Tx) error {
 		bucket := tx.Bucket([]byte(_workerBucketKey))
 		c := bucket.Cursor()
-		var w worker
+		var w workerStatus
 		for k, v := c.First(); k != nil; k, v = c.Next() {
 			jsonErr := json.Unmarshal(v, &w)
 			if jsonErr != nil {
@@ -79,7 +79,7 @@ func (b *boltAdapter) ListWorkers() (ws []worker, err error) {
 	return
 }
 
-func (b *boltAdapter) GetWorker(workerID string) (w worker, err error) {
+func (b *boltAdapter) GetWorker(workerID string) (w workerStatus, err error) {
 	err = b.db.View(func(tx *bolt.Tx) error {
 		bucket := tx.Bucket([]byte(_workerBucketKey))
 		v := bucket.Get([]byte(workerID))
@@ -92,7 +92,7 @@ func (b *boltAdapter) GetWorker(workerID string) (w worker, err error) {
 	return
 }
 
-func (b *boltAdapter) CreateWorker(w worker) (worker, error) {
+func (b *boltAdapter) CreateWorker(w workerStatus) (workerStatus, error) {
 	err := b.db.Update(func(tx *bolt.Tx) error {
 		bucket := tx.Bucket([]byte(_workerBucketKey))
 		v, err := json.Marshal(w)
