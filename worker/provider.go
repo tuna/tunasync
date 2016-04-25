@@ -1,9 +1,9 @@
 package worker
 
 import (
-	"errors"
 	"os"
 	"sync"
+	"sync/atomic"
 	"time"
 )
 
@@ -31,6 +31,8 @@ type mirrorProvider interface {
 	// terminate mirror job
 	Terminate() error
 	// job hooks
+	IsRunning() bool
+
 	Hooks() []jobHook
 
 	Interval() time.Duration
@@ -54,7 +56,9 @@ type baseProvider struct {
 	name     string
 	interval time.Duration
 
-	cmd     *cmdJob
+	cmd       *cmdJob
+	isRunning atomic.Value
+
 	logFile *os.File
 
 	hooks []jobHook
@@ -142,9 +146,15 @@ func (p *baseProvider) Start() error {
 	panic("Not Implemented")
 }
 
+func (p *baseProvider) IsRunning() bool {
+	isRunning, _ := p.isRunning.Load().(bool)
+	return isRunning
+}
+
 func (p *baseProvider) Wait() error {
 	defer func() {
 		p.Lock()
+		p.isRunning.Store(false)
 		if p.logFile != nil {
 			p.logFile.Close()
 			p.logFile = nil
@@ -156,8 +166,8 @@ func (p *baseProvider) Wait() error {
 
 func (p *baseProvider) Terminate() error {
 	logger.Debug("terminating provider: %s", p.Name())
-	if p.cmd == nil {
-		return errors.New("provider command job not initialized")
+	if !p.IsRunning() {
+		return nil
 	}
 
 	p.Lock()
@@ -168,5 +178,7 @@ func (p *baseProvider) Terminate() error {
 	p.Unlock()
 
 	err := p.cmd.Terminate()
+	p.isRunning.Store(false)
+
 	return err
 }

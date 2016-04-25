@@ -54,7 +54,7 @@ func (c *cmdJob) Start() error {
 
 func (c *cmdJob) Wait() error {
 	err := c.cmd.Wait()
-	c.finished <- empty{}
+	close(c.finished)
 	return err
 }
 

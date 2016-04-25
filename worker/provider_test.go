@@ -13,15 +13,21 @@ import (
 
 func TestRsyncProvider(t *testing.T) {
 	Convey("Rsync Provider should work", t, func() {
+		tmpDir, err := ioutil.TempDir("", "tunasync")
+		defer os.RemoveAll(tmpDir)
+		So(err, ShouldBeNil)
+		scriptFile := filepath.Join(tmpDir, "myrsync")
+		tmpFile := filepath.Join(tmpDir, "log_file")
 
 		c := rsyncConfig{
 			name:        "tuna",
 			upstreamURL: "rsync://rsync.tuna.moe/tuna/",
-			workingDir:  "/srv/mirror/production/tuna",
-			logDir:      "/var/log/tunasync",
-			logFile:     "tuna.log",
+			rsyncCmd:    scriptFile,
+			workingDir:  tmpDir,
+			logDir:      tmpDir,
+			logFile:     tmpFile,
 			useIPv6:     true,
-			interval:    600,
+			interval:    600 * time.Second,
 		}
 
 		provider, err := newRsyncProvider(c)
@@ -61,6 +67,38 @@ func TestRsyncProvider(t *testing.T) {
 			})
 		})
 
+		Convey("Let's try a run", func() {
+			scriptContent := `#!/bin/bash
+echo "syncing to $(pwd)"
+echo $@
+sleep 1
+echo "Done"
+exit 0
+			`
+			err = ioutil.WriteFile(scriptFile, []byte(scriptContent), 0755)
+			So(err, ShouldBeNil)
+
+			expectedOutput := fmt.Sprintf(
+				"syncing to %s\n"+
+					"%s\n"+
+					"Done\n",
+				provider.WorkingDir(),
+				fmt.Sprintf(
+					"-aHvh --no-o --no-g --stats --exclude .~tmp~/ "+
+						"--delete --delete-after --delay-updates --safe-links "+
+						"--timeout=120 --contimeout=120 -6 %s %s",
+					provider.upstreamURL, provider.WorkingDir(),
+				),
+			)
+
+			err = provider.Run()
+			So(err, ShouldBeNil)
+			loggedContent, err := ioutil.ReadFile(provider.LogFile())
+			So(err, ShouldBeNil)
+			So(string(loggedContent), ShouldEqual, expectedOutput)
+			// fmt.Println(string(loggedContent))
+		})
+
 	})
 }
 
@@ -79,7 +117,7 @@ func TestCmdProvider(t *testing.T) {
 			workingDir:  tmpDir,
 			logDir:      tmpDir,
 			logFile:     tmpFile,
-			interval:    600,
+			interval:    600 * time.Second,
 			env: map[string]string{
 				"AOSP_REPO_BIN": "/usr/local/bin/repo",
 			},
@@ -102,7 +140,7 @@ echo $TUNASYNC_UPSTREAM_URL
 echo $TUNASYNC_LOG_FILE
 echo $AOSP_REPO_BIN
 `
-			exceptedOutput := fmt.Sprintf(
+			expectedOutput := fmt.Sprintf(
 				"%s\n%s\n%s\n%s\n%s\n",
 				provider.WorkingDir(),
 				provider.Name(),
@@ -121,7 +159,7 @@ echo $AOSP_REPO_BIN
 
 			loggedContent, err := ioutil.ReadFile(provider.LogFile())
 			So(err, ShouldBeNil)
-			So(string(loggedContent), ShouldEqual, exceptedOutput)
+			So(string(loggedContent), ShouldEqual, expectedOutput)
 		})
 
 		Convey("If a command fails", func() {
@@ -153,6 +191,111 @@ sleep 5
 			err = provider.Terminate()
 			So(err, ShouldBeNil)
 
+		})
+	})
+}
+
+func TestTwoStageRsyncProvider(t *testing.T) {
+	Convey("TwoStageRsync Provider should work", t, func(ctx C) {
+		tmpDir, err := ioutil.TempDir("", "tunasync")
+		defer os.RemoveAll(tmpDir)
+		So(err, ShouldBeNil)
+		scriptFile := filepath.Join(tmpDir, "myrsync")
+		tmpFile := filepath.Join(tmpDir, "log_file")
+
+		c := twoStageRsyncConfig{
+			name:          "tuna-two-stage-rsync",
+			upstreamURL:   "rsync://mirrors.tuna.moe/",
+			stage1Profile: "debian",
+			rsyncCmd:      scriptFile,
+			workingDir:    tmpDir,
+			logDir:        tmpDir,
+			logFile:       tmpFile,
+			useIPv6:       true,
+			excludeFile:   tmpFile,
+		}
+
+		provider, err := newTwoStageRsyncProvider(c)
+		So(err, ShouldBeNil)
+
+		So(provider.Name(), ShouldEqual, c.name)
+		So(provider.WorkingDir(), ShouldEqual, c.workingDir)
+		So(provider.LogDir(), ShouldEqual, c.logDir)
+		So(provider.LogFile(), ShouldEqual, c.logFile)
+		So(provider.Interval(), ShouldEqual, c.interval)
+
+		Convey("Try a command", func(ctx C) {
+			scriptContent := `#!/bin/bash
+echo "syncing to $(pwd)"
+echo $@
+sleep 1
+echo "Done"
+exit 0
+			`
+			err = ioutil.WriteFile(scriptFile, []byte(scriptContent), 0755)
+			So(err, ShouldBeNil)
+
+			err = provider.Run()
+			So(err, ShouldBeNil)
+
+			expectedOutput := fmt.Sprintf(
+				"syncing to %s\n"+
+					"%s\n"+
+					"Done\n"+
+					"syncing to %s\n"+
+					"%s\n"+
+					"Done\n",
+				provider.WorkingDir(),
+				fmt.Sprintf(
+					"-aHvh --no-o --no-g --stats --exclude .~tmp~/ --safe-links "+
+						"--timeout=120 --contimeout=120 --exclude dists/ -6 "+
+						"--exclude-from %s %s %s",
+					provider.excludeFile, provider.upstreamURL, provider.WorkingDir(),
+				),
+				provider.WorkingDir(),
+				fmt.Sprintf(
+					"-aHvh --no-o --no-g --stats --exclude .~tmp~/ "+
+						"--delete --delete-after --delay-updates --safe-links "+
+						"--timeout=120 --contimeout=120 -6 --exclude-from %s %s %s",
+					provider.excludeFile, provider.upstreamURL, provider.WorkingDir(),
+				),
+			)
+
+			loggedContent, err := ioutil.ReadFile(provider.LogFile())
+			So(err, ShouldBeNil)
+			So(string(loggedContent), ShouldEqual, expectedOutput)
+			// fmt.Println(string(loggedContent))
+
+		})
+		Convey("Try terminating", func(ctx C) {
+			scriptContent := `#!/bin/bash
+echo $@
+sleep 4
+exit 0
+			`
+			err = ioutil.WriteFile(scriptFile, []byte(scriptContent), 0755)
+			So(err, ShouldBeNil)
+
+			go func() {
+				err = provider.Run()
+				ctx.So(err, ShouldNotBeNil)
+			}()
+
+			time.Sleep(1 * time.Second)
+			err = provider.Terminate()
+			So(err, ShouldBeNil)
+
+			expectedOutput := fmt.Sprintf(
+				"-aHvh --no-o --no-g --stats --exclude .~tmp~/ --safe-links "+
+					"--timeout=120 --contimeout=120 --exclude dists/ -6 "+
+					"--exclude-from %s %s %s\n",
+				provider.excludeFile, provider.upstreamURL, provider.WorkingDir(),
+			)
+
+			loggedContent, err := ioutil.ReadFile(provider.LogFile())
+			So(err, ShouldBeNil)
+			So(string(loggedContent), ShouldEqual, expectedOutput)
+			// fmt.Println(string(loggedContent))
 		})
 	})
 }

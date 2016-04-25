@@ -1,6 +1,10 @@
 package worker
 
-import "time"
+import (
+	"errors"
+	"strings"
+	"time"
+)
 
 type rsyncConfig struct {
 	name                               string
@@ -20,6 +24,9 @@ type rsyncProvider struct {
 
 func newRsyncProvider(c rsyncConfig) (*rsyncProvider, error) {
 	// TODO: check config options
+	if !strings.HasSuffix(c.upstreamURL, "/") {
+		return nil, errors.New("rsync upstream URL should ends with /")
+	}
 	provider := &rsyncProvider{
 		baseProvider: baseProvider{
 			name:     c.name,
@@ -47,6 +54,7 @@ func newRsyncProvider(c rsyncConfig) (*rsyncProvider, error) {
 	if c.excludeFile != "" {
 		options = append(options, "--exclude-from", c.excludeFile)
 	}
+	provider.options = options
 
 	provider.ctx.Set(_WorkingDirKey, c.workingDir)
 	provider.ctx.Set(_LogDirKey, c.logDir)
@@ -63,6 +71,7 @@ func (p *rsyncProvider) Run() error {
 }
 
 func (p *rsyncProvider) Start() error {
+
 	env := map[string]string{}
 	if p.password != "" {
 		env["RSYNC_PASSWORD"] = p.password
@@ -76,5 +85,9 @@ func (p *rsyncProvider) Start() error {
 		return err
 	}
 
-	return p.cmd.Start()
+	if err := p.cmd.Start(); err != nil {
+		return err
+	}
+	p.isRunning.Store(true)
+	return nil
 }

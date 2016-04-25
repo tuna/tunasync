@@ -66,5 +66,9 @@ func (p *cmdProvider) Start() error {
 		return err
 	}
 
-	return p.cmd.Start()
+	if err := p.cmd.Start(); err != nil {
+		return err
+	}
+	p.isRunning.Store(true)
+	return nil
 }
