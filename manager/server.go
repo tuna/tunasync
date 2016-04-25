@@ -2,11 +2,13 @@ package manager
 
 import (
 	"fmt"
-	"github.com/gin-gonic/gin"
-	. "github.com/tuna/tunasync/internal"
 	"net/http"
 	"sync"
 	"time"
+
+	"github.com/gin-gonic/gin"
+
+	. "github.com/tuna/tunasync/internal"
 )
 
 const (
@@ -20,8 +22,9 @@ const (
 )
 
 type worker struct {
-	ID    string `json:"id"`    // worker name
-	Token string `json:"token"` // session token
+	ID         string    `json:"id"`          // worker name
+	Token      string    `json:"token"`       // session token
+	LastOnline time.Time `json:"last_online"` // last seen
 }
 
 var (
@@ -62,7 +65,7 @@ func (s *managerServer) listWorkers(c *gin.Context) {
 	}
 	for _, w := range workers {
 		workerInfos = append(workerInfos,
-			WorkerInfoMsg{w.ID})
+			WorkerInfoMsg{w.ID, w.LastOnline})
 	}
 	c.JSON(http.StatusOK, workerInfos)
 }

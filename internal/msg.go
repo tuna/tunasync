@@ -18,7 +18,8 @@ type StatusUpdateMsg struct {
 // A WorkerInfoMsg is the information struct that describe
 // a worker, and sent from the manager to clients.
 type WorkerInfoMsg struct {
-	ID string `json:"id"`
+	ID         string    `json:"id"`
+	LastOnline time.Time `json:"last_online"`
 }
 
 type CmdVerb uint8
