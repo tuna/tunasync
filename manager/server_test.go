@@ -157,6 +157,10 @@ type mockDBAdapter struct {
 	statusStore map[string]mirrorStatus
 }
 
+func (b *mockDBAdapter) Init() error {
+	return nil
+}
+
 func (b *mockDBAdapter) ListWorkers() ([]worker, error) {
 	workers := make([]worker, len(b.workerStore))
 	idx := 0
