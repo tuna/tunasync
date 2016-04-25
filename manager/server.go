@@ -20,10 +20,8 @@ const (
 )
 
 type worker struct {
-	// worker name
-	id string
-	// session token
-	token string
+	ID    string `json:"id"`    // worker name
+	Token string `json:"token"` // session token
 }
 
 var (
@@ -64,7 +62,7 @@ func (s *managerServer) listWorkers(c *gin.Context) {
 	}
 	for _, w := range workers {
 		workerInfos = append(workerInfos,
-			WorkerInfoMsg{w.id})
+			WorkerInfoMsg{w.ID})
 	}
 	c.JSON(http.StatusOK, workerInfos)
 }
@@ -85,7 +83,7 @@ func (s *managerServer) registerWorker(c *gin.Context) {
 	// create workerCmd channel for this worker
 	workerChannelMu.Lock()
 	defer workerChannelMu.Unlock()
-	workerChannels[_worker.id] = make(chan WorkerCmd, maxQueuedCmdNum)
+	workerChannels[_worker.ID] = make(chan WorkerCmd, maxQueuedCmdNum)
 	c.JSON(http.StatusOK, newWorker)
 }
 
@@ -200,8 +198,12 @@ func makeHTTPServer(debug bool) *managerServer {
 		gin.Default(),
 		nil,
 	}
+
+	// common log middleware
+	s.Use(contextErrorLogger)
+
 	s.GET("/ping", func(c *gin.Context) {
-		c.JSON(http.StatusOK, gin.H{"msg": "pong"})
+		c.JSON(http.StatusOK, gin.H{_infoKey: "pong"})
 	})
 	// list jobs, status page
 	s.GET("/jobs", s.listAllJobs)
@@ -209,15 +211,17 @@ func makeHTTPServer(debug bool) *managerServer {
 	// list workers
 	s.GET("/workers", s.listWorkers)
 	// worker online
-	s.POST("/workers/:id", s.registerWorker)
+	s.POST("/workers", s.registerWorker)
 
+	// workerID should be valid in this route group
+	workerValidateGroup := s.Group("/workers", s.workerIDValidator)
 	// get job list
-	s.GET("/workers/:id/jobs", s.listJobsOfWorker)
+	workerValidateGroup.GET(":id/jobs", s.listJobsOfWorker)
 	// post job status
-	s.POST("/workers/:id/jobs/:job", s.updateJobOfWorker)
+	workerValidateGroup.POST(":id/jobs/:job", s.updateJobOfWorker)
 
 	// worker command polling
-	s.GET("/workers/:id/cmd_stream", s.getCmdOfWorker)
+	workerValidateGroup.GET(":id/cmd_stream", s.getCmdOfWorker)
 
 	// for tunasynctl to post commands
 	s.POST("/cmd/", s.handleClientCmd)
