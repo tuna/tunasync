@@ -49,6 +49,20 @@ func (s *mirrorStatus) UnmarshalJSON(v []byte) error {
 	} else {
 		return errors.New("key `name` does not exist in the json")
 	}
+	if isMaster, ok := m["is_master"]; ok {
+		if s.IsMaster, ok = isMaster.(bool); !ok {
+			return errors.New("is_master should be a string")
+		}
+	} else {
+		return errors.New("key `is_master` does not exist in the json")
+	}
+	if _worker, ok := m["worker"]; ok {
+		if s.Worker, ok = _worker.(string); !ok {
+			return errors.New("worker should be a string")
+		}
+	} else {
+		return errors.New("key `worker` does not exist in the json")
+	}
 	if upstream, ok := m["upstream"]; ok {
 		if s.Upstream, ok = upstream.(string); !ok {
 			return errors.New("upstream should be a string")
