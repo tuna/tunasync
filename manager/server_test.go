@@ -1,7 +1,6 @@
 package manager
 
 import (
-	"bytes"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
@@ -11,6 +10,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/gin-gonic/gin"
+
 	. "github.com/smartystreets/goconvey/convey"
 	. "github.com/tuna/tunasync/internal"
 )
@@ -19,14 +20,8 @@ const (
 	_magicBadWorkerID = "magic_bad_worker_id"
 )
 
-func postJSON(url string, obj interface{}) (*http.Response, error) {
-	b := new(bytes.Buffer)
-	json.NewEncoder(b).Encode(obj)
-	return http.Post(url, "application/json; charset=utf-8", b)
-}
-
 func TestHTTPServer(t *testing.T) {
-	Convey("HTTP server should work", t, func() {
+	Convey("HTTP server should work", t, func(ctx C) {
 		InitLogger(true, true, false)
 		s := makeHTTPServer(false)
 		So(s, ShouldNotBeNil)
@@ -55,7 +50,7 @@ func TestHTTPServer(t *testing.T) {
 		So(err, ShouldBeNil)
 		So(p[_infoKey], ShouldEqual, "pong")
 
-		Convey("when database fail", func() {
+		Convey("when database fail", func(ctx C) {
 			resp, err := http.Get(fmt.Sprintf("%s/workers/%s/jobs", baseURL, _magicBadWorkerID))
 			So(err, ShouldBeNil)
 			So(resp.StatusCode, ShouldEqual, http.StatusInternalServerError)
@@ -66,7 +61,7 @@ func TestHTTPServer(t *testing.T) {
 			So(msg[_errorKey], ShouldEqual, fmt.Sprintf("failed to list jobs of worker %s: %s", _magicBadWorkerID, "database fail"))
 		})
 
-		Convey("when register a worker", func() {
+		Convey("when register a worker", func(ctx C) {
 			w := workerStatus{
 				ID: "test_worker1",
 			}
@@ -74,7 +69,7 @@ func TestHTTPServer(t *testing.T) {
 			So(err, ShouldBeNil)
 			So(resp.StatusCode, ShouldEqual, http.StatusOK)
 
-			Convey("list all workers", func() {
+			Convey("list all workers", func(ctx C) {
 				So(err, ShouldBeNil)
 				resp, err := http.Get(baseURL + "/workers")
 				So(err, ShouldBeNil)
@@ -85,7 +80,7 @@ func TestHTTPServer(t *testing.T) {
 				So(len(actualResponseObj), ShouldEqual, 2)
 			})
 
-			Convey("update mirror status of a existed worker", func() {
+			Convey("update mirror status of a existed worker", func(ctx C) {
 				status := mirrorStatus{
 					Name:       "arch-sync1",
 					Worker:     "test_worker1",
@@ -96,10 +91,11 @@ func TestHTTPServer(t *testing.T) {
 					Size:       "3GB",
 				}
 				resp, err := postJSON(fmt.Sprintf("%s/workers/%s/jobs/%s", baseURL, status.Worker, status.Name), status)
+				defer resp.Body.Close()
 				So(err, ShouldBeNil)
 				So(resp.StatusCode, ShouldEqual, http.StatusOK)
 
-				Convey("list mirror status of an existed worker", func() {
+				Convey("list mirror status of an existed worker", func(ctx C) {
 
 					expectedResponse, err := json.Marshal([]mirrorStatus{status})
 					So(err, ShouldBeNil)
@@ -113,7 +109,7 @@ func TestHTTPServer(t *testing.T) {
 					So(strings.TrimSpace(string(body)), ShouldEqual, string(expectedResponse))
 				})
 
-				Convey("list all job status of all workers", func() {
+				Convey("list all job status of all workers", func(ctx C) {
 					expectedResponse, err := json.Marshal([]mirrorStatus{status})
 					So(err, ShouldBeNil)
 					resp, err := http.Get(baseURL + "/jobs")
@@ -127,7 +123,7 @@ func TestHTTPServer(t *testing.T) {
 				})
 			})
 
-			Convey("update mirror status of an inexisted worker", func() {
+			Convey("update mirror status of an inexisted worker", func(ctx C) {
 				invalidWorker := "test_worker2"
 				status := mirrorStatus{
 					Name:       "arch-sync2",
@@ -147,6 +143,65 @@ func TestHTTPServer(t *testing.T) {
 				err = json.NewDecoder(resp.Body).Decode(&msg)
 				So(err, ShouldBeNil)
 				So(msg[_errorKey], ShouldEqual, "invalid workerID "+invalidWorker)
+			})
+			Convey("handle client command", func(ctx C) {
+				cmdChan := make(chan WorkerCmd, 1)
+				workerServer := makeMockWorkerServer(cmdChan)
+				workerPort := rand.Intn(10000) + 30000
+				bindAddress := fmt.Sprintf("127.0.0.1:%d", workerPort)
+				workerBaseURL := fmt.Sprintf("http://%s", bindAddress)
+				w := workerStatus{
+					ID:  "test_worker_cmd",
+					URL: workerBaseURL + "/cmd",
+				}
+				resp, err := postJSON(baseURL+"/workers", w)
+				So(err, ShouldBeNil)
+				So(resp.StatusCode, ShouldEqual, http.StatusOK)
+
+				go func() {
+					// run the mock worker server
+					workerServer.Run(bindAddress)
+				}()
+				time.Sleep(50 * time.Microsecond)
+				// verify the worker mock server is running
+				workerResp, err := http.Get(workerBaseURL + "/ping")
+				defer workerResp.Body.Close()
+				So(err, ShouldBeNil)
+				So(workerResp.StatusCode, ShouldEqual, http.StatusOK)
+
+				Convey("when client send wrong cmd", func(ctx C) {
+					clientCmd := ClientCmd{
+						Cmd:      CmdStart,
+						MirrorID: "ubuntu-sync",
+						WorkerID: "not_exist_worker",
+					}
+					resp, err := postJSON(baseURL+"/cmd", clientCmd)
+					defer resp.Body.Close()
+					So(err, ShouldBeNil)
+					So(resp.StatusCode, ShouldEqual, http.StatusBadRequest)
+				})
+
+				Convey("when client send correct cmd", func(ctx C) {
+					clientCmd := ClientCmd{
+						Cmd:      CmdStart,
+						MirrorID: "ubuntu-sync",
+						WorkerID: w.ID,
+					}
+
+					resp, err := postJSON(baseURL+"/cmd", clientCmd)
+					defer resp.Body.Close()
+
+					So(err, ShouldBeNil)
+					So(resp.StatusCode, ShouldEqual, http.StatusOK)
+					time.Sleep(50 * time.Microsecond)
+					select {
+					case cmd := <-cmdChan:
+						ctx.So(cmd.Cmd, ShouldEqual, clientCmd.Cmd)
+						ctx.So(cmd.MirrorID, ShouldEqual, clientCmd.MirrorID)
+					default:
+						ctx.So(0, ShouldEqual, 1)
+					}
+				})
 			})
 		})
 	})
@@ -232,4 +287,18 @@ func (b *mockDBAdapter) ListAllMirrorStatus() ([]mirrorStatus, error) {
 
 func (b *mockDBAdapter) Close() error {
 	return nil
+}
+
+func makeMockWorkerServer(cmdChan chan WorkerCmd) *gin.Engine {
+	r := gin.Default()
+	r.GET("/ping", func(c *gin.Context) {
+		c.JSON(http.StatusOK, gin.H{_infoKey: "pong"})
+	})
+	r.POST("/cmd", func(c *gin.Context) {
+		var cmd WorkerCmd
+		c.BindJSON(&cmd)
+		cmdChan <- cmd
+	})
+
+	return r
 }

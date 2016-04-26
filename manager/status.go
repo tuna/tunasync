@@ -106,3 +106,10 @@ func (s *mirrorStatus) UnmarshalJSON(v []byte) error {
 	}
 	return nil
 }
+
+type workerStatus struct {
+	ID         string    `json:"id"`          // worker name
+	Token      string    `json:"token"`       // session token
+	URL        string    `json:"url"`         // worker url
+	LastOnline time.Time `json:"last_online"` // last seen
+}

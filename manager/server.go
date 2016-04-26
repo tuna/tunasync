@@ -3,8 +3,6 @@ package manager
 import (
 	"fmt"
 	"net/http"
-	"sync"
-	"time"
 
 	"github.com/gin-gonic/gin"
 
@@ -12,24 +10,8 @@ import (
 )
 
 const (
-	maxQueuedCmdNum = 3
-	cmdPollTime     = 10 * time.Second
-)
-
-const (
 	_errorKey = "error"
 	_infoKey  = "message"
-)
-
-type workerStatus struct {
-	ID         string    `json:"id"`          // worker name
-	Token      string    `json:"token"`       // session token
-	LastOnline time.Time `json:"last_online"` // last seen
-}
-
-var (
-	workerChannelMu sync.RWMutex
-	workerChannels  = make(map[string]chan WorkerCmd)
 )
 
 type managerServer struct {
@@ -84,9 +66,6 @@ func (s *managerServer) registerWorker(c *gin.Context) {
 		return
 	}
 	// create workerCmd channel for this worker
-	workerChannelMu.Lock()
-	defer workerChannelMu.Unlock()
-	workerChannels[_worker.ID] = make(chan WorkerCmd, maxQueuedCmdNum)
 	c.JSON(http.StatusOK, newWorker)
 }
 
@@ -129,11 +108,8 @@ func (s *managerServer) updateJobOfWorker(c *gin.Context) {
 }
 
 func (s *managerServer) handleClientCmd(c *gin.Context) {
-	workerChannelMu.RLock()
-	defer workerChannelMu.RUnlock()
 	var clientCmd ClientCmd
 	c.BindJSON(&clientCmd)
-	// TODO: decide which worker should do this mirror when WorkerID is null string
 	workerID := clientCmd.WorkerID
 	if workerID == "" {
 		// TODO: decide which worker should do this mirror when WorkerID is null string
@@ -142,50 +118,30 @@ func (s *managerServer) handleClientCmd(c *gin.Context) {
 		return
 	}
 
-	workerChannel, ok := workerChannels[workerID]
-	if !ok {
+	w, err := s.adapter.GetWorker(workerID)
+	if err != nil {
 		err := fmt.Errorf("worker %s is not registered yet", workerID)
 		s.returnErrJSON(c, http.StatusBadRequest, err)
 		return
 	}
+	workerURL := w.URL
 	// parse client cmd into worker cmd
 	workerCmd := WorkerCmd{
 		Cmd:      clientCmd.Cmd,
 		MirrorID: clientCmd.MirrorID,
 		Args:     clientCmd.Args,
 	}
-	select {
-	case workerChannel <- workerCmd:
-		// successfully insert command to channel
-		c.JSON(http.StatusOK, struct{}{})
-	default:
-		// pending commands for that worker exceed
-		// the maxQueuedCmdNum threshold
-		err := fmt.Errorf("pending commands for worker %s exceed"+
-			"the %d threshold, the command is dropped",
-			workerID, maxQueuedCmdNum)
+
+	// post command to worker
+	_, err = postJSON(workerURL, workerCmd)
+	if err != nil {
+		err := fmt.Errorf("post command to worker %s(%s) fail: %s", workerID, workerURL, err.Error())
 		c.Error(err)
-		s.returnErrJSON(c, http.StatusServiceUnavailable, err)
+		s.returnErrJSON(c, http.StatusInternalServerError, err)
 		return
 	}
-}
-
-func (s *managerServer) getCmdOfWorker(c *gin.Context) {
-	workerID := c.Param("id")
-	workerChannelMu.RLock()
-	defer workerChannelMu.RUnlock()
-
-	workerChannel := workerChannels[workerID]
-	for {
-		select {
-		case _ = <-workerChannel:
-			// TODO: push new command to worker client
-			continue
-		case <-time.After(cmdPollTime):
-			// time limit exceeded, close the connection
-			break
-		}
-	}
+	// TODO: check response for success
+	c.JSON(http.StatusOK, gin.H{_infoKey: "successfully send command to worker " + workerID})
 }
 
 func (s *managerServer) setDBAdapter(adapter dbAdapter) {
@@ -223,11 +179,8 @@ func makeHTTPServer(debug bool) *managerServer {
 	// post job status
 	workerValidateGroup.POST(":id/jobs/:job", s.updateJobOfWorker)
 
-	// worker command polling
-	workerValidateGroup.GET(":id/cmd_stream", s.getCmdOfWorker)
-
 	// for tunasynctl to post commands
-	s.POST("/cmd/", s.handleClientCmd)
+	s.POST("/cmd", s.handleClientCmd)
 
 	return s
 }
