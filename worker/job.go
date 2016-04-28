@@ -44,6 +44,18 @@ func (m *mirrorJob) Name() string {
 	return m.provider.Name()
 }
 
+func (m *mirrorJob) Stopped() bool {
+	if !m.enabled {
+		return true
+	}
+	select {
+	case <-m.stopped:
+		return true
+	default:
+		return false
+	}
+}
+
 // runMirrorJob is the goroutine where syncing job runs in
 // arguments:
 //    provider: mirror provider object

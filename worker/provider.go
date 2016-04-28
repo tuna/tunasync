@@ -33,6 +33,7 @@ type mirrorProvider interface {
 	// job hooks
 	IsRunning() bool
 
+	AddHook(hook jobHook)
 	Hooks() []jobHook
 
 	Interval() time.Duration
