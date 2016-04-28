@@ -72,7 +72,7 @@ func TestConfig(t *testing.T) {
 			Convey("when giving no config options", func() {
 				app.Action = func(c *cli.Context) {
 					cfgFile := c.String("config")
-					cfg, err := loadConfig(cfgFile, c)
+					cfg, err := LoadConfig(cfgFile, c)
 					So(err, ShouldEqual, nil)
 					So(cfg.Server.Addr, ShouldEqual, "127.0.0.1")
 				}
@@ -83,7 +83,7 @@ func TestConfig(t *testing.T) {
 				app.Action = func(c *cli.Context) {
 					cfgFile := c.String("config")
 					So(cfgFile, ShouldEqual, tmpfile.Name())
-					conf, err := loadConfig(cfgFile, c)
+					conf, err := LoadConfig(cfgFile, c)
 					So(err, ShouldEqual, nil)
 					So(conf.Server.Addr, ShouldEqual, "0.0.0.0")
 					So(conf.Server.Port, ShouldEqual, 5000)
@@ -99,7 +99,7 @@ func TestConfig(t *testing.T) {
 				app.Action = func(c *cli.Context) {
 					cfgFile := c.String("config")
 					So(cfgFile, ShouldEqual, "")
-					conf, err := loadConfig(cfgFile, c)
+					conf, err := LoadConfig(cfgFile, c)
 					So(err, ShouldEqual, nil)
 					So(conf.Server.Addr, ShouldEqual, "0.0.0.0")
 					So(conf.Server.Port, ShouldEqual, 5001)
@@ -119,7 +119,7 @@ func TestConfig(t *testing.T) {
 				app.Action = func(c *cli.Context) {
 					cfgFile := c.String("config")
 					So(cfgFile, ShouldEqual, tmpfile.Name())
-					conf, err := loadConfig(cfgFile, c)
+					conf, err := LoadConfig(cfgFile, c)
 					So(err, ShouldEqual, nil)
 					So(conf.Server.Addr, ShouldEqual, "0.0.0.0")
 					So(conf.Server.Port, ShouldEqual, 5000)

@@ -29,7 +29,7 @@ type FileConfig struct {
 	CACert string `toml:"ca_cert"`
 }
 
-func loadConfig(cfgFile string, c *cli.Context) (*Config, error) {
+func LoadConfig(cfgFile string, c *cli.Context) (*Config, error) {
 
 	cfg := new(Config)
 	cfg.Server.Addr = "127.0.0.1"
@@ -44,6 +44,10 @@ func loadConfig(cfgFile string, c *cli.Context) (*Config, error) {
 			logger.Error(err.Error())
 			return nil, err
 		}
+	}
+
+	if c == nil {
+		return cfg, nil
 	}
 
 	if c.String("addr") != "" {
