@@ -54,7 +54,7 @@ exclude_file = "/etc/tunasync.d/fedora-exclude.txt"
 	`
 
 	Convey("When giving invalid file", t, func() {
-		cfg, err := loadConfig("/path/to/invalid/file")
+		cfg, err := LoadConfig("/path/to/invalid/file")
 		So(err, ShouldNotBeNil)
 		So(cfg, ShouldBeNil)
 	})
@@ -68,7 +68,7 @@ exclude_file = "/etc/tunasync.d/fedora-exclude.txt"
 		So(err, ShouldEqual, nil)
 		defer tmpfile.Close()
 
-		cfg, err := loadConfig(tmpfile.Name())
+		cfg, err := LoadConfig(tmpfile.Name())
 		So(err, ShouldBeNil)
 		So(cfg.Global.Name, ShouldEqual, "test_worker")
 		So(cfg.Global.Interval, ShouldEqual, 240)
@@ -107,7 +107,7 @@ exclude_file = "/etc/tunasync.d/fedora-exclude.txt"
 		So(err, ShouldEqual, nil)
 		defer tmpfile.Close()
 
-		cfg, err := loadConfig(tmpfile.Name())
+		cfg, err := LoadConfig(tmpfile.Name())
 		So(err, ShouldBeNil)
 
 		w := &Worker{

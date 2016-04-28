@@ -76,7 +76,8 @@ type mirrorConfig struct {
 	Stage1Profile string `toml:"stage1_profile"`
 }
 
-func loadConfig(cfgFile string) (*Config, error) {
+// LoadConfig loads configuration
+func LoadConfig(cfgFile string) (*Config, error) {
 	if _, err := os.Stat(cfgFile); err != nil {
 		return nil, err
 	}
