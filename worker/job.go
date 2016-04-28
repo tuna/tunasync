@@ -28,6 +28,7 @@ type jobMessage struct {
 type mirrorJob struct {
 	provider mirrorProvider
 	ctrlChan chan ctrlAction
+	stopped  chan empty
 	enabled  bool
 }
 
@@ -35,7 +36,7 @@ func newMirrorJob(provider mirrorProvider) *mirrorJob {
 	return &mirrorJob{
 		provider: provider,
 		ctrlChan: make(chan ctrlAction, 1),
-		enabled:  true,
+		enabled:  false,
 	}
 }
 
@@ -51,6 +52,9 @@ func (m *mirrorJob) Name() string {
 //    sempaphore: make sure the concurrent running syncing job won't explode
 // TODO: message struct for managerChan
 func (m *mirrorJob) Run(managerChan chan<- jobMessage, semaphore chan empty) error {
+
+	m.stopped = make(chan empty)
+	defer close(m.stopped)
 
 	provider := m.provider
 

@@ -68,6 +68,15 @@ func TestMirrorJob(t *testing.T) {
 				job := newMirrorJob(provider)
 
 				go job.Run(managerChan, semaphore)
+				// job should not start if we don't start it
+				select {
+				case <-managerChan:
+					So(0, ShouldEqual, 1) // made this fail
+				case <-time.After(1 * time.Second):
+					So(0, ShouldEqual, 0)
+				}
+
+				job.ctrlChan <- jobStart
 				for i := 0; i < 2; i++ {
 					msg := <-managerChan
 					So(msg.status, ShouldEqual, PreSyncing)
@@ -96,7 +105,7 @@ func TestMirrorJob(t *testing.T) {
 				select {
 				case <-managerChan:
 					So(0, ShouldEqual, 1) // made this fail
-				case <-time.After(2 * time.Second):
+				case <-job.stopped:
 					So(0, ShouldEqual, 0)
 				}
 			})
@@ -118,6 +127,7 @@ echo $TUNASYNC_WORKING_DIR
 
 			Convey("If we kill it", func(ctx C) {
 				go job.Run(managerChan, semaphore)
+				job.ctrlChan <- jobStart
 
 				time.Sleep(1 * time.Second)
 				msg := <-managerChan
@@ -135,10 +145,12 @@ echo $TUNASYNC_WORKING_DIR
 				So(err, ShouldBeNil)
 				So(string(loggedContent), ShouldEqual, exceptedOutput)
 				job.ctrlChan <- jobDisable
+				<-job.stopped
 			})
 
 			Convey("If we don't kill it", func(ctx C) {
 				go job.Run(managerChan, semaphore)
+				job.ctrlChan <- jobStart
 
 				msg := <-managerChan
 				So(msg.status, ShouldEqual, PreSyncing)
@@ -156,6 +168,7 @@ echo $TUNASYNC_WORKING_DIR
 				So(err, ShouldBeNil)
 				So(string(loggedContent), ShouldEqual, exceptedOutput)
 				job.ctrlChan <- jobDisable
+				<-job.stopped
 			})
 		})
 
