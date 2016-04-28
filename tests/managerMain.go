@@ -1,23 +1,17 @@
 package main
 
-import "github.com/tuna/tunasync/manager"
+import (
+	"fmt"
 
-var cfg = manager.Config{
-	Debug: true,
-	Server: manager.ServerConfig{
-		Addr:    "127.0.0.1",
-		Port:    12345,
-		SSLCert: "manager.crt",
-		SSLKey:  "manager.key",
-	},
-	Files: manager.FileConfig{
-		DBType: "bolt",
-		DBFile: "/tmp/tunasync/manager.db",
-		CACert: "rootCA.crt",
-	},
-}
+	"github.com/tuna/tunasync/manager"
+)
 
 func main() {
-	m := manager.GetTUNASyncManager(&cfg)
+	cfg, err := manager.LoadConfig("manager.conf", nil)
+	if err != nil {
+		fmt.Println(err.Error())
+		return
+	}
+	m := manager.GetTUNASyncManager(cfg)
 	m.Run()
 }
