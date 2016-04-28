@@ -195,15 +195,7 @@ func (s *Manager) updateJobOfWorker(c *gin.Context) {
 	c.BindJSON(&status)
 	mirrorName := status.Name
 
-	curStatus, err := s.adapter.GetMirrorStatus(workerID, mirrorName)
-	if err != nil {
-		err := fmt.Errorf("failed to get job %s of worker %s: %s",
-			mirrorName, workerID, err.Error(),
-		)
-		c.Error(err)
-		s.returnErrJSON(c, http.StatusInternalServerError, err)
-		return
-	}
+	curStatus, _ := s.adapter.GetMirrorStatus(workerID, mirrorName)
 
 	// Only successful syncing needs last_update
 	if status.Status == Success {

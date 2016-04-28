@@ -82,13 +82,12 @@ func TestHTTPServer(t *testing.T) {
 
 			Convey("update mirror status of a existed worker", func(ctx C) {
 				status := MirrorStatus{
-					Name:       "arch-sync1",
-					Worker:     "test_worker1",
-					IsMaster:   true,
-					Status:     Success,
-					LastUpdate: time.Now(),
-					Upstream:   "mirrors.tuna.tsinghua.edu.cn",
-					Size:       "3GB",
+					Name:     "arch-sync1",
+					Worker:   "test_worker1",
+					IsMaster: true,
+					Status:   Success,
+					Upstream: "mirrors.tuna.tsinghua.edu.cn",
+					Size:     "3GB",
 				}
 				resp, err := PostJSON(fmt.Sprintf("%s/workers/%s/jobs/%s", baseURL, status.Worker, status.Name), status, nil)
 				defer resp.Body.Close()
@@ -96,31 +95,36 @@ func TestHTTPServer(t *testing.T) {
 				So(resp.StatusCode, ShouldEqual, http.StatusOK)
 
 				Convey("list mirror status of an existed worker", func(ctx C) {
+					var ms []MirrorStatus
+					resp, err := GetJSON(baseURL+"/workers/test_worker1/jobs", &ms, nil)
 
-					expectedResponse, err := json.Marshal([]MirrorStatus{status})
-					So(err, ShouldBeNil)
-					resp, err := http.Get(baseURL + "/workers/test_worker1/jobs")
 					So(err, ShouldBeNil)
 					So(resp.StatusCode, ShouldEqual, http.StatusOK)
 					// err = json.NewDecoder(resp.Body).Decode(&mirrorStatusList)
-					body, err := ioutil.ReadAll(resp.Body)
-					defer resp.Body.Close()
-					So(err, ShouldBeNil)
-					So(strings.TrimSpace(string(body)), ShouldEqual, string(expectedResponse))
+					m := ms[0]
+					So(m.Name, ShouldEqual, status.Name)
+					So(m.Worker, ShouldEqual, status.Worker)
+					So(m.Status, ShouldEqual, status.Status)
+					So(m.Upstream, ShouldEqual, status.Upstream)
+					So(m.Size, ShouldEqual, status.Size)
+					So(m.IsMaster, ShouldEqual, status.IsMaster)
+					So(time.Now().Sub(m.LastUpdate), ShouldBeLessThan, 1*time.Second)
+
 				})
 
 				Convey("list all job status of all workers", func(ctx C) {
-					expectedResponse, err := json.Marshal(
-						[]webMirrorStatus{convertMirrorStatus(status)},
-					)
-					So(err, ShouldBeNil)
-					resp, err := http.Get(baseURL + "/jobs")
+					var ms []webMirrorStatus
+					resp, err := GetJSON(baseURL+"/jobs", &ms, nil)
 					So(err, ShouldBeNil)
 					So(resp.StatusCode, ShouldEqual, http.StatusOK)
-					body, err := ioutil.ReadAll(resp.Body)
-					defer resp.Body.Close()
-					So(err, ShouldBeNil)
-					So(strings.TrimSpace(string(body)), ShouldEqual, string(expectedResponse))
+
+					m := ms[0]
+					So(m.Name, ShouldEqual, status.Name)
+					So(m.Status, ShouldEqual, status.Status)
+					So(m.Upstream, ShouldEqual, status.Upstream)
+					So(m.Size, ShouldEqual, status.Size)
+					So(m.IsMaster, ShouldEqual, status.IsMaster)
+					So(time.Now().Sub(m.LastUpdate.Time), ShouldBeLessThan, 1*time.Second)
 
 				})
 			})
