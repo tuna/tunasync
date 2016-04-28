@@ -15,9 +15,9 @@ type MirrorStatus struct {
 	ErrorMsg   string     `json:"error_msg"`
 }
 
-// A WorkerInfoMsg is the information struct that describe
+// A WorkerStatus is the information struct that describe
 // a worker, and sent from the manager to clients.
-type WorkerInfoMsg struct {
+type WorkerStatus struct {
 	ID         string    `json:"id"`
 	URL        string    `json:"url"`         // worker url
 	Token      string    `json:"token"`       // session token

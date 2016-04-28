@@ -291,7 +291,7 @@ func (w *Worker) registorWorker() {
 		w.cfg.Manager.APIBase,
 	)
 
-	msg := WorkerInfoMsg{
+	msg := WorkerStatus{
 		ID:  w.Name(),
 		URL: w.URL(),
 	}

@@ -26,11 +26,11 @@ func TestHTTPServer(t *testing.T) {
 		s := makeHTTPServer(false)
 		So(s, ShouldNotBeNil)
 		s.setDBAdapter(&mockDBAdapter{
-			workerStore: map[string]workerStatus{
-				_magicBadWorkerID: workerStatus{
+			workerStore: map[string]WorkerStatus{
+				_magicBadWorkerID: WorkerStatus{
 					ID: _magicBadWorkerID,
 				}},
-			statusStore: make(map[string]mirrorStatus),
+			statusStore: make(map[string]MirrorStatus),
 		})
 		port := rand.Intn(10000) + 20000
 		baseURL := fmt.Sprintf("http://127.0.0.1:%d", port)
@@ -62,7 +62,7 @@ func TestHTTPServer(t *testing.T) {
 		})
 
 		Convey("when register a worker", func(ctx C) {
-			w := workerStatus{
+			w := WorkerStatus{
 				ID: "test_worker1",
 			}
 			resp, err := postJSON(baseURL+"/workers", w)
@@ -74,14 +74,14 @@ func TestHTTPServer(t *testing.T) {
 				resp, err := http.Get(baseURL + "/workers")
 				So(err, ShouldBeNil)
 				defer resp.Body.Close()
-				var actualResponseObj []WorkerInfoMsg
+				var actualResponseObj []WorkerStatus
 				err = json.NewDecoder(resp.Body).Decode(&actualResponseObj)
 				So(err, ShouldBeNil)
 				So(len(actualResponseObj), ShouldEqual, 2)
 			})
 
 			Convey("update mirror status of a existed worker", func(ctx C) {
-				status := mirrorStatus{
+				status := MirrorStatus{
 					Name:       "arch-sync1",
 					Worker:     "test_worker1",
 					IsMaster:   true,
@@ -97,7 +97,7 @@ func TestHTTPServer(t *testing.T) {
 
 				Convey("list mirror status of an existed worker", func(ctx C) {
 
-					expectedResponse, err := json.Marshal([]mirrorStatus{status})
+					expectedResponse, err := json.Marshal([]MirrorStatus{status})
 					So(err, ShouldBeNil)
 					resp, err := http.Get(baseURL + "/workers/test_worker1/jobs")
 					So(err, ShouldBeNil)
@@ -110,7 +110,9 @@ func TestHTTPServer(t *testing.T) {
 				})
 
 				Convey("list all job status of all workers", func(ctx C) {
-					expectedResponse, err := json.Marshal([]mirrorStatus{status})
+					expectedResponse, err := json.Marshal(
+						[]webMirrorStatus{convertMirrorStatus(status)},
+					)
 					So(err, ShouldBeNil)
 					resp, err := http.Get(baseURL + "/jobs")
 					So(err, ShouldBeNil)
@@ -125,7 +127,7 @@ func TestHTTPServer(t *testing.T) {
 
 			Convey("update mirror status of an inexisted worker", func(ctx C) {
 				invalidWorker := "test_worker2"
-				status := mirrorStatus{
+				status := MirrorStatus{
 					Name:       "arch-sync2",
 					Worker:     invalidWorker,
 					IsMaster:   true,
@@ -150,7 +152,7 @@ func TestHTTPServer(t *testing.T) {
 				workerPort := rand.Intn(10000) + 30000
 				bindAddress := fmt.Sprintf("127.0.0.1:%d", workerPort)
 				workerBaseURL := fmt.Sprintf("http://%s", bindAddress)
-				w := workerStatus{
+				w := WorkerStatus{
 					ID:  "test_worker_cmd",
 					URL: workerBaseURL + "/cmd",
 				}
@@ -208,16 +210,16 @@ func TestHTTPServer(t *testing.T) {
 }
 
 type mockDBAdapter struct {
-	workerStore map[string]workerStatus
-	statusStore map[string]mirrorStatus
+	workerStore map[string]WorkerStatus
+	statusStore map[string]MirrorStatus
 }
 
 func (b *mockDBAdapter) Init() error {
 	return nil
 }
 
-func (b *mockDBAdapter) ListWorkers() ([]workerStatus, error) {
-	workers := make([]workerStatus, len(b.workerStore))
+func (b *mockDBAdapter) ListWorkers() ([]WorkerStatus, error) {
+	workers := make([]WorkerStatus, len(b.workerStore))
 	idx := 0
 	for _, w := range b.workerStore {
 		workers[idx] = w
@@ -226,15 +228,15 @@ func (b *mockDBAdapter) ListWorkers() ([]workerStatus, error) {
 	return workers, nil
 }
 
-func (b *mockDBAdapter) GetWorker(workerID string) (workerStatus, error) {
+func (b *mockDBAdapter) GetWorker(workerID string) (WorkerStatus, error) {
 	w, ok := b.workerStore[workerID]
 	if !ok {
-		return workerStatus{}, fmt.Errorf("invalid workerId")
+		return WorkerStatus{}, fmt.Errorf("invalid workerId")
 	}
 	return w, nil
 }
 
-func (b *mockDBAdapter) CreateWorker(w workerStatus) (workerStatus, error) {
+func (b *mockDBAdapter) CreateWorker(w WorkerStatus) (WorkerStatus, error) {
 	// _, ok := b.workerStore[w.ID]
 	// if ok {
 	// 	return workerStatus{}, fmt.Errorf("duplicate worker name")
@@ -243,19 +245,19 @@ func (b *mockDBAdapter) CreateWorker(w workerStatus) (workerStatus, error) {
 	return w, nil
 }
 
-func (b *mockDBAdapter) GetMirrorStatus(workerID, mirrorID string) (mirrorStatus, error) {
+func (b *mockDBAdapter) GetMirrorStatus(workerID, mirrorID string) (MirrorStatus, error) {
 	id := mirrorID + "/" + workerID
 	status, ok := b.statusStore[id]
 	if !ok {
-		return mirrorStatus{}, fmt.Errorf("no mirror %s exists in worker %s", mirrorID, workerID)
+		return MirrorStatus{}, fmt.Errorf("no mirror %s exists in worker %s", mirrorID, workerID)
 	}
 	return status, nil
 }
 
-func (b *mockDBAdapter) UpdateMirrorStatus(workerID, mirrorID string, status mirrorStatus) (mirrorStatus, error) {
+func (b *mockDBAdapter) UpdateMirrorStatus(workerID, mirrorID string, status MirrorStatus) (MirrorStatus, error) {
 	// if _, ok := b.workerStore[workerID]; !ok {
 	// 	// unregistered worker
-	// 	return mirrorStatus{}, fmt.Errorf("invalid workerID %s", workerID)
+	// 	return MirrorStatus{}, fmt.Errorf("invalid workerID %s", workerID)
 	// }
 
 	id := mirrorID + "/" + workerID
@@ -263,11 +265,11 @@ func (b *mockDBAdapter) UpdateMirrorStatus(workerID, mirrorID string, status mir
 	return status, nil
 }
 
-func (b *mockDBAdapter) ListMirrorStatus(workerID string) ([]mirrorStatus, error) {
-	var mirrorStatusList []mirrorStatus
+func (b *mockDBAdapter) ListMirrorStatus(workerID string) ([]MirrorStatus, error) {
+	var mirrorStatusList []MirrorStatus
 	// simulating a database fail
 	if workerID == _magicBadWorkerID {
-		return []mirrorStatus{}, fmt.Errorf("database fail")
+		return []MirrorStatus{}, fmt.Errorf("database fail")
 	}
 	for k, v := range b.statusStore {
 		if wID := strings.Split(k, "/")[1]; wID == workerID {
@@ -277,8 +279,8 @@ func (b *mockDBAdapter) ListMirrorStatus(workerID string) ([]mirrorStatus, error
 	return mirrorStatusList, nil
 }
 
-func (b *mockDBAdapter) ListAllMirrorStatus() ([]mirrorStatus, error) {
-	var mirrorStatusList []mirrorStatus
+func (b *mockDBAdapter) ListAllMirrorStatus() ([]MirrorStatus, error) {
+	var mirrorStatusList []MirrorStatus
 	for _, v := range b.statusStore {
 		mirrorStatusList = append(mirrorStatusList, v)
 	}

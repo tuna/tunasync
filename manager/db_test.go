@@ -31,7 +31,7 @@ func TestBoltAdapter(t *testing.T) {
 		testWorkerIDs := []string{"test_worker1", "test_worker2"}
 		Convey("create worker", func() {
 			for _, id := range testWorkerIDs {
-				w := workerStatus{
+				w := WorkerStatus{
 					ID:         id,
 					Token:      "token_" + id,
 					LastOnline: time.Now(),
@@ -58,7 +58,7 @@ func TestBoltAdapter(t *testing.T) {
 		})
 
 		Convey("update mirror status", func() {
-			status1 := mirrorStatus{
+			status1 := MirrorStatus{
 				Name:       "arch-sync1",
 				Worker:     testWorkerIDs[0],
 				IsMaster:   true,
@@ -67,7 +67,7 @@ func TestBoltAdapter(t *testing.T) {
 				Upstream:   "mirrors.tuna.tsinghua.edu.cn",
 				Size:       "3GB",
 			}
-			status2 := mirrorStatus{
+			status2 := MirrorStatus{
 				Name:       "arch-sync2",
 				Worker:     testWorkerIDs[1],
 				IsMaster:   true,
@@ -94,7 +94,7 @@ func TestBoltAdapter(t *testing.T) {
 			Convey("list mirror status", func() {
 				ms, err := boltDB.ListMirrorStatus(testWorkerIDs[0])
 				So(err, ShouldBeNil)
-				expectedJSON, err := json.Marshal([]mirrorStatus{status1})
+				expectedJSON, err := json.Marshal([]MirrorStatus{status1})
 				So(err, ShouldBeNil)
 				actualJSON, err := json.Marshal(ms)
 				So(err, ShouldBeNil)
@@ -104,7 +104,7 @@ func TestBoltAdapter(t *testing.T) {
 			Convey("list all mirror status", func() {
 				ms, err := boltDB.ListAllMirrorStatus()
 				So(err, ShouldBeNil)
-				expectedJSON, err := json.Marshal([]mirrorStatus{status1, status2})
+				expectedJSON, err := json.Marshal([]MirrorStatus{status1, status2})
 				So(err, ShouldBeNil)
 				actualJSON, err := json.Marshal(ms)
 				So(err, ShouldBeNil)

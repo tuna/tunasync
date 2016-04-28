@@ -30,12 +30,19 @@ func (s *managerServer) listAllJobs(c *gin.Context) {
 		s.returnErrJSON(c, http.StatusInternalServerError, err)
 		return
 	}
-	c.JSON(http.StatusOK, mirrorStatusList)
+	webMirStatusList := []webMirrorStatus{}
+	for _, m := range mirrorStatusList {
+		webMirStatusList = append(
+			webMirStatusList,
+			convertMirrorStatus(m),
+		)
+	}
+	c.JSON(http.StatusOK, webMirStatusList)
 }
 
 // listWrokers respond with informations of all the workers
 func (s *managerServer) listWorkers(c *gin.Context) {
-	var workerInfos []WorkerInfoMsg
+	var workerInfos []WorkerStatus
 	workers, err := s.adapter.ListWorkers()
 	if err != nil {
 		err := fmt.Errorf("failed to list workers: %s",
@@ -47,7 +54,7 @@ func (s *managerServer) listWorkers(c *gin.Context) {
 	}
 	for _, w := range workers {
 		workerInfos = append(workerInfos,
-			WorkerInfoMsg{
+			WorkerStatus{
 				ID:         w.ID,
 				LastOnline: w.LastOnline,
 			})
@@ -57,7 +64,7 @@ func (s *managerServer) listWorkers(c *gin.Context) {
 
 // registerWorker register an newly-online worker
 func (s *managerServer) registerWorker(c *gin.Context) {
-	var _worker workerStatus
+	var _worker WorkerStatus
 	c.BindJSON(&_worker)
 	newWorker, err := s.adapter.CreateWorker(_worker)
 	if err != nil {
@@ -95,7 +102,7 @@ func (s *managerServer) returnErrJSON(c *gin.Context, code int, err error) {
 
 func (s *managerServer) updateJobOfWorker(c *gin.Context) {
 	workerID := c.Param("id")
-	var status mirrorStatus
+	var status MirrorStatus
 	c.BindJSON(&status)
 	mirrorName := status.Name
 	newStatus, err := s.adapter.UpdateMirrorStatus(workerID, mirrorName, status)

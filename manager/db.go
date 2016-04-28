@@ -6,17 +6,19 @@ import (
 	"strings"
 
 	"github.com/boltdb/bolt"
+
+	. "github.com/tuna/tunasync/internal"
 )
 
 type dbAdapter interface {
 	Init() error
-	ListWorkers() ([]workerStatus, error)
-	GetWorker(workerID string) (workerStatus, error)
-	CreateWorker(w workerStatus) (workerStatus, error)
-	UpdateMirrorStatus(workerID, mirrorID string, status mirrorStatus) (mirrorStatus, error)
-	GetMirrorStatus(workerID, mirrorID string) (mirrorStatus, error)
-	ListMirrorStatus(workerID string) ([]mirrorStatus, error)
-	ListAllMirrorStatus() ([]mirrorStatus, error)
+	ListWorkers() ([]WorkerStatus, error)
+	GetWorker(workerID string) (WorkerStatus, error)
+	CreateWorker(w WorkerStatus) (WorkerStatus, error)
+	UpdateMirrorStatus(workerID, mirrorID string, status MirrorStatus) (MirrorStatus, error)
+	GetMirrorStatus(workerID, mirrorID string) (MirrorStatus, error)
+	ListMirrorStatus(workerID string) ([]MirrorStatus, error)
+	ListAllMirrorStatus() ([]MirrorStatus, error)
 	Close() error
 }
 
@@ -61,11 +63,11 @@ func (b *boltAdapter) Init() (err error) {
 	})
 }
 
-func (b *boltAdapter) ListWorkers() (ws []workerStatus, err error) {
+func (b *boltAdapter) ListWorkers() (ws []WorkerStatus, err error) {
 	err = b.db.View(func(tx *bolt.Tx) error {
 		bucket := tx.Bucket([]byte(_workerBucketKey))
 		c := bucket.Cursor()
-		var w workerStatus
+		var w WorkerStatus
 		for k, v := c.First(); k != nil; k, v = c.Next() {
 			jsonErr := json.Unmarshal(v, &w)
 			if jsonErr != nil {
@@ -79,7 +81,7 @@ func (b *boltAdapter) ListWorkers() (ws []workerStatus, err error) {
 	return
 }
 
-func (b *boltAdapter) GetWorker(workerID string) (w workerStatus, err error) {
+func (b *boltAdapter) GetWorker(workerID string) (w WorkerStatus, err error) {
 	err = b.db.View(func(tx *bolt.Tx) error {
 		bucket := tx.Bucket([]byte(_workerBucketKey))
 		v := bucket.Get([]byte(workerID))
@@ -92,7 +94,7 @@ func (b *boltAdapter) GetWorker(workerID string) (w workerStatus, err error) {
 	return
 }
 
-func (b *boltAdapter) CreateWorker(w workerStatus) (workerStatus, error) {
+func (b *boltAdapter) CreateWorker(w WorkerStatus) (WorkerStatus, error) {
 	err := b.db.Update(func(tx *bolt.Tx) error {
 		bucket := tx.Bucket([]byte(_workerBucketKey))
 		v, err := json.Marshal(w)
@@ -105,7 +107,7 @@ func (b *boltAdapter) CreateWorker(w workerStatus) (workerStatus, error) {
 	return w, err
 }
 
-func (b *boltAdapter) UpdateMirrorStatus(workerID, mirrorID string, status mirrorStatus) (mirrorStatus, error) {
+func (b *boltAdapter) UpdateMirrorStatus(workerID, mirrorID string, status MirrorStatus) (MirrorStatus, error) {
 	id := mirrorID + "/" + workerID
 	err := b.db.Update(func(tx *bolt.Tx) error {
 		bucket := tx.Bucket([]byte(_statusBucketKey))
@@ -116,7 +118,7 @@ func (b *boltAdapter) UpdateMirrorStatus(workerID, mirrorID string, status mirro
 	return status, err
 }
 
-func (b *boltAdapter) GetMirrorStatus(workerID, mirrorID string) (m mirrorStatus, err error) {
+func (b *boltAdapter) GetMirrorStatus(workerID, mirrorID string) (m MirrorStatus, err error) {
 	id := mirrorID + "/" + workerID
 	err = b.db.Update(func(tx *bolt.Tx) error {
 		bucket := tx.Bucket([]byte(_statusBucketKey))
@@ -130,11 +132,11 @@ func (b *boltAdapter) GetMirrorStatus(workerID, mirrorID string) (m mirrorStatus
 	return
 }
 
-func (b *boltAdapter) ListMirrorStatus(workerID string) (ms []mirrorStatus, err error) {
+func (b *boltAdapter) ListMirrorStatus(workerID string) (ms []MirrorStatus, err error) {
 	err = b.db.View(func(tx *bolt.Tx) error {
 		bucket := tx.Bucket([]byte(_statusBucketKey))
 		c := bucket.Cursor()
-		var m mirrorStatus
+		var m MirrorStatus
 		for k, v := c.First(); k != nil; k, v = c.Next() {
 			if wID := strings.Split(string(k), "/")[1]; wID == workerID {
 				jsonErr := json.Unmarshal(v, &m)
@@ -150,11 +152,11 @@ func (b *boltAdapter) ListMirrorStatus(workerID string) (ms []mirrorStatus, err 
 	return
 }
 
-func (b *boltAdapter) ListAllMirrorStatus() (ms []mirrorStatus, err error) {
+func (b *boltAdapter) ListAllMirrorStatus() (ms []MirrorStatus, err error) {
 	err = b.db.View(func(tx *bolt.Tx) error {
 		bucket := tx.Bucket([]byte(_statusBucketKey))
 		c := bucket.Cursor()
-		var m mirrorStatus
+		var m MirrorStatus
 		for k, v := c.First(); k != nil; k, v = c.Next() {
 			jsonErr := json.Unmarshal(v, &m)
 			if jsonErr != nil {

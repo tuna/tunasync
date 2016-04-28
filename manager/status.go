@@ -2,114 +2,61 @@ package manager
 
 import (
 	"encoding/json"
-	"errors"
-	"fmt"
 	"strconv"
 	"time"
 
 	. "github.com/tuna/tunasync/internal"
 )
 
-type mirrorStatus struct {
-	Name       string
-	Worker     string
-	IsMaster   bool
-	Status     SyncStatus
-	LastUpdate time.Time
-	Upstream   string
-	Size       string // approximate size
+type textTime struct {
+	time.Time
 }
 
-func (s mirrorStatus) MarshalJSON() ([]byte, error) {
-	m := map[string]interface{}{
-		"name":           s.Name,
-		"worker":         s.Worker,
-		"is_master":      s.IsMaster,
-		"status":         s.Status,
-		"last_update":    s.LastUpdate.Format("2006-01-02 15:04:05"),
-		"last_update_ts": fmt.Sprintf("%d", s.LastUpdate.Unix()),
-		"size":           s.Size,
-		"upstream":       s.Upstream,
-	}
-	return json.Marshal(m)
+func (t textTime) MarshalJSON() ([]byte, error) {
+	return json.Marshal(t.Format("2006-01-02 15:04:05"))
+}
+func (t *textTime) UnmarshalJSON(b []byte) error {
+	s := string(b)
+	t2, err := time.ParseInLocation(`"2006-01-02 15:04:05"`, s, time.Local)
+	*t = textTime{t2}
+	return err
 }
 
-func (s *mirrorStatus) UnmarshalJSON(v []byte) error {
-	var m map[string]interface{}
+type stampTime struct {
+	time.Time
+}
 
-	err := json.Unmarshal(v, &m)
+func (t stampTime) MarshalJSON() ([]byte, error) {
+	return json.Marshal(t.Unix())
+}
+func (t *stampTime) UnmarshalJSON(b []byte) error {
+	ts, err := strconv.Atoi(string(b))
 	if err != nil {
 		return err
 	}
-
-	if name, ok := m["name"]; ok {
-		if s.Name, ok = name.(string); !ok {
-			return errors.New("name should be a string")
-		}
-	} else {
-		return errors.New("key `name` does not exist in the json")
-	}
-	if isMaster, ok := m["is_master"]; ok {
-		if s.IsMaster, ok = isMaster.(bool); !ok {
-			return errors.New("is_master should be a string")
-		}
-	} else {
-		return errors.New("key `is_master` does not exist in the json")
-	}
-	if _worker, ok := m["worker"]; ok {
-		if s.Worker, ok = _worker.(string); !ok {
-			return errors.New("worker should be a string")
-		}
-	} else {
-		return errors.New("key `worker` does not exist in the json")
-	}
-	if upstream, ok := m["upstream"]; ok {
-		if s.Upstream, ok = upstream.(string); !ok {
-			return errors.New("upstream should be a string")
-		}
-	} else {
-		return errors.New("key `upstream` does not exist in the json")
-	}
-	if size, ok := m["size"]; ok {
-		if s.Size, ok = size.(string); !ok {
-			return errors.New("size should be a string")
-		}
-	} else {
-		return errors.New("key `size` does not exist in the json")
-	}
-	// tricky: status
-	if status, ok := m["status"]; ok {
-		if ss, ok := status.(string); ok {
-			err := json.Unmarshal([]byte(`"`+ss+`"`), &(s.Status))
-			if err != nil {
-				return err
-			}
-		} else {
-			return errors.New("status should be a string")
-		}
-	} else {
-		return errors.New("key `status` does not exist in the json")
-	}
-	// tricky: last update
-	if lastUpdate, ok := m["last_update_ts"]; ok {
-		if sts, ok := lastUpdate.(string); ok {
-			ts, err := strconv.Atoi(sts)
-			if err != nil {
-				return fmt.Errorf("last_update_ts should be a interger, got: %s", sts)
-			}
-			s.LastUpdate = time.Unix(int64(ts), 0)
-		} else {
-			return fmt.Errorf("last_update_ts should be a string of integer, got: %s", lastUpdate)
-		}
-	} else {
-		return errors.New("key `last_update_ts` does not exist in the json")
-	}
-	return nil
+	*t = stampTime{time.Unix(int64(ts), 0)}
+	return err
 }
 
-type workerStatus struct {
-	ID         string    `json:"id"`          // worker name
-	Token      string    `json:"token"`       // session token
-	URL        string    `json:"url"`         // worker url
-	LastOnline time.Time `json:"last_online"` // last seen
+// webMirrorStatus is the mirror status to be shown in the web page
+type webMirrorStatus struct {
+	Name         string     `json:"name"`
+	IsMaster     bool       `json:"is_master"`
+	Status       SyncStatus `json:"status"`
+	LastUpdate   textTime   `json:"last_update"`
+	LastUpdateTs stampTime  `json:"last_update_ts"`
+	Upstream     string     `json:"upstream"`
+	Size         string     `json:"size"` // approximate size
+}
+
+func convertMirrorStatus(m MirrorStatus) webMirrorStatus {
+	return webMirrorStatus{
+		Name:         m.Name,
+		IsMaster:     m.IsMaster,
+		Status:       m.Status,
+		LastUpdate:   textTime{m.LastUpdate},
+		LastUpdateTs: stampTime{m.LastUpdate},
+		Upstream:     m.Upstream,
+		Size:         m.Size,
+	}
 }
