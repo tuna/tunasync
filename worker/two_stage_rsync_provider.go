@@ -117,7 +117,7 @@ func (p *twoStageRsyncProvider) Run() error {
 		command = append(command, p.upstreamURL, p.WorkingDir())
 
 		p.cmd = newCmdJob(command, p.WorkingDir(), env)
-		if err := p.setLogFile(); err != nil {
+		if err := p.prepareLogFile(); err != nil {
 			return err
 		}
 

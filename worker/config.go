@@ -15,21 +15,6 @@ const (
 	ProvCommand
 )
 
-func (p ProviderEnum) MarshalText() ([]byte, error) {
-
-	switch p {
-	case ProvCommand:
-		return []byte("command"), nil
-	case ProvRsync:
-		return []byte("rsync"), nil
-	case ProvTwoStageRsync:
-		return []byte("two-stage-rsync"), nil
-	default:
-		return []byte{}, errors.New("Invalid ProviderEnum value")
-	}
-
-}
-
 func (p *ProviderEnum) UnmarshalText(text []byte) error {
 	s := string(text)
 	switch s {

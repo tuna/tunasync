@@ -122,7 +122,7 @@ func (p *baseProvider) Hooks() []jobHook {
 	return p.hooks
 }
 
-func (p *baseProvider) setLogFile() error {
+func (p *baseProvider) prepareLogFile() error {
 	if p.LogFile() == "/dev/null" {
 		p.cmd.SetLogFile(nil)
 		return nil
