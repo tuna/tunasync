@@ -49,6 +49,16 @@ func GetTUNASyncWorker(cfg *Config) *Worker {
 		schedule:     newScheduleQueue(),
 		mirrorStatus: make(map[string]SyncStatus),
 	}
+
+	if cfg.Manager.CACert != "" {
+		tlsConfig, err := GetTLSConfig(cfg.Manager.CACert)
+		if err != nil {
+			logger.Error("Failed to init TLS config: %s", err.Error())
+			return nil
+		}
+		w.tlsConfig = tlsConfig
+	}
+
 	w.initJobs()
 	w.makeHTTPServer()
 	tunasyncWorker = w
@@ -75,7 +85,9 @@ func (w *Worker) initProviders() {
 			logDir = c.Global.LogDir
 		}
 		if mirrorDir == "" {
-			mirrorDir = c.Global.MirrorDir
+			mirrorDir = filepath.Join(
+				c.Global.MirrorDir, mirror.Name,
+			)
 		}
 		logDir = formatLogDir(logDir, mirror)
 
@@ -87,7 +99,7 @@ func (w *Worker) initProviders() {
 				name:        mirror.Name,
 				upstreamURL: mirror.Upstream,
 				command:     mirror.Command,
-				workingDir:  filepath.Join(mirrorDir, mirror.Name),
+				workingDir:  mirrorDir,
 				logDir:      logDir,
 				logFile:     filepath.Join(logDir, "latest.log"),
 				interval:    time.Duration(mirror.Interval) * time.Minute,
@@ -102,9 +114,10 @@ func (w *Worker) initProviders() {
 			rc := rsyncConfig{
 				name:        mirror.Name,
 				upstreamURL: mirror.Upstream,
+				rsyncCmd:    mirror.Command,
 				password:    mirror.Password,
 				excludeFile: mirror.ExcludeFile,
-				workingDir:  filepath.Join(mirrorDir, mirror.Name),
+				workingDir:  mirrorDir,
 				logDir:      logDir,
 				logFile:     filepath.Join(logDir, "latest.log"),
 				useIPv6:     mirror.UseIPv6,
@@ -120,9 +133,10 @@ func (w *Worker) initProviders() {
 				name:          mirror.Name,
 				stage1Profile: mirror.Stage1Profile,
 				upstreamURL:   mirror.Upstream,
+				rsyncCmd:      mirror.Command,
 				password:      mirror.Password,
 				excludeFile:   mirror.ExcludeFile,
-				workingDir:    filepath.Join(mirrorDir, mirror.Name),
+				workingDir:    mirrorDir,
 				logDir:        logDir,
 				logFile:       filepath.Join(logDir, "latest.log"),
 				useIPv6:       mirror.UseIPv6,
@@ -303,7 +317,7 @@ func (w *Worker) registorWorker() {
 
 func (w *Worker) updateStatus(jobMsg jobMessage) {
 	url := fmt.Sprintf(
-		"%s/%s/jobs/%s",
+		"%s/workers/%s/jobs/%s",
 		w.cfg.Manager.APIBase,
 		w.Name(),
 		jobMsg.name,
@@ -329,7 +343,7 @@ func (w *Worker) fetchJobStatus() []MirrorStatus {
 	var mirrorList []MirrorStatus
 
 	url := fmt.Sprintf(
-		"%s/%s/jobs",
+		"%s/workers/%s/jobs",
 		w.cfg.Manager.APIBase,
 		w.Name(),
 	)

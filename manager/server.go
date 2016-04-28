@@ -4,6 +4,7 @@ import (
 	"crypto/tls"
 	"fmt"
 	"net/http"
+	"time"
 
 	"github.com/gin-gonic/gin"
 
@@ -153,6 +154,7 @@ func (s *Manager) listWorkers(c *gin.Context) {
 func (s *Manager) registerWorker(c *gin.Context) {
 	var _worker WorkerStatus
 	c.BindJSON(&_worker)
+	_worker.LastOnline = time.Now()
 	newWorker, err := s.adapter.CreateWorker(_worker)
 	if err != nil {
 		err := fmt.Errorf("failed to register worker: %s",
@@ -230,7 +232,7 @@ func (s *Manager) handleClientCmd(c *gin.Context) {
 	}
 
 	// post command to worker
-	_, err = postJSON(workerURL, workerCmd)
+	_, err = PostJSON(workerURL, workerCmd, s.tlsConfig)
 	if err != nil {
 		err := fmt.Errorf("post command to worker %s(%s) fail: %s", workerID, workerURL, err.Error())
 		c.Error(err)

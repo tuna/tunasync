@@ -65,7 +65,7 @@ func TestHTTPServer(t *testing.T) {
 			w := WorkerStatus{
 				ID: "test_worker1",
 			}
-			resp, err := postJSON(baseURL+"/workers", w)
+			resp, err := PostJSON(baseURL+"/workers", w, nil)
 			So(err, ShouldBeNil)
 			So(resp.StatusCode, ShouldEqual, http.StatusOK)
 
@@ -90,7 +90,7 @@ func TestHTTPServer(t *testing.T) {
 					Upstream:   "mirrors.tuna.tsinghua.edu.cn",
 					Size:       "3GB",
 				}
-				resp, err := postJSON(fmt.Sprintf("%s/workers/%s/jobs/%s", baseURL, status.Worker, status.Name), status)
+				resp, err := PostJSON(fmt.Sprintf("%s/workers/%s/jobs/%s", baseURL, status.Worker, status.Name), status, nil)
 				defer resp.Body.Close()
 				So(err, ShouldBeNil)
 				So(resp.StatusCode, ShouldEqual, http.StatusOK)
@@ -136,8 +136,8 @@ func TestHTTPServer(t *testing.T) {
 					Upstream:   "mirrors.tuna.tsinghua.edu.cn",
 					Size:       "4GB",
 				}
-				resp, err := postJSON(fmt.Sprintf("%s/workers/%s/jobs/%s",
-					baseURL, status.Worker, status.Name), status)
+				resp, err := PostJSON(fmt.Sprintf("%s/workers/%s/jobs/%s",
+					baseURL, status.Worker, status.Name), status, nil)
 				So(err, ShouldBeNil)
 				So(resp.StatusCode, ShouldEqual, http.StatusBadRequest)
 				defer resp.Body.Close()
@@ -156,7 +156,7 @@ func TestHTTPServer(t *testing.T) {
 					ID:  "test_worker_cmd",
 					URL: workerBaseURL + "/cmd",
 				}
-				resp, err := postJSON(baseURL+"/workers", w)
+				resp, err := PostJSON(baseURL+"/workers", w, nil)
 				So(err, ShouldBeNil)
 				So(resp.StatusCode, ShouldEqual, http.StatusOK)
 
@@ -177,7 +177,7 @@ func TestHTTPServer(t *testing.T) {
 						MirrorID: "ubuntu-sync",
 						WorkerID: "not_exist_worker",
 					}
-					resp, err := postJSON(baseURL+"/cmd", clientCmd)
+					resp, err := PostJSON(baseURL+"/cmd", clientCmd, nil)
 					defer resp.Body.Close()
 					So(err, ShouldBeNil)
 					So(resp.StatusCode, ShouldEqual, http.StatusBadRequest)
@@ -190,7 +190,7 @@ func TestHTTPServer(t *testing.T) {
 						WorkerID: w.ID,
 					}
 
-					resp, err := postJSON(baseURL+"/cmd", clientCmd)
+					resp, err := PostJSON(baseURL+"/cmd", clientCmd, nil)
 					defer resp.Body.Close()
 
 					So(err, ShouldBeNil)

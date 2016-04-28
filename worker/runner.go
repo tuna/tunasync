@@ -37,6 +37,14 @@ func newCmdJob(cmdAndArgs []string, workingDir string, env map[string]string) *c
 		panic("Command length should be at least 1!")
 	}
 
+	logger.Debug("Executing command %s at %s", cmdAndArgs[0], workingDir)
+	if _, err := os.Stat(workingDir); os.IsNotExist(err) {
+		logger.Debug("Making dir %s", workingDir)
+		if err = os.MkdirAll(workingDir, 0755); err != nil {
+			logger.Error("Error making dir %s", workingDir)
+		}
+	}
+
 	cmd.Dir = workingDir
 	cmd.Env = newEnviron(env, true)
 
