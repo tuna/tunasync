@@ -96,6 +96,46 @@ exclude_file = "/etc/tunasync.d/fedora-exclude.txt"
 		So(m.ExcludeFile, ShouldEqual, "/etc/tunasync.d/fedora-exclude.txt")
 
 		So(len(cfg.Mirrors), ShouldEqual, 3)
+	})
+
+	Convey("Providers can be inited from a valid config file", t, func() {
+		tmpfile, err := ioutil.TempFile("", "tunasync")
+		So(err, ShouldEqual, nil)
+		defer os.Remove(tmpfile.Name())
+
+		err = ioutil.WriteFile(tmpfile.Name(), []byte(cfgBlob), 0644)
+		So(err, ShouldEqual, nil)
+		defer tmpfile.Close()
+
+		cfg, err := loadConfig(tmpfile.Name())
+		So(err, ShouldBeNil)
+
+		providers := initProviders(cfg)
+
+		p := providers[0]
+		So(p.Name(), ShouldEqual, "AOSP")
+		So(p.LogDir(), ShouldEqual, "/var/log/tunasync/AOSP")
+		So(p.LogFile(), ShouldEqual, "/var/log/tunasync/AOSP/latest.log")
+		_, ok := p.(*cmdProvider)
+		So(ok, ShouldBeTrue)
+
+		p = providers[1]
+		So(p.Name(), ShouldEqual, "debian")
+		So(p.LogDir(), ShouldEqual, "/var/log/tunasync/debian")
+		So(p.LogFile(), ShouldEqual, "/var/log/tunasync/debian/latest.log")
+		r2p, ok := p.(*twoStageRsyncProvider)
+		So(ok, ShouldBeTrue)
+		So(r2p.stage1Profile, ShouldEqual, "debian")
+		So(r2p.WorkingDir(), ShouldEqual, "/data/mirrors/debian")
+
+		p = providers[2]
+		So(p.Name(), ShouldEqual, "fedora")
+		So(p.LogDir(), ShouldEqual, "/var/log/tunasync/fedora")
+		So(p.LogFile(), ShouldEqual, "/var/log/tunasync/fedora/latest.log")
+		rp, ok := p.(*rsyncProvider)
+		So(ok, ShouldBeTrue)
+		So(rp.WorkingDir(), ShouldEqual, "/data/mirrors/fedora")
+		So(rp.excludeFile, ShouldEqual, "/etc/tunasync.d/fedora-exclude.txt")
 
 	})
 }

@@ -68,6 +68,24 @@ func initProviders(c *Config) []mirrorProvider {
 				panic(err)
 			}
 			providers = append(providers, p)
+		case ProvTwoStageRsync:
+			rc := twoStageRsyncConfig{
+				name:          mirror.Name,
+				stage1Profile: mirror.Stage1Profile,
+				upstreamURL:   mirror.Upstream,
+				password:      mirror.Password,
+				excludeFile:   mirror.ExcludeFile,
+				workingDir:    filepath.Join(mirrorDir, mirror.Name),
+				logDir:        logDir,
+				logFile:       filepath.Join(logDir, "latest.log"),
+				useIPv6:       mirror.UseIPv6,
+				interval:      time.Duration(mirror.Interval) * time.Minute,
+			}
+			p, err := newTwoStageRsyncProvider(rc)
+			if err != nil {
+				panic(err)
+			}
+			providers = append(providers, p)
 		default:
 			panic(errors.New("Invalid mirror provider"))
 
