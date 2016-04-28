@@ -63,6 +63,10 @@ func newRsyncProvider(c rsyncConfig) (*rsyncProvider, error) {
 	return provider, nil
 }
 
+func (p *rsyncProvider) Upstream() string {
+	return p.upstreamURL
+}
+
 func (p *rsyncProvider) Run() error {
 	if err := p.Start(); err != nil {
 		return err

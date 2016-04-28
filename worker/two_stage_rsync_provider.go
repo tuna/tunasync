@@ -70,6 +70,10 @@ func newTwoStageRsyncProvider(c twoStageRsyncConfig) (*twoStageRsyncProvider, er
 	return provider, nil
 }
 
+func (p *twoStageRsyncProvider) Upstream() string {
+	return p.upstreamURL
+}
+
 func (p *twoStageRsyncProvider) Options(stage int) ([]string, error) {
 	var options []string
 	if stage == 1 {

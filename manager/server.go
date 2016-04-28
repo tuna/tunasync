@@ -47,7 +47,10 @@ func (s *managerServer) listWorkers(c *gin.Context) {
 	}
 	for _, w := range workers {
 		workerInfos = append(workerInfos,
-			WorkerInfoMsg{w.ID, w.LastOnline})
+			WorkerInfoMsg{
+				ID:         w.ID,
+				LastOnline: w.LastOnline,
+			})
 	}
 	c.JSON(http.StatusOK, workerInfos)
 }

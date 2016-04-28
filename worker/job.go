@@ -28,7 +28,7 @@ type jobMessage struct {
 type mirrorJob struct {
 	provider mirrorProvider
 	ctrlChan chan ctrlAction
-	stopped  chan empty
+	disabled chan empty
 	enabled  bool
 }
 
@@ -44,12 +44,12 @@ func (m *mirrorJob) Name() string {
 	return m.provider.Name()
 }
 
-func (m *mirrorJob) Stopped() bool {
+func (m *mirrorJob) Disabled() bool {
 	if !m.enabled {
 		return true
 	}
 	select {
-	case <-m.stopped:
+	case <-m.disabled:
 		return true
 	default:
 		return false
@@ -65,8 +65,8 @@ func (m *mirrorJob) Stopped() bool {
 // TODO: message struct for managerChan
 func (m *mirrorJob) Run(managerChan chan<- jobMessage, semaphore chan empty) error {
 
-	m.stopped = make(chan empty)
-	defer close(m.stopped)
+	m.disabled = make(chan empty)
+	defer close(m.disabled)
 
 	provider := m.provider
 
@@ -210,6 +210,7 @@ func (m *mirrorJob) Run(managerChan chan<- jobMessage, semaphore chan empty) err
 					close(kill)
 					<-jobDone
 				case jobDisable:
+					m.enabled = false
 					close(kill)
 					<-jobDone
 					return nil
@@ -234,6 +235,7 @@ func (m *mirrorJob) Run(managerChan chan<- jobMessage, semaphore chan empty) err
 		case jobStop:
 			m.enabled = false
 		case jobDisable:
+			m.enabled = false
 			return nil
 		case jobRestart:
 			m.enabled = true

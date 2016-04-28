@@ -105,7 +105,7 @@ func TestMirrorJob(t *testing.T) {
 				select {
 				case <-managerChan:
 					So(0, ShouldEqual, 1) // made this fail
-				case <-job.stopped:
+				case <-job.disabled:
 					So(0, ShouldEqual, 0)
 				}
 			})
@@ -145,7 +145,7 @@ echo $TUNASYNC_WORKING_DIR
 				So(err, ShouldBeNil)
 				So(string(loggedContent), ShouldEqual, exceptedOutput)
 				job.ctrlChan <- jobDisable
-				<-job.stopped
+				<-job.disabled
 			})
 
 			Convey("If we don't kill it", func(ctx C) {
@@ -168,7 +168,7 @@ echo $TUNASYNC_WORKING_DIR
 				So(err, ShouldBeNil)
 				So(string(loggedContent), ShouldEqual, exceptedOutput)
 				job.ctrlChan <- jobDisable
-				<-job.stopped
+				<-job.disabled
 			})
 		})
 

@@ -44,6 +44,10 @@ func newCmdProvider(c cmdConfig) (*cmdProvider, error) {
 	return provider, nil
 }
 
+func (p *cmdProvider) Upstream() string {
+	return p.upstreamURL
+}
+
 func (p *cmdProvider) Run() error {
 	if err := p.Start(); err != nil {
 		return err

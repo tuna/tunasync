@@ -21,6 +21,7 @@ const (
 type mirrorProvider interface {
 	// name
 	Name() string
+	Upstream() string
 
 	// run mirror job in background
 	Run() error

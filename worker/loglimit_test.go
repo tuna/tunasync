@@ -122,7 +122,7 @@ sleep 5
 			So(msg.status, ShouldEqual, Failed)
 
 			job.ctrlChan <- jobDisable
-			<-job.stopped
+			<-job.disabled
 
 			So(logFile, ShouldNotEqual, provider.LogFile())
 

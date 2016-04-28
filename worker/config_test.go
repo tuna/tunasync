@@ -110,16 +110,21 @@ exclude_file = "/etc/tunasync.d/fedora-exclude.txt"
 		cfg, err := loadConfig(tmpfile.Name())
 		So(err, ShouldBeNil)
 
-		providers := initProviders(cfg)
+		w := &Worker{
+			cfg:       cfg,
+			providers: make(map[string]mirrorProvider),
+		}
 
-		p := providers[0]
+		w.initProviders()
+
+		p := w.providers["AOSP"]
 		So(p.Name(), ShouldEqual, "AOSP")
 		So(p.LogDir(), ShouldEqual, "/var/log/tunasync/AOSP")
 		So(p.LogFile(), ShouldEqual, "/var/log/tunasync/AOSP/latest.log")
 		_, ok := p.(*cmdProvider)
 		So(ok, ShouldBeTrue)
 
-		p = providers[1]
+		p = w.providers["debian"]
 		So(p.Name(), ShouldEqual, "debian")
 		So(p.LogDir(), ShouldEqual, "/var/log/tunasync/debian")
 		So(p.LogFile(), ShouldEqual, "/var/log/tunasync/debian/latest.log")
@@ -128,7 +133,7 @@ exclude_file = "/etc/tunasync.d/fedora-exclude.txt"
 		So(r2p.stage1Profile, ShouldEqual, "debian")
 		So(r2p.WorkingDir(), ShouldEqual, "/data/mirrors/debian")
 
-		p = providers[2]
+		p = w.providers["fedora"]
 		So(p.Name(), ShouldEqual, "fedora")
 		So(p.LogDir(), ShouldEqual, "/var/log/tunasync/fedora")
 		So(p.LogFile(), ShouldEqual, "/var/log/tunasync/fedora/latest.log")

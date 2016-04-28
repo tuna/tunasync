@@ -4,7 +4,7 @@ import "time"
 
 // A StatusUpdateMsg represents a msg when
 // a worker has done syncing
-type StatusUpdateMsg struct {
+type MirrorStatus struct {
 	Name       string     `json:"name"`
 	Worker     string     `json:"worker"`
 	IsMaster   bool       `json:"is_master"`
@@ -19,7 +19,9 @@ type StatusUpdateMsg struct {
 // a worker, and sent from the manager to clients.
 type WorkerInfoMsg struct {
 	ID         string    `json:"id"`
-	LastOnline time.Time `json:"last_online"`
+	URL        string    `json:"url"`         // worker url
+	Token      string    `json:"token"`       // session token
+	LastOnline time.Time `json:"last_online"` // last seen
 }
 
 type CmdVerb uint8
