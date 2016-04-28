@@ -13,11 +13,11 @@ type textTime struct {
 }
 
 func (t textTime) MarshalJSON() ([]byte, error) {
-	return json.Marshal(t.Format("2006-01-02 15:04:05"))
+	return json.Marshal(t.Format("2006-01-02 15:04:05 -0700"))
 }
 func (t *textTime) UnmarshalJSON(b []byte) error {
 	s := string(b)
-	t2, err := time.ParseInLocation(`"2006-01-02 15:04:05"`, s, time.Local)
+	t2, err := time.Parse(`"2006-01-02 15:04:05 -0700"`, s)
 	*t = textTime{t2}
 	return err
 }

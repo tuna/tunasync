@@ -12,7 +12,7 @@ import (
 
 func TestStatus(t *testing.T) {
 	Convey("status json ser-de should work", t, func() {
-		tz := "Asia/Shanghai"
+		tz := "Asia/Tokyo"
 		loc, err := time.LoadLocation(tz)
 		So(err, ShouldBeNil)
 		t := time.Date(2016, time.April, 16, 23, 8, 10, 0, loc)
@@ -27,7 +27,7 @@ func TestStatus(t *testing.T) {
 
 		b, err := json.Marshal(m)
 		So(err, ShouldBeNil)
-		// fmt.Println(string(b))
+		//fmt.Println(string(b))
 		var m2 webMirrorStatus
 		err = json.Unmarshal(b, &m2)
 		So(err, ShouldBeNil)
