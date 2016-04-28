@@ -21,6 +21,13 @@ interval = 240
 api_base = "https://127.0.0.1:5000"
 token = "some_token"
 
+[server]
+hostname = "worker1.example.com"
+listen_addr = "127.0.0.1"
+listen_port = 6000
+ssl_cert = "/etc/tunasync.d/worker1.cert"
+ssl_key = "/etc/tunasync.d/worker1.key"
+
 [[mirrors]]
 name = "AOSP"
 provider = "command"
@@ -68,6 +75,7 @@ exclude_file = "/etc/tunasync.d/fedora-exclude.txt"
 		So(cfg.Global.MirrorDir, ShouldEqual, "/data/mirrors")
 
 		So(cfg.Manager.APIBase, ShouldEqual, "https://127.0.0.1:5000")
+		So(cfg.Server.Hostname, ShouldEqual, "worker1.example.com")
 
 		m := cfg.Mirrors[0]
 		So(m.Name, ShouldEqual, "AOSP")

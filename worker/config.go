@@ -49,6 +49,7 @@ func (p *ProviderEnum) UnmarshalText(text []byte) error {
 type Config struct {
 	Global  globalConfig   `toml:"global"`
 	Manager managerConfig  `toml:"manager"`
+	Server  serverConfig   `toml:"server"`
 	Mirrors []mirrorConfig `toml:"mirrors"`
 }
 
@@ -64,6 +65,14 @@ type managerConfig struct {
 	APIBase string `toml:"api_base"`
 	CACert  string `toml:"ca_cert"`
 	Token   string `toml:"token"`
+}
+
+type serverConfig struct {
+	Hostname string `toml:"hostname"`
+	Addr     string `toml:"listen_addr"`
+	Port     int    `toml:"listen_port"`
+	SSLCert  string `toml:"ssl_cert"`
+	SSLKey   string `toml:"ssl_key"`
 }
 
 type mirrorConfig struct {
