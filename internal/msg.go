@@ -1,6 +1,9 @@
 package internal
 
-import "time"
+import (
+	"fmt"
+	"time"
+)
 
 // A StatusUpdateMsg represents a msg when
 // a worker has done syncing
@@ -34,12 +37,35 @@ const (
 	CmdPing            // ensure the goroutine is alive
 )
 
+func (c CmdVerb) String() string {
+	switch c {
+	case CmdStart:
+		return "start"
+	case CmdStop:
+		return "stop"
+	case CmdDisable:
+		return "disable"
+	case CmdRestart:
+		return "restart"
+	case CmdPing:
+		return "ping"
+	}
+	return "unknown"
+}
+
 // A WorkerCmd is the command message send from the
 // manager to a worker
 type WorkerCmd struct {
 	Cmd      CmdVerb  `json:"cmd"`
 	MirrorID string   `json:"mirror_id"`
 	Args     []string `json:"args"`
+}
+
+func (c WorkerCmd) String() string {
+	if len(c.Args) > 0 {
+		return fmt.Sprintf("%v (%s, %v)", c.Cmd, c.MirrorID, c.Args)
+	}
+	return fmt.Sprintf("%v (%s)", c.Cmd, c.MirrorID)
 }
 
 // A ClientCmd is the command message send from client

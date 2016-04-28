@@ -44,6 +44,7 @@ func (q *scheduleQueue) Pop() *mirrorJob {
 	defer first.Close()
 
 	t := first.Key().(time.Time)
+	// logger.Debug("First job should run @%v", t)
 	if t.Before(time.Now()) {
 		job := first.Value().(*mirrorJob)
 		q.list.Delete(first.Key())

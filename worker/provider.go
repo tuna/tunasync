@@ -85,6 +85,7 @@ func (p *baseProvider) Context() *Context {
 }
 
 func (p *baseProvider) Interval() time.Duration {
+	// logger.Debug("interval for %s: %v", p.Name(), p.interval)
 	return p.interval
 }
 

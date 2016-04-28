@@ -20,40 +20,33 @@ const (
 )
 
 type jobMessage struct {
-	status tunasync.SyncStatus
-	name   string
-	msg    string
+	status   tunasync.SyncStatus
+	name     string
+	msg      string
+	schedule bool
 }
 
 type mirrorJob struct {
-	provider mirrorProvider
-	ctrlChan chan ctrlAction
-	disabled chan empty
-	enabled  bool
+	provider   mirrorProvider
+	ctrlChan   chan ctrlAction
+	disabled   chan empty
+	started    bool
+	schedule   bool
+	isDisabled bool
 }
 
 func newMirrorJob(provider mirrorProvider) *mirrorJob {
 	return &mirrorJob{
-		provider: provider,
-		ctrlChan: make(chan ctrlAction, 1),
-		enabled:  false,
+		provider:   provider,
+		ctrlChan:   make(chan ctrlAction, 1),
+		started:    false,
+		schedule:   false,
+		isDisabled: false,
 	}
 }
 
 func (m *mirrorJob) Name() string {
 	return m.provider.Name()
-}
-
-func (m *mirrorJob) Disabled() bool {
-	if !m.enabled {
-		return true
-	}
-	select {
-	case <-m.disabled:
-		return true
-	default:
-		return false
-	}
 }
 
 // runMirrorJob is the goroutine where syncing job runs in
@@ -66,7 +59,11 @@ func (m *mirrorJob) Disabled() bool {
 func (m *mirrorJob) Run(managerChan chan<- jobMessage, semaphore chan empty) error {
 
 	m.disabled = make(chan empty)
-	defer close(m.disabled)
+	defer func() {
+		close(m.disabled)
+		m.schedule = false
+		m.isDisabled = true
+	}()
 
 	provider := m.provider
 
@@ -81,6 +78,7 @@ func (m *mirrorJob) Run(managerChan chan<- jobMessage, semaphore chan empty) err
 				managerChan <- jobMessage{
 					tunasync.Failed, m.Name(),
 					fmt.Sprintf("error exec hook %s: %s", hookname, err.Error()),
+					false,
 				}
 				return err
 			}
@@ -91,7 +89,7 @@ func (m *mirrorJob) Run(managerChan chan<- jobMessage, semaphore chan empty) err
 	runJobWrapper := func(kill <-chan empty, jobDone chan<- empty) error {
 		defer close(jobDone)
 
-		managerChan <- jobMessage{tunasync.PreSyncing, m.Name(), ""}
+		managerChan <- jobMessage{tunasync.PreSyncing, m.Name(), "", false}
 		logger.Info("start syncing: %s", m.Name())
 
 		Hooks := provider.Hooks()
@@ -118,7 +116,7 @@ func (m *mirrorJob) Run(managerChan chan<- jobMessage, semaphore chan empty) err
 			}
 
 			// start syncing
-			managerChan <- jobMessage{tunasync.Syncing, m.Name(), ""}
+			managerChan <- jobMessage{tunasync.Syncing, m.Name(), "", false}
 
 			var syncErr error
 			syncDone := make(chan error, 1)
@@ -152,7 +150,7 @@ func (m *mirrorJob) Run(managerChan chan<- jobMessage, semaphore chan empty) err
 			if syncErr == nil {
 				// syncing success
 				logger.Info("succeeded syncing %s", m.Name())
-				managerChan <- jobMessage{tunasync.Success, m.Name(), ""}
+				managerChan <- jobMessage{tunasync.Success, m.Name(), "", true}
 				// post-success hooks
 				err := runHooks(rHooks, func(h jobHook) error { return h.postSuccess() }, "post-success")
 				if err != nil {
@@ -164,7 +162,7 @@ func (m *mirrorJob) Run(managerChan chan<- jobMessage, semaphore chan empty) err
 
 			// syncing failed
 			logger.Warning("failed syncing %s: %s", m.Name(), syncErr.Error())
-			managerChan <- jobMessage{tunasync.Failed, m.Name(), syncErr.Error()}
+			managerChan <- jobMessage{tunasync.Failed, m.Name(), syncErr.Error(), retry == maxRetry-1}
 
 			// post-fail hooks
 			logger.Debug("post-fail hooks")
@@ -194,7 +192,7 @@ func (m *mirrorJob) Run(managerChan chan<- jobMessage, semaphore chan empty) err
 	}
 
 	for {
-		if m.enabled {
+		if m.started {
 			kill := make(chan empty)
 			jobDone := make(chan empty)
 			go runJob(kill, jobDone)
@@ -206,21 +204,24 @@ func (m *mirrorJob) Run(managerChan chan<- jobMessage, semaphore chan empty) err
 			case ctrl := <-m.ctrlChan:
 				switch ctrl {
 				case jobStop:
-					m.enabled = false
+					m.schedule = false
+					m.started = false
 					close(kill)
 					<-jobDone
 				case jobDisable:
-					m.enabled = false
+					m.schedule = false
+					m.isDisabled = true
+					m.started = false
 					close(kill)
 					<-jobDone
 					return nil
 				case jobRestart:
-					m.enabled = true
+					m.started = true
 					close(kill)
 					<-jobDone
 					continue
 				case jobStart:
-					m.enabled = true
+					m.started = true
 					goto _wait_for_job
 				default:
 					// TODO: implement this
@@ -233,14 +234,21 @@ func (m *mirrorJob) Run(managerChan chan<- jobMessage, semaphore chan empty) err
 		ctrl := <-m.ctrlChan
 		switch ctrl {
 		case jobStop:
-			m.enabled = false
+			m.schedule = false
+			m.started = false
 		case jobDisable:
-			m.enabled = false
+			m.schedule = false
+			m.isDisabled = true
+			m.started = false
 			return nil
 		case jobRestart:
-			m.enabled = true
+			m.schedule = true
+			m.isDisabled = false
+			m.started = true
 		case jobStart:
-			m.enabled = true
+			m.schedule = true
+			m.isDisabled = false
+			m.started = true
 		default:
 			// TODO
 			return nil

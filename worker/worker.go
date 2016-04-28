@@ -28,8 +28,6 @@ type Worker struct {
 	schedule   *scheduleQueue
 	httpServer *gin.Engine
 	tlsConfig  *tls.Config
-
-	mirrorStatus map[string]SyncStatus
 }
 
 // GetTUNASyncWorker returns a singalton worker
@@ -46,8 +44,7 @@ func GetTUNASyncWorker(cfg *Config) *Worker {
 		managerChan: make(chan jobMessage, 32),
 		semaphore:   make(chan empty, cfg.Global.Concurrent),
 
-		schedule:     newScheduleQueue(),
-		mirrorStatus: make(map[string]SyncStatus),
+		schedule: newScheduleQueue(),
 	}
 
 	if cfg.Manager.CACert != "" {
@@ -88,6 +85,9 @@ func (w *Worker) initProviders() {
 			mirrorDir = filepath.Join(
 				c.Global.MirrorDir, mirror.Name,
 			)
+		}
+		if mirror.Interval == 0 {
+			mirror.Interval = c.Global.Interval
 		}
 		logDir = formatLogDir(logDir, mirror)
 
@@ -163,8 +163,6 @@ func (w *Worker) initJobs() {
 
 	for name, provider := range w.providers {
 		w.jobs[name] = newMirrorJob(provider)
-		go w.jobs[name].Run(w.managerChan, w.semaphore)
-		w.mirrorStatus[name] = Paused
 	}
 }
 
@@ -185,24 +183,40 @@ func (w *Worker) makeHTTPServer() {
 			c.JSON(http.StatusNotFound, gin.H{"msg": fmt.Sprintf("Mirror ``%s'' not found", cmd.MirrorID)})
 			return
 		}
+		logger.Info("Received command: %v", cmd)
 		// if job disabled, start them first
 		switch cmd.Cmd {
 		case CmdStart, CmdRestart:
-			if job.Disabled() {
+			if job.isDisabled {
 				go job.Run(w.managerChan, w.semaphore)
 			}
 		}
 		switch cmd.Cmd {
 		case CmdStart:
+			job.schedule = true
+			job.isDisabled = false
 			job.ctrlChan <- jobStart
-		case CmdStop:
-			job.ctrlChan <- jobStop
 		case CmdRestart:
+			job.schedule = true
+			job.isDisabled = false
 			job.ctrlChan <- jobRestart
+		case CmdStop:
+			// if job is disabled, no goroutine would be there
+			// receiving this signal
+			if !job.isDisabled {
+				job.schedule = false
+				job.isDisabled = false
+				w.schedule.Remove(job.Name())
+				job.ctrlChan <- jobStop
+			}
 		case CmdDisable:
-			w.schedule.Remove(job.Name())
-			job.ctrlChan <- jobDisable
-			<-job.disabled
+			if !job.isDisabled {
+				job.schedule = false
+				job.isDisabled = true
+				w.schedule.Remove(job.Name())
+				job.ctrlChan <- jobDisable
+				<-job.disabled
+			}
 		case CmdPing:
 			job.ctrlChan <- jobStart
 		default:
@@ -243,15 +257,32 @@ func (w *Worker) runSchedule() {
 	for name := range w.jobs {
 		unset[name] = true
 	}
+	// Fetch mirror list stored in the manager
+	// put it on the scheduled time
+	// if it's disabled, ignore it
 	for _, m := range mirrorList {
 		if job, ok := w.jobs[m.Name]; ok {
-			stime := m.LastUpdate.Add(job.provider.Interval())
-			w.schedule.AddJob(stime, job)
 			delete(unset, m.Name)
+			switch m.Status {
+			case Paused:
+				go job.Run(w.managerChan, w.semaphore)
+				job.schedule = false
+				continue
+			case Disabled:
+				job.schedule = false
+				job.isDisabled = true
+				continue
+			default:
+				go job.Run(w.managerChan, w.semaphore)
+				stime := m.LastUpdate.Add(job.provider.Interval())
+				logger.Debug("Scheduling job %s @%s", job.Name(), stime.Format("2006-01-02 15:04:05"))
+				w.schedule.AddJob(stime, job)
+			}
 		}
 	}
 	for name := range unset {
 		job := w.jobs[name]
+		go job.Run(w.managerChan, w.semaphore)
 		w.schedule.AddJob(time.Now(), job)
 	}
 
@@ -259,22 +290,26 @@ func (w *Worker) runSchedule() {
 		select {
 		case jobMsg := <-w.managerChan:
 			// got status update from job
-			w.updateStatus(jobMsg)
-			status := w.mirrorStatus[jobMsg.name]
-			if status == Disabled || status == Paused {
+			job := w.jobs[jobMsg.name]
+			if !job.schedule {
+				logger.Info("Job %s disabled/paused, skip adding new schedule", jobMsg.name)
 				continue
 			}
-			w.mirrorStatus[jobMsg.name] = jobMsg.status
-			switch jobMsg.status {
-			case Success, Failed:
-				job := w.jobs[jobMsg.name]
-				w.schedule.AddJob(
-					time.Now().Add(job.provider.Interval()),
-					job,
+
+			w.updateStatus(jobMsg)
+
+			if jobMsg.schedule {
+				schedTime := time.Now().Add(job.provider.Interval())
+				logger.Info(
+					"Next scheduled time for %s: %s",
+					job.Name(),
+					schedTime.Format("2006-01-02 15:04:05"),
 				)
+				w.schedule.AddJob(schedTime, job)
 			}
 
-		case <-time.Tick(10 * time.Second):
+		case <-time.Tick(5 * time.Second):
+			// check schedule every 5 seconds
 			if job := w.schedule.Pop(); job != nil {
 				job.ctrlChan <- jobStart
 			}
@@ -324,14 +359,13 @@ func (w *Worker) updateStatus(jobMsg jobMessage) {
 	)
 	p := w.providers[jobMsg.name]
 	smsg := MirrorStatus{
-		Name:       jobMsg.name,
-		Worker:     w.cfg.Global.Name,
-		IsMaster:   true,
-		Status:     jobMsg.status,
-		LastUpdate: time.Now(),
-		Upstream:   p.Upstream(),
-		Size:       "unknown",
-		ErrorMsg:   jobMsg.msg,
+		Name:     jobMsg.name,
+		Worker:   w.cfg.Global.Name,
+		IsMaster: true,
+		Status:   jobMsg.status,
+		Upstream: p.Upstream(),
+		Size:     "unknown",
+		ErrorMsg: jobMsg.msg,
 	}
 
 	if _, err := PostJSON(url, smsg, w.tlsConfig); err != nil {

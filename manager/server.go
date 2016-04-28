@@ -194,6 +194,24 @@ func (s *Manager) updateJobOfWorker(c *gin.Context) {
 	var status MirrorStatus
 	c.BindJSON(&status)
 	mirrorName := status.Name
+
+	curStatus, err := s.adapter.GetMirrorStatus(workerID, mirrorName)
+	if err != nil {
+		err := fmt.Errorf("failed to get job %s of worker %s: %s",
+			mirrorName, workerID, err.Error(),
+		)
+		c.Error(err)
+		s.returnErrJSON(c, http.StatusInternalServerError, err)
+		return
+	}
+
+	// Only successful syncing needs last_update
+	if status.Status == Success {
+		status.LastUpdate = time.Now()
+	} else {
+		status.LastUpdate = curStatus.LastUpdate
+	}
+
 	newStatus, err := s.adapter.UpdateMirrorStatus(workerID, mirrorName, status)
 	if err != nil {
 		err := fmt.Errorf("failed to update job %s of worker %s: %s",
@@ -229,6 +247,22 @@ func (s *Manager) handleClientCmd(c *gin.Context) {
 		Cmd:      clientCmd.Cmd,
 		MirrorID: clientCmd.MirrorID,
 		Args:     clientCmd.Args,
+	}
+
+	// update job status, even if the job did not disable successfully,
+	// this status should be set as disabled
+	curStat, _ := s.adapter.GetMirrorStatus(clientCmd.WorkerID, clientCmd.MirrorID)
+	changed := false
+	switch clientCmd.Cmd {
+	case CmdDisable:
+		curStat.Status = Disabled
+		changed = true
+	case CmdStop:
+		curStat.Status = Paused
+		changed = true
+	}
+	if changed {
+		s.adapter.UpdateMirrorStatus(clientCmd.WorkerID, clientCmd.MirrorID, curStat)
 	}
 
 	// post command to worker
