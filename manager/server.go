@@ -1,6 +1,7 @@
 package manager
 
 import (
+	"crypto/tls"
 	"fmt"
 	"net/http"
 
@@ -14,13 +15,99 @@ const (
 	_infoKey  = "message"
 )
 
-type managerServer struct {
-	*gin.Engine
-	adapter dbAdapter
+var manager *Manager
+
+// A Manager represents a manager server
+type Manager struct {
+	cfg       *Config
+	engine    *gin.Engine
+	adapter   dbAdapter
+	tlsConfig *tls.Config
+}
+
+// GetTUNASyncManager returns the manager from config
+func GetTUNASyncManager(cfg *Config) *Manager {
+	if manager != nil {
+		return manager
+	}
+
+	// create gin engine
+	if !cfg.Debug {
+		gin.SetMode(gin.ReleaseMode)
+	}
+	s := &Manager{
+		cfg:       cfg,
+		engine:    gin.Default(),
+		adapter:   nil,
+		tlsConfig: nil,
+	}
+
+	if cfg.Files.CACert != "" {
+		tlsConfig, err := GetTLSConfig(cfg.Files.CACert)
+		if err != nil {
+			logger.Error("Error initializing TLS config: %s", err.Error())
+			return nil
+		}
+		s.tlsConfig = tlsConfig
+	}
+
+	if cfg.Files.DBFile != "" {
+		adapter, err := makeDBAdapter(cfg.Files.DBType, cfg.Files.DBFile)
+		if err != nil {
+			logger.Error("Error initializing DB adapter: %s", err.Error())
+			return nil
+		}
+		s.setDBAdapter(adapter)
+	}
+
+	// common log middleware
+	s.engine.Use(contextErrorLogger)
+
+	s.engine.GET("/ping", func(c *gin.Context) {
+		c.JSON(http.StatusOK, gin.H{_infoKey: "pong"})
+	})
+	// list jobs, status page
+	s.engine.GET("/jobs", s.listAllJobs)
+
+	// list workers
+	s.engine.GET("/workers", s.listWorkers)
+	// worker online
+	s.engine.POST("/workers", s.registerWorker)
+
+	// workerID should be valid in this route group
+	workerValidateGroup := s.engine.Group("/workers", s.workerIDValidator)
+	// get job list
+	workerValidateGroup.GET(":id/jobs", s.listJobsOfWorker)
+	// post job status
+	workerValidateGroup.POST(":id/jobs/:job", s.updateJobOfWorker)
+
+	// for tunasynctl to post commands
+	s.engine.POST("/cmd", s.handleClientCmd)
+
+	manager = s
+	return s
+}
+
+func (s *Manager) setDBAdapter(adapter dbAdapter) {
+	s.adapter = adapter
+}
+
+// Run runs the manager server forever
+func (s *Manager) Run() {
+	addr := fmt.Sprintf("%s:%d", s.cfg.Server.Addr, s.cfg.Server.Port)
+	if s.cfg.Server.SSLCert == "" && s.cfg.Server.SSLKey == "" {
+		if err := s.engine.Run(addr); err != nil {
+			panic(err)
+		}
+	} else {
+		if err := s.engine.RunTLS(addr, s.cfg.Server.SSLCert, s.cfg.Server.SSLKey); err != nil {
+			panic(err)
+		}
+	}
 }
 
 // listAllJobs repond with all jobs of specified workers
-func (s *managerServer) listAllJobs(c *gin.Context) {
+func (s *Manager) listAllJobs(c *gin.Context) {
 	mirrorStatusList, err := s.adapter.ListAllMirrorStatus()
 	if err != nil {
 		err := fmt.Errorf("failed to list all mirror status: %s",
@@ -41,7 +128,7 @@ func (s *managerServer) listAllJobs(c *gin.Context) {
 }
 
 // listWrokers respond with informations of all the workers
-func (s *managerServer) listWorkers(c *gin.Context) {
+func (s *Manager) listWorkers(c *gin.Context) {
 	var workerInfos []WorkerStatus
 	workers, err := s.adapter.ListWorkers()
 	if err != nil {
@@ -63,7 +150,7 @@ func (s *managerServer) listWorkers(c *gin.Context) {
 }
 
 // registerWorker register an newly-online worker
-func (s *managerServer) registerWorker(c *gin.Context) {
+func (s *Manager) registerWorker(c *gin.Context) {
 	var _worker WorkerStatus
 	c.BindJSON(&_worker)
 	newWorker, err := s.adapter.CreateWorker(_worker)
@@ -80,7 +167,7 @@ func (s *managerServer) registerWorker(c *gin.Context) {
 }
 
 // listJobsOfWorker respond with all the jobs of the specified worker
-func (s *managerServer) listJobsOfWorker(c *gin.Context) {
+func (s *Manager) listJobsOfWorker(c *gin.Context) {
 	workerID := c.Param("id")
 	mirrorStatusList, err := s.adapter.ListMirrorStatus(workerID)
 	if err != nil {
@@ -94,13 +181,13 @@ func (s *managerServer) listJobsOfWorker(c *gin.Context) {
 	c.JSON(http.StatusOK, mirrorStatusList)
 }
 
-func (s *managerServer) returnErrJSON(c *gin.Context, code int, err error) {
+func (s *Manager) returnErrJSON(c *gin.Context, code int, err error) {
 	c.JSON(code, gin.H{
 		_errorKey: err.Error(),
 	})
 }
 
-func (s *managerServer) updateJobOfWorker(c *gin.Context) {
+func (s *Manager) updateJobOfWorker(c *gin.Context) {
 	workerID := c.Param("id")
 	var status MirrorStatus
 	c.BindJSON(&status)
@@ -117,7 +204,7 @@ func (s *managerServer) updateJobOfWorker(c *gin.Context) {
 	c.JSON(http.StatusOK, newStatus)
 }
 
-func (s *managerServer) handleClientCmd(c *gin.Context) {
+func (s *Manager) handleClientCmd(c *gin.Context) {
 	var clientCmd ClientCmd
 	c.BindJSON(&clientCmd)
 	workerID := clientCmd.WorkerID
@@ -152,45 +239,4 @@ func (s *managerServer) handleClientCmd(c *gin.Context) {
 	}
 	// TODO: check response for success
 	c.JSON(http.StatusOK, gin.H{_infoKey: "successfully send command to worker " + workerID})
-}
-
-func (s *managerServer) setDBAdapter(adapter dbAdapter) {
-	s.adapter = adapter
-}
-
-func makeHTTPServer(debug bool) *managerServer {
-	// create gin engine
-	if !debug {
-		gin.SetMode(gin.ReleaseMode)
-	}
-	s := &managerServer{
-		gin.Default(),
-		nil,
-	}
-
-	// common log middleware
-	s.Use(contextErrorLogger)
-
-	s.GET("/ping", func(c *gin.Context) {
-		c.JSON(http.StatusOK, gin.H{_infoKey: "pong"})
-	})
-	// list jobs, status page
-	s.GET("/jobs", s.listAllJobs)
-
-	// list workers
-	s.GET("/workers", s.listWorkers)
-	// worker online
-	s.POST("/workers", s.registerWorker)
-
-	// workerID should be valid in this route group
-	workerValidateGroup := s.Group("/workers", s.workerIDValidator)
-	// get job list
-	workerValidateGroup.GET(":id/jobs", s.listJobsOfWorker)
-	// post job status
-	workerValidateGroup.POST(":id/jobs/:job", s.updateJobOfWorker)
-
-	// for tunasynctl to post commands
-	s.POST("/cmd", s.handleClientCmd)
-
-	return s
 }

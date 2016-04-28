@@ -23,7 +23,7 @@ const (
 func TestHTTPServer(t *testing.T) {
 	Convey("HTTP server should work", t, func(ctx C) {
 		InitLogger(true, true, false)
-		s := makeHTTPServer(false)
+		s := GetTUNASyncManager(&Config{Debug: false})
 		So(s, ShouldNotBeNil)
 		s.setDBAdapter(&mockDBAdapter{
 			workerStore: map[string]WorkerStatus{
@@ -35,7 +35,7 @@ func TestHTTPServer(t *testing.T) {
 		port := rand.Intn(10000) + 20000
 		baseURL := fmt.Sprintf("http://127.0.0.1:%d", port)
 		go func() {
-			s.Run(fmt.Sprintf("127.0.0.1:%d", port))
+			s.engine.Run(fmt.Sprintf("127.0.0.1:%d", port))
 		}()
 		time.Sleep(50 * time.Microsecond)
 		resp, err := http.Get(baseURL + "/ping")

@@ -20,7 +20,7 @@ func contextErrorLogger(c *gin.Context) {
 	c.Next()
 }
 
-func (s *managerServer) workerIDValidator(c *gin.Context) {
+func (s *Manager) workerIDValidator(c *gin.Context) {
 	workerID := c.Param("id")
 	_, err := s.adapter.GetWorker(workerID)
 	if err != nil {
