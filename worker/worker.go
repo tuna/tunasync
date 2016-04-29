@@ -2,7 +2,6 @@ package worker
 
 import (
 	"bytes"
-	"crypto/tls"
 	"errors"
 	"fmt"
 	"html/template"
@@ -26,8 +25,8 @@ type Worker struct {
 	semaphore   chan empty
 
 	schedule   *scheduleQueue
-	httpServer *gin.Engine
-	tlsConfig  *tls.Config
+	httpEngine *gin.Engine
+	httpClient *http.Client
 }
 
 // GetTUNASyncWorker returns a singalton worker
@@ -48,12 +47,12 @@ func GetTUNASyncWorker(cfg *Config) *Worker {
 	}
 
 	if cfg.Manager.CACert != "" {
-		tlsConfig, err := GetTLSConfig(cfg.Manager.CACert)
+		httpClient, err := CreateHTTPClient(cfg.Manager.CACert)
 		if err != nil {
-			logger.Error("Failed to init TLS config: %s", err.Error())
+			logger.Error("Error initializing HTTP client: %s", err.Error())
 			return nil
 		}
-		w.tlsConfig = tlsConfig
+		w.httpClient = httpClient
 	}
 
 	w.initJobs()
@@ -227,18 +226,25 @@ func (w *Worker) makeHTTPServer() {
 		c.JSON(http.StatusOK, gin.H{"msg": "OK"})
 	})
 
-	w.httpServer = s
+	w.httpEngine = s
 }
 
 func (w *Worker) runHTTPServer() {
 	addr := fmt.Sprintf("%s:%d", w.cfg.Server.Addr, w.cfg.Server.Port)
 
+	httpServer := &http.Server{
+		Addr:         addr,
+		Handler:      w.httpEngine,
+		ReadTimeout:  10 * time.Second,
+		WriteTimeout: 10 * time.Second,
+	}
+
 	if w.cfg.Server.SSLCert == "" && w.cfg.Server.SSLKey == "" {
-		if err := w.httpServer.Run(addr); err != nil {
+		if err := httpServer.ListenAndServe(); err != nil {
 			panic(err)
 		}
 	} else {
-		if err := w.httpServer.RunTLS(addr, w.cfg.Server.SSLCert, w.cfg.Server.SSLKey); err != nil {
+		if err := httpServer.ListenAndServeTLS(w.cfg.Server.SSLCert, w.cfg.Server.SSLKey); err != nil {
 			panic(err)
 		}
 	}
@@ -345,7 +351,7 @@ func (w *Worker) registorWorker() {
 		URL: w.URL(),
 	}
 
-	if _, err := PostJSON(url, msg, w.tlsConfig); err != nil {
+	if _, err := PostJSON(url, msg, w.httpClient); err != nil {
 		logger.Error("Failed to register worker")
 	}
 }
@@ -368,7 +374,7 @@ func (w *Worker) updateStatus(jobMsg jobMessage) {
 		ErrorMsg: jobMsg.msg,
 	}
 
-	if _, err := PostJSON(url, smsg, w.tlsConfig); err != nil {
+	if _, err := PostJSON(url, smsg, w.httpClient); err != nil {
 		logger.Error("Failed to update mirror(%s) status: %s", jobMsg.name, err.Error())
 	}
 }
@@ -382,7 +388,7 @@ func (w *Worker) fetchJobStatus() []MirrorStatus {
 		w.Name(),
 	)
 
-	if _, err := GetJSON(url, &mirrorList, w.tlsConfig); err != nil {
+	if _, err := GetJSON(url, &mirrorList, w.httpClient); err != nil {
 		logger.Error("Failed to fetch job status: %s", err.Error())
 	}
 

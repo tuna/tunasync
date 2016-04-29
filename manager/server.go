@@ -1,7 +1,6 @@
 package manager
 
 import (
-	"crypto/tls"
 	"fmt"
 	"net/http"
 	"time"
@@ -20,10 +19,10 @@ var manager *Manager
 
 // A Manager represents a manager server
 type Manager struct {
-	cfg       *Config
-	engine    *gin.Engine
-	adapter   dbAdapter
-	tlsConfig *tls.Config
+	cfg        *Config
+	engine     *gin.Engine
+	adapter    dbAdapter
+	httpClient *http.Client
 }
 
 // GetTUNASyncManager returns the manager from config
@@ -37,19 +36,18 @@ func GetTUNASyncManager(cfg *Config) *Manager {
 		gin.SetMode(gin.ReleaseMode)
 	}
 	s := &Manager{
-		cfg:       cfg,
-		engine:    gin.Default(),
-		adapter:   nil,
-		tlsConfig: nil,
+		cfg:     cfg,
+		engine:  gin.Default(),
+		adapter: nil,
 	}
 
 	if cfg.Files.CACert != "" {
-		tlsConfig, err := GetTLSConfig(cfg.Files.CACert)
+		httpClient, err := CreateHTTPClient(cfg.Files.CACert)
 		if err != nil {
-			logger.Error("Error initializing TLS config: %s", err.Error())
+			logger.Error("Error initializing HTTP client: %s", err.Error())
 			return nil
 		}
-		s.tlsConfig = tlsConfig
+		s.httpClient = httpClient
 	}
 
 	if cfg.Files.DBFile != "" {
@@ -96,12 +94,20 @@ func (s *Manager) setDBAdapter(adapter dbAdapter) {
 // Run runs the manager server forever
 func (s *Manager) Run() {
 	addr := fmt.Sprintf("%s:%d", s.cfg.Server.Addr, s.cfg.Server.Port)
+
+	httpServer := &http.Server{
+		Addr:         addr,
+		Handler:      s.engine,
+		ReadTimeout:  10 * time.Second,
+		WriteTimeout: 10 * time.Second,
+	}
+
 	if s.cfg.Server.SSLCert == "" && s.cfg.Server.SSLKey == "" {
-		if err := s.engine.Run(addr); err != nil {
+		if err := httpServer.ListenAndServe(); err != nil {
 			panic(err)
 		}
 	} else {
-		if err := s.engine.RunTLS(addr, s.cfg.Server.SSLCert, s.cfg.Server.SSLKey); err != nil {
+		if err := httpServer.ListenAndServeTLS(s.cfg.Server.SSLCert, s.cfg.Server.SSLKey); err != nil {
 			panic(err)
 		}
 	}
@@ -258,7 +264,7 @@ func (s *Manager) handleClientCmd(c *gin.Context) {
 	}
 
 	// post command to worker
-	_, err = PostJSON(workerURL, workerCmd, s.tlsConfig)
+	_, err = PostJSON(workerURL, workerCmd, s.httpClient)
 	if err != nil {
 		err := fmt.Errorf("post command to worker %s(%s) fail: %s", workerID, workerURL, err.Error())
 		c.Error(err)

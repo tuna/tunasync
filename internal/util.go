@@ -8,6 +8,7 @@ import (
 	"errors"
 	"io/ioutil"
 	"net/http"
+	"time"
 )
 
 // GetTLSConfig generate tls.Config from CAFile
@@ -28,20 +29,34 @@ func GetTLSConfig(CAFile string) (*tls.Config, error) {
 	return tlsConfig, nil
 }
 
-// PostJSON posts json object to url
-func PostJSON(url string, obj interface{}, tlsConfig *tls.Config) (*http.Response, error) {
-	var client *http.Client
-	if tlsConfig == nil {
-		client = &http.Client{}
-	} else {
-		tr := &http.Transport{
-			TLSClientConfig: tlsConfig,
-		}
-		client = &http.Client{
-			Transport: tr,
+// CreateHTTPClient returns a http.Client
+func CreateHTTPClient(CAFile string) (*http.Client, error) {
+	var tlsConfig *tls.Config
+	var err error
+
+	if CAFile != "" {
+		tlsConfig, err = GetTLSConfig(CAFile)
+		if err != nil {
+			return nil, err
 		}
 	}
 
+	tr := &http.Transport{
+		MaxIdleConnsPerHost: 20,
+		TLSClientConfig:     tlsConfig,
+	}
+
+	return &http.Client{
+		Transport: tr,
+		Timeout:   5 * time.Second,
+	}, nil
+}
+
+// PostJSON posts json object to url
+func PostJSON(url string, obj interface{}, client *http.Client) (*http.Response, error) {
+	if client == nil {
+		client, _ = CreateHTTPClient("")
+	}
 	b := new(bytes.Buffer)
 	if err := json.NewEncoder(b).Encode(obj); err != nil {
 		return nil, err
@@ -50,17 +65,9 @@ func PostJSON(url string, obj interface{}, tlsConfig *tls.Config) (*http.Respons
 }
 
 // GetJSON gets a json response from url
-func GetJSON(url string, obj interface{}, tlsConfig *tls.Config) (*http.Response, error) {
-	var client *http.Client
-	if tlsConfig == nil {
-		client = &http.Client{}
-	} else {
-		tr := &http.Transport{
-			TLSClientConfig: tlsConfig,
-		}
-		client = &http.Client{
-			Transport: tr,
-		}
+func GetJSON(url string, obj interface{}, client *http.Client) (*http.Response, error) {
+	if client == nil {
+		client, _ = CreateHTTPClient("")
 	}
 
 	resp, err := client.Get(url)
