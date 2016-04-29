@@ -4,6 +4,7 @@ import (
 	"os"
 
 	"github.com/codegangsta/cli"
+	"github.com/gin-gonic/gin"
 	"gopkg.in/op/go-logging.v1"
 
 	tunasync "github.com/tuna/tunasync/internal"
@@ -21,6 +22,9 @@ func startManager(c *cli.Context) {
 		logger.Error("Error loading config: %s", err.Error())
 		os.Exit(1)
 	}
+	if !cfg.Debug {
+		gin.SetMode(gin.ReleaseMode)
+	}
 
 	m := manager.GetTUNASyncManager(cfg)
 	if m == nil {
@@ -34,6 +38,9 @@ func startManager(c *cli.Context) {
 
 func startWorker(c *cli.Context) {
 	tunasync.InitLogger(c.Bool("verbose"), c.Bool("debug"), c.Bool("with-systemd"))
+	if !c.Bool("debug") {
+		gin.SetMode(gin.ReleaseMode)
+	}
 
 	cfg, err := worker.LoadConfig(c.String("config"))
 	if err != nil {

@@ -86,7 +86,7 @@ func (m *mirrorJob) Run(managerChan chan<- jobMessage, semaphore chan empty) err
 	runHooks := func(Hooks []jobHook, action func(h jobHook) error, hookname string) error {
 		for _, hook := range Hooks {
 			if err := action(hook); err != nil {
-				logger.Error(
+				logger.Errorf(
 					"failed at %s hooks for %s: %s",
 					hookname, m.Name(), err.Error(),
 				)
@@ -105,7 +105,7 @@ func (m *mirrorJob) Run(managerChan chan<- jobMessage, semaphore chan empty) err
 		defer close(jobDone)
 
 		managerChan <- jobMessage{tunasync.PreSyncing, m.Name(), "", false}
-		logger.Info("start syncing: %s", m.Name())
+		logger.Noticef("start syncing: %s", m.Name())
 
 		Hooks := provider.Hooks()
 		rHooks := []jobHook{}
@@ -123,7 +123,7 @@ func (m *mirrorJob) Run(managerChan chan<- jobMessage, semaphore chan empty) err
 			stopASAP := false // stop job as soon as possible
 
 			if retry > 0 {
-				logger.Info("retry syncing: %s, retry: %d", m.Name(), retry)
+				logger.Noticef("retry syncing: %s, retry: %d", m.Name(), retry)
 			}
 			err := runHooks(Hooks, func(h jobHook) error { return h.preExec() }, "pre-exec")
 			if err != nil {
@@ -150,7 +150,7 @@ func (m *mirrorJob) Run(managerChan chan<- jobMessage, semaphore chan empty) err
 				stopASAP = true
 				err := provider.Terminate()
 				if err != nil {
-					logger.Error("failed to terminate provider %s: %s", m.Name(), err.Error())
+					logger.Errorf("failed to terminate provider %s: %s", m.Name(), err.Error())
 					return err
 				}
 				syncErr = errors.New("killed by manager")
@@ -164,7 +164,7 @@ func (m *mirrorJob) Run(managerChan chan<- jobMessage, semaphore chan empty) err
 
 			if syncErr == nil {
 				// syncing success
-				logger.Info("succeeded syncing %s", m.Name())
+				logger.Noticef("succeeded syncing %s", m.Name())
 				managerChan <- jobMessage{tunasync.Success, m.Name(), "", true}
 				// post-success hooks
 				err := runHooks(rHooks, func(h jobHook) error { return h.postSuccess() }, "post-success")
@@ -176,7 +176,7 @@ func (m *mirrorJob) Run(managerChan chan<- jobMessage, semaphore chan empty) err
 			}
 
 			// syncing failed
-			logger.Warning("failed syncing %s: %s", m.Name(), syncErr.Error())
+			logger.Warningf("failed syncing %s: %s", m.Name(), syncErr.Error())
 			managerChan <- jobMessage{tunasync.Failed, m.Name(), syncErr.Error(), retry == maxRetry-1}
 
 			// post-fail hooks

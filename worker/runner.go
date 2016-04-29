@@ -45,11 +45,11 @@ func newCmdJob(provider mirrorProvider, cmdAndArgs []string, workingDir string, 
 		}
 	}
 
-	logger.Debug("Executing command %s at %s", cmdAndArgs[0], workingDir)
+	logger.Debugf("Executing command %s at %s", cmdAndArgs[0], workingDir)
 	if _, err := os.Stat(workingDir); os.IsNotExist(err) {
-		logger.Debug("Making dir %s", workingDir)
+		logger.Debugf("Making dir %s", workingDir)
 		if err = os.MkdirAll(workingDir, 0755); err != nil {
-			logger.Error("Error making dir %s", workingDir)
+			logger.Errorf("Error making dir %s", workingDir)
 		}
 	}
 

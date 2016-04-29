@@ -30,7 +30,7 @@ func (f fileSlice) Swap(i, j int)      { f[i], f[j] = f[j], f[i] }
 func (f fileSlice) Less(i, j int) bool { return f[i].ModTime().Before(f[j].ModTime()) }
 
 func (l *logLimiter) preExec() error {
-	logger.Debug("executing log limitter for %s", l.provider.Name())
+	logger.Debugf("executing log limitter for %s", l.provider.Name())
 
 	p := l.provider
 	if p.LogFile() == "/dev/null" {

@@ -142,7 +142,7 @@ func (p *baseProvider) prepareLogFile() error {
 	if p.logFile == nil {
 		logFile, err := os.OpenFile(p.LogFile(), os.O_WRONLY|os.O_CREATE, 0644)
 		if err != nil {
-			logger.Error("Error opening logfile %s: %s", p.LogFile(), err.Error())
+			logger.Errorf("Error opening logfile %s: %s", p.LogFile(), err.Error())
 			return err
 		}
 		p.logFile = logFile
@@ -178,7 +178,7 @@ func (p *baseProvider) Wait() error {
 }
 
 func (p *baseProvider) Terminate() error {
-	logger.Debug("terminating provider: %s", p.Name())
+	logger.Debugf("terminating provider: %s", p.Name())
 	if !p.IsRunning() {
 		return nil
 	}

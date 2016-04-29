@@ -37,14 +37,19 @@ func GetTUNASyncManager(cfg *Config) *Manager {
 	}
 	s := &Manager{
 		cfg:     cfg,
-		engine:  gin.Default(),
 		adapter: nil,
+	}
+
+	s.engine = gin.New()
+	s.engine.Use(gin.Recovery())
+	if cfg.Debug {
+		s.engine.Use(gin.Logger())
 	}
 
 	if cfg.Files.CACert != "" {
 		httpClient, err := CreateHTTPClient(cfg.Files.CACert)
 		if err != nil {
-			logger.Error("Error initializing HTTP client: %s", err.Error())
+			logger.Errorf("Error initializing HTTP client: %s", err.Error())
 			return nil
 		}
 		s.httpClient = httpClient
@@ -53,7 +58,7 @@ func GetTUNASyncManager(cfg *Config) *Manager {
 	if cfg.Files.DBFile != "" {
 		adapter, err := makeDBAdapter(cfg.Files.DBType, cfg.Files.DBFile)
 		if err != nil {
-			logger.Error("Error initializing DB adapter: %s", err.Error())
+			logger.Errorf("Error initializing DB adapter: %s", err.Error())
 			return nil
 		}
 		s.setDBAdapter(adapter)
@@ -170,6 +175,8 @@ func (s *Manager) registerWorker(c *gin.Context) {
 		s.returnErrJSON(c, http.StatusInternalServerError, err)
 		return
 	}
+
+	logger.Noticef("Worker <%s> registered", _worker.ID)
 	// create workerCmd channel for this worker
 	c.JSON(http.StatusOK, newWorker)
 }
@@ -210,6 +217,22 @@ func (s *Manager) updateJobOfWorker(c *gin.Context) {
 		status.LastUpdate = curStatus.LastUpdate
 	}
 
+	// for logging
+	switch status.Status {
+	case Success:
+		logger.Noticef("Job [%s] @<%s> success", status.Name, status.Worker)
+	case Failed:
+		logger.Warningf("Job [%s] @<%s> failed", status.Name, status.Worker)
+	case Syncing:
+		logger.Infof("Job [%s] @<%s> starts syncing", status.Name, status.Worker)
+	case Disabled:
+		logger.Noticef("Job [%s] @<%s> disabled", status.Name, status.Worker)
+	case Paused:
+		logger.Noticef("Job [%s] @<%s> paused", status.Name, status.Worker)
+	default:
+		logger.Infof("Job [%s] @<%s> status: %s", status.Name, status.Worker, status.Status)
+	}
+
 	newStatus, err := s.adapter.UpdateMirrorStatus(workerID, mirrorName, status)
 	if err != nil {
 		err := fmt.Errorf("failed to update job %s of worker %s: %s",
@@ -228,7 +251,7 @@ func (s *Manager) handleClientCmd(c *gin.Context) {
 	workerID := clientCmd.WorkerID
 	if workerID == "" {
 		// TODO: decide which worker should do this mirror when WorkerID is null string
-		logger.Error("handleClientCmd case workerID == \" \" not implemented yet")
+		logger.Errorf("handleClientCmd case workerID == \" \" not implemented yet")
 		c.AbortWithStatus(http.StatusInternalServerError)
 		return
 	}
@@ -263,6 +286,7 @@ func (s *Manager) handleClientCmd(c *gin.Context) {
 		s.adapter.UpdateMirrorStatus(clientCmd.WorkerID, clientCmd.MirrorID, curStat)
 	}
 
+	logger.Noticef("Posting command '%s %s' to <%s>", clientCmd.Cmd, clientCmd.MirrorID, clientCmd.WorkerID)
 	// post command to worker
 	_, err = PostJSON(workerURL, workerCmd, s.httpClient)
 	if err != nil {

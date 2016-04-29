@@ -49,7 +49,7 @@ func GetTUNASyncWorker(cfg *Config) *Worker {
 	if cfg.Manager.CACert != "" {
 		httpClient, err := CreateHTTPClient(cfg.Manager.CACert)
 		if err != nil {
-			logger.Error("Error initializing HTTP client: %s", err.Error())
+			logger.Errorf("Error initializing HTTP client: %s", err.Error())
 			return nil
 		}
 		w.httpClient = httpClient
@@ -190,7 +190,7 @@ func (w *Worker) makeHTTPServer() {
 			c.JSON(http.StatusNotFound, gin.H{"msg": fmt.Sprintf("Mirror ``%s'' not found", cmd.MirrorID)})
 			return
 		}
-		logger.Info("Received command: %v", cmd)
+		logger.Noticef("Received command: %v", cmd)
 		// if job disabled, start them first
 		switch cmd.Cmd {
 		case CmdStart, CmdRestart:
@@ -225,7 +225,6 @@ func (w *Worker) makeHTTPServer() {
 
 		c.JSON(http.StatusOK, gin.H{"msg": "OK"})
 	})
-
 	w.httpEngine = s
 }
 
@@ -281,7 +280,7 @@ func (w *Worker) runSchedule() {
 				job.SetState(stateReady)
 				go job.Run(w.managerChan, w.semaphore)
 				stime := m.LastUpdate.Add(job.provider.Interval())
-				logger.Debug("Scheduling job %s @%s", job.Name(), stime.Format("2006-01-02 15:04:05"))
+				logger.Debugf("Scheduling job %s @%s", job.Name(), stime.Format("2006-01-02 15:04:05"))
 				w.schedule.AddJob(stime, job)
 			}
 		}
@@ -302,7 +301,7 @@ func (w *Worker) runSchedule() {
 			// got status update from job
 			job := w.jobs[jobMsg.name]
 			if job.State() != stateReady {
-				logger.Info("Job %s state is not ready, skip adding new schedule", jobMsg.name)
+				logger.Infof("Job %s state is not ready, skip adding new schedule", jobMsg.name)
 				continue
 			}
 
@@ -316,7 +315,7 @@ func (w *Worker) runSchedule() {
 			// can trigger scheduling
 			if jobMsg.schedule {
 				schedTime := time.Now().Add(job.provider.Interval())
-				logger.Info(
+				logger.Noticef(
 					"Next scheduled time for %s: %s",
 					job.Name(),
 					schedTime.Format("2006-01-02 15:04:05"),
@@ -362,7 +361,7 @@ func (w *Worker) registorWorker() {
 	}
 
 	if _, err := PostJSON(url, msg, w.httpClient); err != nil {
-		logger.Error("Failed to register worker")
+		logger.Errorf("Failed to register worker")
 	}
 }
 
@@ -385,7 +384,7 @@ func (w *Worker) updateStatus(jobMsg jobMessage) {
 	}
 
 	if _, err := PostJSON(url, smsg, w.httpClient); err != nil {
-		logger.Error("Failed to update mirror(%s) status: %s", jobMsg.name, err.Error())
+		logger.Errorf("Failed to update mirror(%s) status: %s", jobMsg.name, err.Error())
 	}
 }
 
@@ -399,7 +398,7 @@ func (w *Worker) fetchJobStatus() []MirrorStatus {
 	)
 
 	if _, err := GetJSON(url, &mirrorList, w.httpClient); err != nil {
-		logger.Error("Failed to fetch job status: %s", err.Error())
+		logger.Errorf("Failed to fetch job status: %s", err.Error())
 	}
 
 	return mirrorList

@@ -43,7 +43,7 @@ func (c *cgroupHook) preExec() error {
 func (c *cgroupHook) postExec() error {
 	err := c.killAll()
 	if err != nil {
-		logger.Error("Error killing tasks: %s", err.Error())
+		logger.Errorf("Error killing tasks: %s", err.Error())
 	}
 
 	c.created = false
@@ -75,7 +75,7 @@ func (c *cgroupHook) killAll() error {
 		taskList = append(taskList, pid)
 	}
 	for _, pid := range taskList {
-		logger.Debug("Killing process: %d", pid)
+		logger.Debugf("Killing process: %d", pid)
 		unix.Kill(pid, syscall.SIGKILL)
 	}
 

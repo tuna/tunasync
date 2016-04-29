@@ -11,7 +11,7 @@ func contextErrorLogger(c *gin.Context) {
 	errs := c.Errors.ByType(gin.ErrorTypeAny)
 	if len(errs) > 0 {
 		for _, err := range errs {
-			logger.Error(`"in request "%s %s: %s"`,
+			logger.Errorf(`"in request "%s %s: %s"`,
 				c.Request.Method, c.Request.URL.Path,
 				err.Error())
 		}

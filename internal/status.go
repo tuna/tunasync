@@ -18,24 +18,30 @@ const (
 	Disabled
 )
 
-func (s SyncStatus) MarshalJSON() ([]byte, error) {
-	var strStatus string
+func (s SyncStatus) String() string {
 	switch s {
 	case None:
-		strStatus = "none"
+		return "none"
 	case Failed:
-		strStatus = "failed"
+		return "failed"
 	case Success:
-		strStatus = "success"
+		return "success"
 	case Syncing:
-		strStatus = "syncing"
+		return "syncing"
 	case PreSyncing:
-		strStatus = "pre-syncing"
+		return "pre-syncing"
 	case Paused:
-		strStatus = "paused"
+		return "paused"
 	case Disabled:
-		strStatus = "disabled"
+		return "disabled"
 	default:
+		return ""
+	}
+}
+
+func (s SyncStatus) MarshalJSON() ([]byte, error) {
+	strStatus := s.String()
+	if strStatus == "" {
 		return []byte{}, errors.New("Invalid status value")
 	}
 

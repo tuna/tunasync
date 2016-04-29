@@ -12,7 +12,11 @@ func InitLogger(verbose, debug, withSystemd bool) {
 	if withSystemd {
 		fmtString = "[%{level:.6s}] %{message}"
 	} else {
-		fmtString = "%{color}[%{time:06-01-02 15:04:05}][%{level:.6s}][%{shortfile}]%{color:reset} %{message}"
+		if debug {
+			fmtString = "%{color}[%{time:06-01-02 15:04:05}][%{level:.6s}][%{shortfile}]%{color:reset} %{message}"
+		} else {
+			fmtString = "%{color}[%{time:06-01-02 15:04:05}][%{level:.6s}]%{color:reset} %{message}"
+		}
 	}
 	format := logging.MustStringFormatter(fmtString)
 	logging.SetFormatter(format)

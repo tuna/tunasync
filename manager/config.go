@@ -41,7 +41,7 @@ func LoadConfig(cfgFile string, c *cli.Context) (*Config, error) {
 
 	if cfgFile != "" {
 		if _, err := toml.DecodeFile(cfgFile, cfg); err != nil {
-			logger.Error(err.Error())
+			logger.Errorf(err.Error())
 			return nil, err
 		}
 	}
