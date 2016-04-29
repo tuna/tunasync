@@ -12,41 +12,47 @@ tunasync
 - Manager: Centural instance on status and job management
 - Worker: Runs mirror jobs
 
-
-+----------+  +---+   worker configs   +---+    +----------+     +----------+
-|  Status  |  |   |+-----------------> | w +--->|  mirror  +---->|  mirror  |
-|  Manager |  |   |                    | o |    |  config  |     | provider |
-+----------+  | W |  start/stop job    | r |    +----------+     +----+-----+
-              | E |+-----------------> | k |                          |
-+----------+  | B |                    | e |       +------------+     |
-|   Job    |  |   |   update status    | r |<------+ mirror job |<----+
-|Controller|  |   | <-----------------+|   |       +------------+
-+----------+  +---+                    +---+
++------------+ +---+                  +---+
+| Client API | |   |    Job Status    |   |    +----------+     +----------+ 
++------------+ |   +----------------->|   |--->|  mirror  +---->|  mirror  | 
++------------+ |   |                  | w |    |  config  |     | provider | 
+| Worker API | | H |                  | o |    +----------+     +----+-----+ 
++------------+ | T |   Job Control    | r |                          |       
++------------+ | T +----------------->| k |       +------------+     |       
+| Job/Status | | P |   Start/Stop/... | e |       | mirror job |<----+       
+| Management | | S |                  | r |       +------^-----+             
++------------+ |   |   Update Status  |   |    +---------+---------+         
++------------+ |   <------------------+   |    |     Scheduler     |
+|   BoltDB   | |   |                  |   |    +-------------------+
++------------+ +---+                  +---+
 
 
 # Job Run Process
 
+
+PreSyncing           Syncing                               Success
 +-----------+     +-----------+    +-------------+     +--------------+
-|  pre-job  +--+->|  job run  +--->|   post-job  +-+-->| post-success |
+|  pre-job  +--+->|  job run  +--->|  post-exec  +-+-->| post-success |
 +-----------+  ^  +-----------+    +-------------+ |   +--------------+
 			   |                                   |
-			   |      +-----------------+          |
+			   |      +-----------------+          | Failed
 			   +------+    post-fail    |<---------+
 					  +-----------------+
 ```
 
 ## TODO
 
-- [ ] split to `tunasync-manager` and `tunasync-worker` instances
-	- [ ] use HTTP as communication protocol
-	- [ ] implement manager as status server first, and use python worker
-	- [ ] implement go worker
+- [x] split to `tunasync-manager` and `tunasync-worker` instances
+	- [x] use HTTP as communication protocol
+	- [x] implement manager as status server first, and use python worker
+	- [x] implement go worker
 - Web frontend for `tunasync-manager`
 	- [ ] start/stop/restart job
 	- [ ] enable/disable mirror
 	- [ ] view log
 - [ ] config file structure
 	- [ ] support multi-file configuration (`/etc/tunasync.d/mirror-enabled/*.conf`)
+
 
 ## Generate Self-Signed Certificate
 
