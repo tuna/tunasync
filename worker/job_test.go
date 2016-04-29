@@ -49,7 +49,7 @@ func TestMirrorJob(t *testing.T) {
 			echo $TUNASYNC_UPSTREAM_URL
 			echo $TUNASYNC_LOG_FILE
 			`
-			exceptedOutput := fmt.Sprintf(
+			expectedOutput := fmt.Sprintf(
 				"%s\n%s\n%s\n%s\n",
 				provider.WorkingDir(),
 				provider.Name(),
@@ -86,7 +86,7 @@ func TestMirrorJob(t *testing.T) {
 					So(msg.status, ShouldEqual, Success)
 					loggedContent, err := ioutil.ReadFile(provider.LogFile())
 					So(err, ShouldBeNil)
-					So(string(loggedContent), ShouldEqual, exceptedOutput)
+					So(string(loggedContent), ShouldEqual, expectedOutput)
 					job.ctrlChan <- jobStart
 				}
 				select {
@@ -140,10 +140,10 @@ echo $TUNASYNC_WORKING_DIR
 				msg = <-managerChan
 				So(msg.status, ShouldEqual, Failed)
 
-				exceptedOutput := fmt.Sprintf("%s\n", provider.WorkingDir())
+				expectedOutput := fmt.Sprintf("%s\n", provider.WorkingDir())
 				loggedContent, err := ioutil.ReadFile(provider.LogFile())
 				So(err, ShouldBeNil)
-				So(string(loggedContent), ShouldEqual, exceptedOutput)
+				So(string(loggedContent), ShouldEqual, expectedOutput)
 				job.ctrlChan <- jobDisable
 				<-job.disabled
 			})
@@ -159,14 +159,14 @@ echo $TUNASYNC_WORKING_DIR
 				msg = <-managerChan
 				So(msg.status, ShouldEqual, Success)
 
-				exceptedOutput := fmt.Sprintf(
+				expectedOutput := fmt.Sprintf(
 					"%s\n%s\n",
 					provider.WorkingDir(), provider.WorkingDir(),
 				)
 
 				loggedContent, err := ioutil.ReadFile(provider.LogFile())
 				So(err, ShouldBeNil)
-				So(string(loggedContent), ShouldEqual, exceptedOutput)
+				So(string(loggedContent), ShouldEqual, expectedOutput)
 				job.ctrlChan <- jobDisable
 				<-job.disabled
 			})

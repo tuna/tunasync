@@ -82,7 +82,6 @@ echo $TUNASYNC_WORKING_DIR
 echo $TUNASYNC_MIRROR_NAME
 echo $TUNASYNC_UPSTREAM_URL
 echo $TUNASYNC_LOG_FILE
-sleep 5
 exit 1
 			`
 
@@ -93,10 +92,12 @@ exit 1
 			job.ctrlChan <- jobStart
 			msg := <-managerChan
 			So(msg.status, ShouldEqual, PreSyncing)
-			msg = <-managerChan
-			So(msg.status, ShouldEqual, Syncing)
-			msg = <-managerChan
-			So(msg.status, ShouldEqual, Failed)
+			for i := 0; i < maxRetry; i++ {
+				msg = <-managerChan
+				So(msg.status, ShouldEqual, Syncing)
+				msg = <-managerChan
+				So(msg.status, ShouldEqual, Failed)
+			}
 
 			time.Sleep(200 * time.Millisecond)
 			job.ctrlChan <- jobDisable
