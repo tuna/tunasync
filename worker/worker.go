@@ -152,6 +152,14 @@ func (w *Worker) initProviders() {
 		}
 
 		provider.AddHook(newLogLimiter(provider))
+
+		// Add Cgroup Hook
+		if w.cfg.Cgroup.Enable {
+			provider.AddHook(
+				newCgroupHook(provider, w.cfg.Cgroup.BasePath, w.cfg.Cgroup.Group),
+			)
+		}
+
 		w.providers[provider.Name()] = provider
 
 	}
@@ -198,13 +206,13 @@ func (w *Worker) makeHTTPServer() {
 		case CmdStop:
 			// if job is disabled, no goroutine would be there
 			// receiving this signal
+			w.schedule.Remove(job.Name())
 			if job.State() != stateDisabled {
-				w.schedule.Remove(job.Name())
 				job.ctrlChan <- jobStop
 			}
 		case CmdDisable:
+			w.schedule.Remove(job.Name())
 			if job.State() != stateDisabled {
-				w.schedule.Remove(job.Name())
 				job.ctrlChan <- jobDisable
 				<-job.disabled
 			}

@@ -3,11 +3,15 @@ go:
     - 1.6
 
 before_install:
-  - go get golang.org/x/tools/cmd/cover
-  - go get -v github.com/mattn/goveralls
+    - sudo apt-get install cgroup-bin
+    - go get golang.org/x/tools/cmd/cover
+    - go get -v github.com/mattn/goveralls
 
 os:
     - linux
+
+before_script:
+    - sudo cgcreate -t travis -a travis -g cpu:tunasync
 
 script:
     - ./.testandcover.bash

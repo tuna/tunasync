@@ -33,6 +33,8 @@ type mirrorProvider interface {
 	Terminate() error
 	// job hooks
 	IsRunning() bool
+	// Cgroup
+	Cgroup() *cgroupHook
 
 	AddHook(hook jobHook)
 	Hooks() []jobHook
@@ -63,7 +65,8 @@ type baseProvider struct {
 
 	logFile *os.File
 
-	hooks []jobHook
+	cgroup *cgroupHook
+	hooks  []jobHook
 }
 
 func (p *baseProvider) Name() string {
@@ -117,11 +120,18 @@ func (p *baseProvider) LogFile() string {
 }
 
 func (p *baseProvider) AddHook(hook jobHook) {
+	if cg, ok := hook.(*cgroupHook); ok {
+		p.cgroup = cg
+	}
 	p.hooks = append(p.hooks, hook)
 }
 
 func (p *baseProvider) Hooks() []jobHook {
 	return p.hooks
+}
+
+func (p *baseProvider) Cgroup() *cgroupHook {
+	return p.cgroup
 }
 
 func (p *baseProvider) prepareLogFile() error {

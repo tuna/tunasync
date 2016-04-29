@@ -65,7 +65,7 @@ func (p *cmdProvider) Start() error {
 	for k, v := range p.env {
 		env[k] = v
 	}
-	p.cmd = newCmdJob(p.command, p.WorkingDir(), env)
+	p.cmd = newCmdJob(p, p.command, p.WorkingDir(), env)
 	if err := p.prepareLogFile(); err != nil {
 		return err
 	}

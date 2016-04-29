@@ -13,7 +13,6 @@ import (
 
 // runner is to run os commands giving command line, env and log file
 // it's an alternative to python-sh or go-sh
-// TODO: cgroup excution
 
 var errProcessNotStarted = errors.New("Process Not Started")
 
@@ -23,18 +22,27 @@ type cmdJob struct {
 	env        map[string]string
 	logFile    *os.File
 	finished   chan empty
+	provider   mirrorProvider
 }
 
-func newCmdJob(cmdAndArgs []string, workingDir string, env map[string]string) *cmdJob {
+func newCmdJob(provider mirrorProvider, cmdAndArgs []string, workingDir string, env map[string]string) *cmdJob {
 	var cmd *exec.Cmd
-	if len(cmdAndArgs) == 1 {
-		cmd = exec.Command(cmdAndArgs[0])
-	} else if len(cmdAndArgs) > 1 {
-		c := cmdAndArgs[0]
-		args := cmdAndArgs[1:]
+
+	if provider.Cgroup() != nil {
+		c := "cgexec"
+		args := []string{"-g", provider.Cgroup().Cgroup()}
+		args = append(args, cmdAndArgs...)
 		cmd = exec.Command(c, args...)
-	} else if len(cmdAndArgs) == 0 {
-		panic("Command length should be at least 1!")
+	} else {
+		if len(cmdAndArgs) == 1 {
+			cmd = exec.Command(cmdAndArgs[0])
+		} else if len(cmdAndArgs) > 1 {
+			c := cmdAndArgs[0]
+			args := cmdAndArgs[1:]
+			cmd = exec.Command(c, args...)
+		} else if len(cmdAndArgs) == 0 {
+			panic("Command length should be at least 1!")
+		}
 	}
 
 	logger.Debug("Executing command %s at %s", cmdAndArgs[0], workingDir)

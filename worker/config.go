@@ -35,6 +35,7 @@ type Config struct {
 	Global  globalConfig   `toml:"global"`
 	Manager managerConfig  `toml:"manager"`
 	Server  serverConfig   `toml:"server"`
+	Cgroup  cgroupConfig   `toml:"cgroup"`
 	Mirrors []mirrorConfig `toml:"mirrors"`
 }
 
@@ -58,6 +59,12 @@ type serverConfig struct {
 	Port     int    `toml:"listen_port"`
 	SSLCert  string `toml:"ssl_cert"`
 	SSLKey   string `toml:"ssl_key"`
+}
+
+type cgroupConfig struct {
+	Enable   bool   `toml:"enable"`
+	BasePath string `toml:"base_path"`
+	Group    string `toml:"group"`
 }
 
 type mirrorConfig struct {
