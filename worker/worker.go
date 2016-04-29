@@ -90,6 +90,16 @@ func (w *Worker) initProviders() {
 		}
 		logDir = formatLogDir(logDir, mirror)
 
+		// IsMaster
+		isMaster := true
+		if mirror.Role == "slave" {
+			isMaster = false
+		} else {
+			if mirror.Role != "" && mirror.Role != "master" {
+				logger.Warningf("Invalid role configuration for %s", mirror.Name)
+			}
+		}
+
 		var provider mirrorProvider
 
 		switch mirror.Provider {
@@ -105,6 +115,7 @@ func (w *Worker) initProviders() {
 				env:         mirror.Env,
 			}
 			p, err := newCmdProvider(pc)
+			p.isMaster = isMaster
 			if err != nil {
 				panic(err)
 			}
@@ -123,6 +134,7 @@ func (w *Worker) initProviders() {
 				interval:    time.Duration(mirror.Interval) * time.Minute,
 			}
 			p, err := newRsyncProvider(rc)
+			p.isMaster = isMaster
 			if err != nil {
 				panic(err)
 			}
@@ -142,6 +154,7 @@ func (w *Worker) initProviders() {
 				interval:      time.Duration(mirror.Interval) * time.Minute,
 			}
 			p, err := newTwoStageRsyncProvider(rc)
+			p.isMaster = isMaster
 			if err != nil {
 				panic(err)
 			}
@@ -395,7 +408,7 @@ func (w *Worker) updateStatus(jobMsg jobMessage) {
 	smsg := MirrorStatus{
 		Name:     jobMsg.name,
 		Worker:   w.cfg.Global.Name,
-		IsMaster: true,
+		IsMaster: p.IsMaster(),
 		Status:   jobMsg.status,
 		Upstream: p.Upstream(),
 		Size:     "unknown",

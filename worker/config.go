@@ -75,6 +75,7 @@ type mirrorConfig struct {
 	MirrorDir string            `toml:"mirror_dir"`
 	LogDir    string            `toml:"log_dir"`
 	Env       map[string]string `toml:"env"`
+	Role      string            `toml:"role"`
 
 	ExecOnSuccess string `toml:"exec_on_success"`
 	ExecOnFailure string `toml:"exec_on_failure"`

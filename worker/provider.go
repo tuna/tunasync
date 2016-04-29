@@ -44,6 +44,7 @@ type mirrorProvider interface {
 	WorkingDir() string
 	LogDir() string
 	LogFile() string
+	IsMaster() bool
 
 	// enter context
 	EnterContext() *Context
@@ -59,6 +60,7 @@ type baseProvider struct {
 	ctx      *Context
 	name     string
 	interval time.Duration
+	isMaster bool
 
 	cmd       *cmdJob
 	isRunning atomic.Value
@@ -90,6 +92,10 @@ func (p *baseProvider) Context() *Context {
 func (p *baseProvider) Interval() time.Duration {
 	// logger.Debug("interval for %s: %v", p.Name(), p.interval)
 	return p.interval
+}
+
+func (p *baseProvider) IsMaster() bool {
+	return p.isMaster
 }
 
 func (p *baseProvider) WorkingDir() string {
