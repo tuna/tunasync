@@ -160,6 +160,25 @@ func (w *Worker) initProviders() {
 			)
 		}
 
+		// ExecOnSuccess hook
+		if mirror.ExecOnSuccess != "" {
+			h, err := newExecPostHook(provider, execOnSuccess, mirror.ExecOnSuccess)
+			if err != nil {
+				logger.Errorf("Error initializing mirror %s: %s", mirror.Name, err.Error())
+				panic(err)
+			}
+			provider.AddHook(h)
+		}
+		// ExecOnFailure hook
+		if mirror.ExecOnFailure != "" {
+			h, err := newExecPostHook(provider, execOnFailure, mirror.ExecOnFailure)
+			if err != nil {
+				logger.Errorf("Error initializing mirror %s: %s", mirror.Name, err.Error())
+				panic(err)
+			}
+			provider.AddHook(h)
+		}
+
 		w.providers[provider.Name()] = provider
 
 	}

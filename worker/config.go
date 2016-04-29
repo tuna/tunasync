@@ -76,6 +76,9 @@ type mirrorConfig struct {
 	LogDir    string            `toml:"log_dir"`
 	Env       map[string]string `toml:"env"`
 
+	ExecOnSuccess string `toml:"exec_on_success"`
+	ExecOnFailure string `toml:"exec_on_failure"`
+
 	Command       string `toml:"command"`
 	UseIPv6       bool   `toml:"use_ipv6"`
 	ExcludeFile   string `toml:"exclude_file"`
