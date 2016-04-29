@@ -33,7 +33,6 @@ func initializeWrapper(handler func(*cli.Context)) func(*cli.Context) {
 		}
 		handler(c)
 	}
-
 }
 
 func initialize(c *cli.Context) error {
@@ -54,7 +53,7 @@ func initialize(c *cli.Context) error {
 	} else {
 		baseURL = "https://" + baseURL
 	}
-	logger.Info("Use manager address: %s", baseURL)
+	logger.Infof("Use manager address: %s", baseURL)
 
 	// create HTTP client
 	var err error
@@ -72,13 +71,13 @@ func listWorkers(c *cli.Context) {
 	var workers []tunasync.WorkerStatus
 	_, err := tunasync.GetJSON(baseURL+listWorkersPath, &workers, client)
 	if err != nil {
-		logger.Error("Filed to correctly get informations from manager server: %s", err.Error())
+		logger.Errorf("Filed to correctly get informations from manager server: %s", err.Error())
 		os.Exit(1)
 	}
 
 	b, err := json.MarshalIndent(workers, "", "  ")
 	if err != nil {
-		logger.Error("Error printing out informations: %s", err.Error())
+		logger.Errorf("Error printing out informations: %s", err.Error())
 	}
 	fmt.Print(string(b))
 }
@@ -89,7 +88,7 @@ func listJobs(c *cli.Context) {
 	if c.Bool("all") {
 		_, err := tunasync.GetJSON(baseURL+listJobsPath, &jobs, client)
 		if err != nil {
-			logger.Error("Filed to correctly get information of all jobs from manager server: %s", err.Error())
+			logger.Errorf("Filed to correctly get information of all jobs from manager server: %s", err.Error())
 			os.Exit(1)
 		}
 
@@ -105,7 +104,7 @@ func listJobs(c *cli.Context) {
 				var workerJobs []tunasync.MirrorStatus
 				_, err := tunasync.GetJSON(fmt.Sprintf("%s/workers/%s/jobs", baseURL, workerID), &workerJobs, client)
 				if err != nil {
-					logger.Error("Filed to correctly get jobs for worker %s: %s", workerID, err.Error())
+					logger.Errorf("Filed to correctly get jobs for worker %s: %s", workerID, err.Error())
 				}
 				ans <- workerJobs
 			}(workerID)
@@ -117,7 +116,7 @@ func listJobs(c *cli.Context) {
 
 	b, err := json.MarshalIndent(jobs, "", "  ")
 	if err != nil {
-		logger.Error("Error printing out informations: %s", err.Error())
+		logger.Errorf("Error printing out informations: %s", err.Error())
 	}
 	fmt.Printf(string(b))
 }
@@ -146,7 +145,7 @@ func cmdJob(cmd tunasync.CmdVerb) func(*cli.Context) {
 		}
 		resp, err := tunasync.PostJSON(baseURL+cmdPath, cmd, client)
 		if err != nil {
-			logger.Error("Failed to correctly send command: %s", err.Error)
+			logger.Errorf("Failed to correctly send command: %s", err.Error())
 			os.Exit(1)
 		}
 		defer resp.Body.Close()
@@ -154,10 +153,10 @@ func cmdJob(cmd tunasync.CmdVerb) func(*cli.Context) {
 		if resp.StatusCode != http.StatusOK {
 			body, err := ioutil.ReadAll(resp.Body)
 			if err != nil {
-				logger.Error("Failed to parse response: %s", err.Error())
+				logger.Errorf("Failed to parse response: %s", err.Error())
 			}
 
-			logger.Error("Failed to correctly send command: HTTP status code is not 200: %s", body)
+			logger.Errorf("Failed to correctly send command: HTTP status code is not 200: %s", body)
 		} else {
 			logger.Info("Succesfully send command")
 		}
