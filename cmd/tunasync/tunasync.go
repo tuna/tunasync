@@ -19,7 +19,7 @@ func startManager(c *cli.Context) {
 
 	cfg, err := manager.LoadConfig(c.String("config"), c)
 	if err != nil {
-		logger.Error("Error loading config: %s", err.Error())
+		logger.Errorf("Error loading config: %s", err.Error())
 		os.Exit(1)
 	}
 	if !cfg.Debug {
@@ -28,7 +28,7 @@ func startManager(c *cli.Context) {
 
 	m := manager.GetTUNASyncManager(cfg)
 	if m == nil {
-		logger.Error("Error intializing TUNA sync worker.")
+		logger.Errorf("Error intializing TUNA sync worker.")
 		os.Exit(1)
 	}
 
@@ -44,13 +44,13 @@ func startWorker(c *cli.Context) {
 
 	cfg, err := worker.LoadConfig(c.String("config"))
 	if err != nil {
-		logger.Error("Error loading config: %s", err.Error())
+		logger.Errorf("Error loading config: %s", err.Error())
 		os.Exit(1)
 	}
 
 	w := worker.GetTUNASyncWorker(cfg)
 	if w == nil {
-		logger.Error("Error intializing TUNA sync worker.")
+		logger.Errorf("Error intializing TUNA sync worker.")
 		os.Exit(1)
 	}
 

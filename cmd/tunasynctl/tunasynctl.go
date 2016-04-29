@@ -8,6 +8,7 @@ import (
 	"os"
 	"strings"
 
+	"github.com/BurntSushi/toml"
 	"github.com/codegangsta/cli"
 	"gopkg.in/op/go-logging.v1"
 
@@ -18,6 +19,9 @@ const (
 	listJobsPath    = "/jobs"
 	listWorkersPath = "/workers"
 	cmdPath         = "/cmd"
+
+	systemCfgFile = "/etc/tunasync/ctl.conf"
+	userCfgFile   = "$HOME/.config/tunasync/ctl.conf"
 )
 
 var logger = logging.MustGetLogger("tunasynctl-cmd")
@@ -35,29 +39,65 @@ func initializeWrapper(handler func(*cli.Context)) func(*cli.Context) {
 	}
 }
 
+type config struct {
+	ManagerAddr string `toml:"manager_addr"`
+	ManagerPort int    `toml:"manager_port"`
+	CACert      string `toml:"ca_cert"`
+}
+
+func loadConfig(cfgFile string, c *cli.Context) (*config, error) {
+	cfg := new(config)
+	cfg.ManagerAddr = "localhost"
+	cfg.ManagerPort = 14242
+
+	if cfgFile != "" {
+		if _, err := toml.DecodeFile(cfgFile, cfg); err != nil {
+			logger.Errorf(err.Error())
+			return nil, err
+		}
+	}
+
+	if c.String("manager") != "" {
+		cfg.ManagerAddr = c.String("manager")
+	}
+	if c.Int("port") > 0 {
+		cfg.ManagerPort = c.Int("port")
+	}
+
+	if c.String("ca-cert") != "" {
+		cfg.CACert = c.String("ca-cert")
+	}
+	return cfg, nil
+}
+
 func initialize(c *cli.Context) error {
 	// init logger
 	tunasync.InitLogger(c.Bool("verbose"), c.Bool("verbose"), false)
+	var cfgFile string
 
-	// parse manager server address
-	baseURL = c.String("manager")
-	if baseURL == "" {
-		baseURL = "localhost"
+	// choose config file and load config
+	if c.String("config") != "" {
+		cfgFile = c.String("config")
+	} else if _, err := os.Stat(os.ExpandEnv(userCfgFile)); err == nil {
+		cfgFile = os.ExpandEnv(userCfgFile)
+	} else if _, err := os.Stat(systemCfgFile); err == nil {
+		cfgFile = systemCfgFile
 	}
-	managerPort := c.String("port")
-	if managerPort != "" {
-		baseURL += ":" + managerPort
+	cfg, err := loadConfig(cfgFile, c)
+
+	if err != nil {
+		logger.Errorf("Load configuration for tunasynctl error: %s", err.Error())
+		return err
 	}
-	if c.Bool("no-ssl") {
-		baseURL = "http://" + baseURL
-	} else {
-		baseURL = "https://" + baseURL
-	}
+
+	// parse base url of the manager server
+	baseURL = fmt.Sprintf("https://%s:%d",
+		cfg.ManagerAddr, cfg.ManagerPort)
+
 	logger.Infof("Use manager address: %s", baseURL)
 
 	// create HTTP client
-	var err error
-	client, err = tunasync.CreateHTTPClient(c.String("ca-cert"))
+	client, err = tunasync.CreateHTTPClient(cfg.CACert)
 	if err != nil {
 		err = fmt.Errorf("Error initializing HTTP client: %s", err.Error())
 		logger.Error(err.Error())
@@ -170,6 +210,11 @@ func main() {
 
 	commonFlags := []cli.Flag{
 		cli.StringFlag{
+			Name: "config, c",
+			Usage: "Read configuration from `FILE` rather than" +
+				" ~/.config/tunasync/ctl.conf and /etc/tunasync/ctl.conf",
+		},
+		cli.StringFlag{
 			Name:  "manager, m",
 			Usage: "The manager server address",
 		},
@@ -178,14 +223,10 @@ func main() {
 			Usage: "The manager server port",
 		},
 		cli.StringFlag{
-			Name:  "ca-cert, c",
-			Usage: "Trust CA cert `CERT`",
+			Name:  "ca-cert",
+			Usage: "Trust root CA cert file `CERT`",
 		},
 
-		cli.BoolFlag{
-			Name:  "no-ssl",
-			Usage: "Use http rather than https",
-		},
 		cli.BoolFlag{
 			Name:  "verbose, v",
 			Usage: "Enable verbosely logging",
