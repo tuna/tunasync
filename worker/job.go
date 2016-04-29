@@ -3,6 +3,7 @@ package worker
 import (
 	"errors"
 	"fmt"
+	"sync/atomic"
 
 	tunasync "github.com/tuna/tunasync/internal"
 )
@@ -26,27 +27,42 @@ type jobMessage struct {
 	schedule bool
 }
 
+const (
+	// empty state
+	stateNone uint32 = iota
+	// ready to run, able to schedule
+	stateReady
+	// paused by jobStop
+	statePaused
+	// disabled by jobDisable
+	stateDisabled
+)
+
 type mirrorJob struct {
-	provider   mirrorProvider
-	ctrlChan   chan ctrlAction
-	disabled   chan empty
-	started    bool
-	schedule   bool
-	isDisabled bool
+	provider mirrorProvider
+	ctrlChan chan ctrlAction
+	disabled chan empty
+	state    uint32
 }
 
 func newMirrorJob(provider mirrorProvider) *mirrorJob {
 	return &mirrorJob{
-		provider:   provider,
-		ctrlChan:   make(chan ctrlAction, 1),
-		started:    false,
-		schedule:   false,
-		isDisabled: false,
+		provider: provider,
+		ctrlChan: make(chan ctrlAction, 1),
+		state:    stateNone,
 	}
 }
 
 func (m *mirrorJob) Name() string {
 	return m.provider.Name()
+}
+
+func (m *mirrorJob) State() uint32 {
+	return atomic.LoadUint32(&(m.state))
+}
+
+func (m *mirrorJob) SetState(state uint32) {
+	atomic.StoreUint32(&(m.state), state)
 }
 
 // runMirrorJob is the goroutine where syncing job runs in
@@ -61,8 +77,7 @@ func (m *mirrorJob) Run(managerChan chan<- jobMessage, semaphore chan empty) err
 	m.disabled = make(chan empty)
 	defer func() {
 		close(m.disabled)
-		m.schedule = false
-		m.isDisabled = true
+		m.SetState(stateDisabled)
 	}()
 
 	provider := m.provider
@@ -192,7 +207,7 @@ func (m *mirrorJob) Run(managerChan chan<- jobMessage, semaphore chan empty) err
 	}
 
 	for {
-		if m.started {
+		if m.State() == stateReady {
 			kill := make(chan empty)
 			jobDone := make(chan empty)
 			go runJob(kill, jobDone)
@@ -204,24 +219,21 @@ func (m *mirrorJob) Run(managerChan chan<- jobMessage, semaphore chan empty) err
 			case ctrl := <-m.ctrlChan:
 				switch ctrl {
 				case jobStop:
-					m.schedule = false
-					m.started = false
+					m.SetState(statePaused)
 					close(kill)
 					<-jobDone
 				case jobDisable:
-					m.schedule = false
-					m.isDisabled = true
-					m.started = false
+					m.SetState(stateDisabled)
 					close(kill)
 					<-jobDone
 					return nil
 				case jobRestart:
-					m.started = true
+					m.SetState(stateReady)
 					close(kill)
 					<-jobDone
 					continue
 				case jobStart:
-					m.started = true
+					m.SetState(stateReady)
 					goto _wait_for_job
 				default:
 					// TODO: implement this
@@ -234,21 +246,14 @@ func (m *mirrorJob) Run(managerChan chan<- jobMessage, semaphore chan empty) err
 		ctrl := <-m.ctrlChan
 		switch ctrl {
 		case jobStop:
-			m.schedule = false
-			m.started = false
+			m.SetState(statePaused)
 		case jobDisable:
-			m.schedule = false
-			m.isDisabled = true
-			m.started = false
+			m.SetState(stateDisabled)
 			return nil
 		case jobRestart:
-			m.schedule = true
-			m.isDisabled = false
-			m.started = true
+			m.SetState(stateReady)
 		case jobStart:
-			m.schedule = true
-			m.isDisabled = false
-			m.started = true
+			m.SetState(stateReady)
 		default:
 			// TODO
 			return nil

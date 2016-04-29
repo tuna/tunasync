@@ -186,32 +186,24 @@ func (w *Worker) makeHTTPServer() {
 		// if job disabled, start them first
 		switch cmd.Cmd {
 		case CmdStart, CmdRestart:
-			if job.isDisabled {
+			if job.State() == stateDisabled {
 				go job.Run(w.managerChan, w.semaphore)
 			}
 		}
 		switch cmd.Cmd {
 		case CmdStart:
-			job.schedule = true
-			job.isDisabled = false
 			job.ctrlChan <- jobStart
 		case CmdRestart:
-			job.schedule = true
-			job.isDisabled = false
 			job.ctrlChan <- jobRestart
 		case CmdStop:
 			// if job is disabled, no goroutine would be there
 			// receiving this signal
-			if !job.isDisabled {
-				job.schedule = false
-				job.isDisabled = false
+			if job.State() != stateDisabled {
 				w.schedule.Remove(job.Name())
 				job.ctrlChan <- jobStop
 			}
 		case CmdDisable:
-			if !job.isDisabled {
-				job.schedule = false
-				job.isDisabled = true
+			if job.State() != stateDisabled {
 				w.schedule.Remove(job.Name())
 				job.ctrlChan <- jobDisable
 				<-job.disabled
@@ -270,15 +262,15 @@ func (w *Worker) runSchedule() {
 		if job, ok := w.jobs[m.Name]; ok {
 			delete(unset, m.Name)
 			switch m.Status {
-			case Paused:
-				go job.Run(w.managerChan, w.semaphore)
-				job.schedule = false
-				continue
 			case Disabled:
-				job.schedule = false
-				job.isDisabled = true
+				job.SetState(stateDisabled)
+				continue
+			case Paused:
+				job.SetState(statePaused)
+				go job.Run(w.managerChan, w.semaphore)
 				continue
 			default:
+				job.SetState(stateReady)
 				go job.Run(w.managerChan, w.semaphore)
 				stime := m.LastUpdate.Add(job.provider.Interval())
 				logger.Debug("Scheduling job %s @%s", job.Name(), stime.Format("2006-01-02 15:04:05"))
@@ -286,8 +278,12 @@ func (w *Worker) runSchedule() {
 			}
 		}
 	}
+	// some new jobs may be added
+	// which does not exist in the
+	// manager's mirror list
 	for name := range unset {
 		job := w.jobs[name]
+		job.SetState(stateReady)
 		go job.Run(w.managerChan, w.semaphore)
 		w.schedule.AddJob(time.Now(), job)
 	}
@@ -297,13 +293,19 @@ func (w *Worker) runSchedule() {
 		case jobMsg := <-w.managerChan:
 			// got status update from job
 			job := w.jobs[jobMsg.name]
-			if !job.schedule {
-				logger.Info("Job %s disabled/paused, skip adding new schedule", jobMsg.name)
+			if job.State() != stateReady {
+				logger.Info("Job %s state is not ready, skip adding new schedule", jobMsg.name)
 				continue
 			}
 
+			// syncing status is only meaningful when job
+			// is running. If it's paused or disabled
+			// a sync failure signal would be emitted
+			// which needs to be ignored
 			w.updateStatus(jobMsg)
 
+			// only successful or the final failure msg
+			// can trigger scheduling
 			if jobMsg.schedule {
 				schedTime := time.Now().Add(job.provider.Interval())
 				logger.Info(
