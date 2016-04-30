@@ -1,0 +1,20 @@
+language: go
+go:
+    - 1.6
+
+before_install:
+    - sudo apt-get install cgroup-bin
+    - go get golang.org/x/tools/cmd/cover
+    - go get -v github.com/mattn/goveralls
+
+os:
+    - linux
+
+before_script:
+    - sudo cgcreate -t travis -a travis -g cpu:tunasync
+
+script:
+    - ./.testandcover.bash
+
+after_success:
+    - goveralls -coverprofile=profile.cov -service=travis-ci

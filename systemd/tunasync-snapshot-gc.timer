@@ -1,8 +1,0 @@
-[Unit]
-Description=TUNAsync GC every 10 minutes
-
-[Timer]
-OnUnitActiveSec=10min
-
-[Install]
-WantedBy=multi-user.target

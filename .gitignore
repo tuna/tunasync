@@ -56,3 +56,4 @@ target/
 *.swp
 *~
 /examples/tunasync.json
+/*.cov
