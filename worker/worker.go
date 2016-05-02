@@ -59,12 +59,26 @@ func GetTUNASyncWorker(cfg *Config) *Worker {
 	return w
 }
 
-func (w *Worker) initJobs() {
-	for _, mirror := range w.cfg.Mirrors {
-		// Create Provider
-		provider := newMirrorProvider(mirror, w.cfg)
-		w.jobs[provider.Name()] = newMirrorJob(provider)
+// Run runs worker forever
+func (w *Worker) Run() {
+	w.registorWorker()
+	go w.runHTTPServer()
+	w.runSchedule()
+}
+
+// Halt stops all jobs
+func (w *Worker) Halt() {
+	w.L.Lock()
+	logger.Notice("Stopping all the jobs")
+	for _, job := range w.jobs {
+		if job.State() != stateDisabled {
+			job.ctrlChan <- jobHalt
+		}
 	}
+	jobsDone.Wait()
+	logger.Notice("All the jobs are stopped")
+	w.L.Unlock()
+	close(w.exit)
 }
 
 // ReloadMirrorConfig refresh the providers and jobs
@@ -134,7 +148,14 @@ func (w *Worker) ReloadMirrorConfig(newMirrors []mirrorConfig) {
 	}
 
 	w.cfg.Mirrors = newMirrors
+}
 
+func (w *Worker) initJobs() {
+	for _, mirror := range w.cfg.Mirrors {
+		// Create Provider
+		provider := newMirrorProvider(mirror, w.cfg)
+		w.jobs[provider.Name()] = newMirrorJob(provider)
+	}
 }
 
 func (w *Worker) disableJob(job *mirrorJob) {
@@ -222,28 +243,6 @@ func (w *Worker) runHTTPServer() {
 			panic(err)
 		}
 	}
-}
-
-// Halt stops all jobs
-func (w *Worker) Halt() {
-	w.L.Lock()
-	logger.Notice("Stopping all the jobs")
-	for _, job := range w.jobs {
-		if job.State() != stateDisabled {
-			job.ctrlChan <- jobHalt
-		}
-	}
-	jobsDone.Wait()
-	logger.Notice("All the jobs are stopped")
-	w.L.Unlock()
-	close(w.exit)
-}
-
-// Run runs worker forever
-func (w *Worker) Run() {
-	w.registorWorker()
-	go w.runHTTPServer()
-	w.runSchedule()
 }
 
 func (w *Worker) runSchedule() {
