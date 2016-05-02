@@ -224,7 +224,7 @@ func (s *Manager) updateJobOfWorker(c *gin.Context) {
 	case Failed:
 		logger.Warningf("Job [%s] @<%s> failed", status.Name, status.Worker)
 	case Syncing:
-		logger.Infof("Job [%s] @<%s> starts syncing", status.Name, status.Worker)
+		logger.Noticef("Job [%s] @<%s> starts syncing", status.Name, status.Worker)
 	case Disabled:
 		logger.Noticef("Job [%s] @<%s> disabled", status.Name, status.Worker)
 	case Paused:

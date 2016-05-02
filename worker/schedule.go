@@ -12,6 +12,7 @@ import (
 type scheduleQueue struct {
 	sync.Mutex
 	list *skiplist.SkipList
+	jobs map[string]bool
 }
 
 func timeLessThan(l, r interface{}) bool {
@@ -23,13 +24,20 @@ func timeLessThan(l, r interface{}) bool {
 func newScheduleQueue() *scheduleQueue {
 	queue := new(scheduleQueue)
 	queue.list = skiplist.NewCustomMap(timeLessThan)
+	queue.jobs = make(map[string]bool)
 	return queue
 }
 
 func (q *scheduleQueue) AddJob(schedTime time.Time, job *mirrorJob) {
 	q.Lock()
 	defer q.Unlock()
+	if _, ok := q.jobs[job.Name()]; ok {
+		logger.Warningf("Job %s already scheduled, removing the existing one", job.Name())
+		q.unsafeRemove(job.Name())
+	}
+	q.jobs[job.Name()] = true
 	q.list.Set(schedTime, job)
+	logger.Debugf("Added job %s @ %v", job.Name(), schedTime)
 }
 
 // pop out the first job if it's time to run it
@@ -44,10 +52,11 @@ func (q *scheduleQueue) Pop() *mirrorJob {
 	defer first.Close()
 
 	t := first.Key().(time.Time)
-	// logger.Debug("First job should run @%v", t)
 	if t.Before(time.Now()) {
 		job := first.Value().(*mirrorJob)
 		q.list.Delete(first.Key())
+		delete(q.jobs, job.Name())
+		logger.Debug("Popped out job %s @%v", job.Name(), t)
 		return job
 	}
 	return nil
@@ -57,7 +66,11 @@ func (q *scheduleQueue) Pop() *mirrorJob {
 func (q *scheduleQueue) Remove(name string) bool {
 	q.Lock()
 	defer q.Unlock()
+	return q.unsafeRemove(name)
+}
 
+// remove job
+func (q *scheduleQueue) unsafeRemove(name string) bool {
 	cur := q.list.Iterator()
 	defer cur.Close()
 
@@ -65,6 +78,7 @@ func (q *scheduleQueue) Remove(name string) bool {
 		cj := cur.Value().(*mirrorJob)
 		if cj.Name() == name {
 			q.list.Delete(cur.Key())
+			delete(q.jobs, name)
 			return true
 		}
 	}

@@ -31,6 +31,24 @@ func TestSchedule(t *testing.T) {
 			So(schedule.Pop(), ShouldEqual, job)
 
 		})
+		Convey("When adding one job twice", func() {
+			c := cmdConfig{
+				name: "schedule_test",
+			}
+			provider, _ := newCmdProvider(c)
+			job := newMirrorJob(provider)
+			sched := time.Now().Add(1 * time.Second)
+
+			schedule.AddJob(sched, job)
+			schedule.AddJob(sched.Add(1*time.Second), job)
+
+			So(schedule.Pop(), ShouldBeNil)
+			time.Sleep(1200 * time.Millisecond)
+			So(schedule.Pop(), ShouldBeNil)
+			time.Sleep(1200 * time.Millisecond)
+			So(schedule.Pop(), ShouldEqual, job)
+
+		})
 		Convey("When removing jobs", func() {
 			c := cmdConfig{
 				name: "schedule_test",

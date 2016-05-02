@@ -68,13 +68,13 @@ func (l *logLimiter) preExec() error {
 		}
 	}
 
-	logFile := filepath.Join(
-		logDir,
-		fmt.Sprintf(
-			"%s_%s.log",
-			p.Name(),
-			time.Now().Format("2006-01-02_15_04"),
-		),
+	logFileName := fmt.Sprintf(
+		"%s_%s.log",
+		p.Name(),
+		time.Now().Format("2006-01-02_15_04"),
+	)
+	logFilePath := filepath.Join(
+		logDir, logFileName,
 	)
 
 	logLink := filepath.Join(logDir, "latest")
@@ -82,10 +82,10 @@ func (l *logLimiter) preExec() error {
 	if _, err = os.Stat(logLink); err == nil {
 		os.Remove(logLink)
 	}
-	os.Symlink(logFile, logLink)
+	os.Symlink(logFileName, logLink)
 
 	ctx := p.EnterContext()
-	ctx.Set(_LogFileKey, logFile)
+	ctx.Set(_LogFileKey, logFilePath)
 	return nil
 }
 
@@ -101,7 +101,8 @@ func (l *logLimiter) postFail() error {
 	logLink := filepath.Join(logDir, "latest")
 	os.Rename(logFile, logFileFail)
 	os.Remove(logLink)
-	os.Symlink(logFileFail, logLink)
+	logFileName := filepath.Base(logFileFail)
+	os.Symlink(logFileName, logLink)
 
 	l.provider.ExitContext()
 	return nil

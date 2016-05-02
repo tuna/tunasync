@@ -7,30 +7,30 @@ import (
 	"github.com/BurntSushi/toml"
 )
 
-type ProviderEnum uint8
+type providerEnum uint8
 
 const (
-	ProvRsync ProviderEnum = iota
-	ProvTwoStageRsync
-	ProvCommand
+	provRsync providerEnum = iota
+	provTwoStageRsync
+	provCommand
 )
 
-func (p *ProviderEnum) UnmarshalText(text []byte) error {
+func (p *providerEnum) UnmarshalText(text []byte) error {
 	s := string(text)
 	switch s {
 	case `command`:
-		*p = ProvCommand
+		*p = provCommand
 	case `rsync`:
-		*p = ProvRsync
+		*p = provRsync
 	case `two-stage-rsync`:
-		*p = ProvTwoStageRsync
+		*p = provTwoStageRsync
 	default:
 		return errors.New("Invalid value to provierEnum")
 	}
 	return nil
-
 }
 
+// Worker config options
 type Config struct {
 	Global  globalConfig   `toml:"global"`
 	Manager managerConfig  `toml:"manager"`
@@ -69,7 +69,7 @@ type cgroupConfig struct {
 
 type mirrorConfig struct {
 	Name      string            `toml:"name"`
-	Provider  ProviderEnum      `toml:"provider"`
+	Provider  providerEnum      `toml:"provider"`
 	Upstream  string            `toml:"upstream"`
 	Interval  int               `toml:"interval"`
 	MirrorDir string            `toml:"mirror_dir"`

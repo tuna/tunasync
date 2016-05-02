@@ -65,6 +65,15 @@ func (m *mirrorJob) SetState(state uint32) {
 	atomic.StoreUint32(&(m.state), state)
 }
 
+func (m *mirrorJob) SetProvider(provider mirrorProvider) error {
+	s := m.State()
+	if (s != stateNone) && (s != stateDisabled) {
+		return fmt.Errorf("Provider cannot be switched when job state is %d", s)
+	}
+	m.provider = provider
+	return nil
+}
+
 // runMirrorJob is the goroutine where syncing job runs in
 // arguments:
 //    provider: mirror provider object
@@ -165,7 +174,7 @@ func (m *mirrorJob) Run(managerChan chan<- jobMessage, semaphore chan empty) err
 			if syncErr == nil {
 				// syncing success
 				logger.Noticef("succeeded syncing %s", m.Name())
-				managerChan <- jobMessage{tunasync.Success, m.Name(), "", true}
+				managerChan <- jobMessage{tunasync.Success, m.Name(), "", (m.State() == stateReady)}
 				// post-success hooks
 				err := runHooks(rHooks, func(h jobHook) error { return h.postSuccess() }, "post-success")
 				if err != nil {
@@ -177,7 +186,7 @@ func (m *mirrorJob) Run(managerChan chan<- jobMessage, semaphore chan empty) err
 
 			// syncing failed
 			logger.Warningf("failed syncing %s: %s", m.Name(), syncErr.Error())
-			managerChan <- jobMessage{tunasync.Failed, m.Name(), syncErr.Error(), retry == maxRetry-1}
+			managerChan <- jobMessage{tunasync.Failed, m.Name(), syncErr.Error(), (retry == maxRetry-1) && (m.State() == stateReady)}
 
 			// post-fail hooks
 			logger.Debug("post-fail hooks")
