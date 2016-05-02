@@ -30,6 +30,7 @@ func (q *scheduleQueue) AddJob(schedTime time.Time, job *mirrorJob) {
 	q.Lock()
 	defer q.Unlock()
 	q.list.Set(schedTime, job)
+	logger.Debugf("Added job %s @ %v", job.Name(), schedTime)
 }
 
 // pop out the first job if it's time to run it

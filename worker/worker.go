@@ -1,12 +1,9 @@
 package worker
 
 import (
-	"bytes"
-	"errors"
 	"fmt"
-	"html/template"
 	"net/http"
-	"path/filepath"
+	"sync"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -17,9 +14,9 @@ var tunasyncWorker *Worker
 
 // A Worker is a instance of tunasync worker
 type Worker struct {
-	cfg       *Config
-	providers map[string]mirrorProvider
-	jobs      map[string]*mirrorJob
+	L    sync.Mutex
+	cfg  *Config
+	jobs map[string]*mirrorJob
 
 	managerChan chan jobMessage
 	semaphore   chan empty
@@ -36,9 +33,8 @@ func GetTUNASyncWorker(cfg *Config) *Worker {
 	}
 
 	w := &Worker{
-		cfg:       cfg,
-		providers: make(map[string]mirrorProvider),
-		jobs:      make(map[string]*mirrorJob),
+		cfg:  cfg,
+		jobs: make(map[string]*mirrorJob),
 
 		managerChan: make(chan jobMessage, 32),
 		semaphore:   make(chan empty, cfg.Global.Concurrent),
@@ -61,147 +57,89 @@ func GetTUNASyncWorker(cfg *Config) *Worker {
 	return w
 }
 
-func (w *Worker) initProviders() {
-	c := w.cfg
-
-	formatLogDir := func(logDir string, m mirrorConfig) string {
-		tmpl, err := template.New("logDirTmpl-" + m.Name).Parse(logDir)
-		if err != nil {
-			panic(err)
-		}
-		var formatedLogDir bytes.Buffer
-		tmpl.Execute(&formatedLogDir, m)
-		return formatedLogDir.String()
-	}
-
-	for _, mirror := range c.Mirrors {
-		logDir := mirror.LogDir
-		mirrorDir := mirror.MirrorDir
-		if logDir == "" {
-			logDir = c.Global.LogDir
-		}
-		if mirrorDir == "" {
-			mirrorDir = filepath.Join(
-				c.Global.MirrorDir, mirror.Name,
-			)
-		}
-		if mirror.Interval == 0 {
-			mirror.Interval = c.Global.Interval
-		}
-		logDir = formatLogDir(logDir, mirror)
-
-		// IsMaster
-		isMaster := true
-		if mirror.Role == "slave" {
-			isMaster = false
-		} else {
-			if mirror.Role != "" && mirror.Role != "master" {
-				logger.Warningf("Invalid role configuration for %s", mirror.Name)
-			}
-		}
-
-		var provider mirrorProvider
-
-		switch mirror.Provider {
-		case ProvCommand:
-			pc := cmdConfig{
-				name:        mirror.Name,
-				upstreamURL: mirror.Upstream,
-				command:     mirror.Command,
-				workingDir:  mirrorDir,
-				logDir:      logDir,
-				logFile:     filepath.Join(logDir, "latest.log"),
-				interval:    time.Duration(mirror.Interval) * time.Minute,
-				env:         mirror.Env,
-			}
-			p, err := newCmdProvider(pc)
-			p.isMaster = isMaster
-			if err != nil {
-				panic(err)
-			}
-			provider = p
-		case ProvRsync:
-			rc := rsyncConfig{
-				name:        mirror.Name,
-				upstreamURL: mirror.Upstream,
-				rsyncCmd:    mirror.Command,
-				password:    mirror.Password,
-				excludeFile: mirror.ExcludeFile,
-				workingDir:  mirrorDir,
-				logDir:      logDir,
-				logFile:     filepath.Join(logDir, "latest.log"),
-				useIPv6:     mirror.UseIPv6,
-				interval:    time.Duration(mirror.Interval) * time.Minute,
-			}
-			p, err := newRsyncProvider(rc)
-			p.isMaster = isMaster
-			if err != nil {
-				panic(err)
-			}
-			provider = p
-		case ProvTwoStageRsync:
-			rc := twoStageRsyncConfig{
-				name:          mirror.Name,
-				stage1Profile: mirror.Stage1Profile,
-				upstreamURL:   mirror.Upstream,
-				rsyncCmd:      mirror.Command,
-				password:      mirror.Password,
-				excludeFile:   mirror.ExcludeFile,
-				workingDir:    mirrorDir,
-				logDir:        logDir,
-				logFile:       filepath.Join(logDir, "latest.log"),
-				useIPv6:       mirror.UseIPv6,
-				interval:      time.Duration(mirror.Interval) * time.Minute,
-			}
-			p, err := newTwoStageRsyncProvider(rc)
-			p.isMaster = isMaster
-			if err != nil {
-				panic(err)
-			}
-			provider = p
-		default:
-			panic(errors.New("Invalid mirror provider"))
-
-		}
-
-		provider.AddHook(newLogLimiter(provider))
-
-		// Add Cgroup Hook
-		if w.cfg.Cgroup.Enable {
-			provider.AddHook(
-				newCgroupHook(provider, w.cfg.Cgroup.BasePath, w.cfg.Cgroup.Group),
-			)
-		}
-
-		// ExecOnSuccess hook
-		if mirror.ExecOnSuccess != "" {
-			h, err := newExecPostHook(provider, execOnSuccess, mirror.ExecOnSuccess)
-			if err != nil {
-				logger.Errorf("Error initializing mirror %s: %s", mirror.Name, err.Error())
-				panic(err)
-			}
-			provider.AddHook(h)
-		}
-		// ExecOnFailure hook
-		if mirror.ExecOnFailure != "" {
-			h, err := newExecPostHook(provider, execOnFailure, mirror.ExecOnFailure)
-			if err != nil {
-				logger.Errorf("Error initializing mirror %s: %s", mirror.Name, err.Error())
-				panic(err)
-			}
-			provider.AddHook(h)
-		}
-
-		w.providers[provider.Name()] = provider
-
+func (w *Worker) initJobs() {
+	for _, mirror := range w.cfg.Mirrors {
+		// Create Provider
+		provider := newMirrorProvider(mirror, w.cfg)
+		w.jobs[provider.Name()] = newMirrorJob(provider)
 	}
 }
 
-func (w *Worker) initJobs() {
-	w.initProviders()
+// ReloadMirrorConfig refresh the providers and jobs
+// from new mirror configs
+// TODO: deleted job should be removed from manager-side mirror list
+func (w *Worker) ReloadMirrorConfig(newMirrors []mirrorConfig) {
+	w.L.Lock()
+	defer w.L.Unlock()
+	logger.Info("Reloading mirror configs")
 
-	for name, provider := range w.providers {
-		w.jobs[name] = newMirrorJob(provider)
+	oldMirrors := w.cfg.Mirrors
+	difference := diffMirrorConfig(oldMirrors, newMirrors)
+
+	// first deal with deletion and modifications
+	for _, op := range difference {
+		if op.diffOp == diffAdd {
+			continue
+		}
+		name := op.mirCfg.Name
+		job, ok := w.jobs[name]
+		if !ok {
+			logger.Warningf("Job %s not found", name)
+			continue
+		}
+		switch op.diffOp {
+		case diffDelete:
+			w.disableJob(job)
+			delete(w.jobs, name)
+			logger.Noticef("Deleted job %s", name)
+		case diffModify:
+			jobState := job.State()
+			w.disableJob(job)
+			// set new provider
+			provider := newMirrorProvider(op.mirCfg, w.cfg)
+			if err := job.SetProvider(provider); err != nil {
+				logger.Errorf("Error setting job provider of %s: %s", name, err.Error())
+				continue
+			}
+
+			// re-schedule job according to its previous state
+			if jobState == stateDisabled {
+				job.SetState(stateDisabled)
+			} else if jobState == statePaused {
+				job.SetState(statePaused)
+				go job.Run(w.managerChan, w.semaphore)
+			} else {
+				job.SetState(stateReady)
+				go job.Run(w.managerChan, w.semaphore)
+				w.schedule.AddJob(time.Now(), job)
+			}
+			logger.Noticef("Reloaded job %s", name)
+		}
+	}
+	// for added new jobs, just start new jobs
+	for _, op := range difference {
+		if op.diffOp != diffAdd {
+			continue
+		}
+		provider := newMirrorProvider(op.mirCfg, w.cfg)
+		job := newMirrorJob(provider)
+		w.jobs[provider.Name()] = job
+
+		job.SetState(stateReady)
+		go job.Run(w.managerChan, w.semaphore)
+		w.schedule.AddJob(time.Now(), job)
+		logger.Noticef("New job %s", job.Name())
+	}
+
+	w.cfg.Mirrors = newMirrors
+
+}
+
+func (w *Worker) disableJob(job *mirrorJob) {
+	w.schedule.Remove(job.Name())
+	if job.State() != stateDisabled {
+		job.ctrlChan <- jobDisable
+		<-job.disabled
 	}
 }
 
@@ -211,17 +149,22 @@ func (w *Worker) makeHTTPServer() {
 	s.Use(gin.Recovery())
 
 	s.POST("/", func(c *gin.Context) {
+		w.L.Lock()
+		defer w.L.Unlock()
+
 		var cmd WorkerCmd
 
 		if err := c.BindJSON(&cmd); err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{"msg": "Invalid request"})
 			return
 		}
+
 		job, ok := w.jobs[cmd.MirrorID]
 		if !ok {
 			c.JSON(http.StatusNotFound, gin.H{"msg": fmt.Sprintf("Mirror ``%s'' not found", cmd.MirrorID)})
 			return
 		}
+
 		logger.Noticef("Received command: %v", cmd)
 		// if job disabled, start them first
 		switch cmd.Cmd {
@@ -243,11 +186,7 @@ func (w *Worker) makeHTTPServer() {
 				job.ctrlChan <- jobStop
 			}
 		case CmdDisable:
-			w.schedule.Remove(job.Name())
-			if job.State() != stateDisabled {
-				job.ctrlChan <- jobDisable
-				<-job.disabled
-			}
+			w.disableJob(job)
 		case CmdPing:
 			job.ctrlChan <- jobStart
 		default:
@@ -289,6 +228,8 @@ func (w *Worker) Run() {
 }
 
 func (w *Worker) runSchedule() {
+	w.L.Lock()
+
 	mirrorList := w.fetchJobStatus()
 	unset := make(map[string]bool)
 	for name := range w.jobs {
@@ -327,11 +268,20 @@ func (w *Worker) runSchedule() {
 		w.schedule.AddJob(time.Now(), job)
 	}
 
+	w.L.Unlock()
+
 	for {
 		select {
 		case jobMsg := <-w.managerChan:
 			// got status update from job
-			job := w.jobs[jobMsg.name]
+			w.L.Lock()
+			job, ok := w.jobs[jobMsg.name]
+			w.L.Unlock()
+			if !ok {
+				logger.Warningf("Job %s not found", jobMsg.name)
+				continue
+			}
+
 			if job.State() != stateReady {
 				logger.Infof("Job %s state is not ready, skip adding new schedule", jobMsg.name)
 				continue
@@ -341,7 +291,7 @@ func (w *Worker) runSchedule() {
 			// is running. If it's paused or disabled
 			// a sync failure signal would be emitted
 			// which needs to be ignored
-			w.updateStatus(jobMsg)
+			w.updateStatus(job, jobMsg)
 
 			// only successful or the final failure msg
 			// can trigger scheduling
@@ -361,9 +311,7 @@ func (w *Worker) runSchedule() {
 				job.ctrlChan <- jobStart
 			}
 		}
-
 	}
-
 }
 
 // Name returns worker name
@@ -397,14 +345,14 @@ func (w *Worker) registorWorker() {
 	}
 }
 
-func (w *Worker) updateStatus(jobMsg jobMessage) {
+func (w *Worker) updateStatus(job *mirrorJob, jobMsg jobMessage) {
 	url := fmt.Sprintf(
 		"%s/workers/%s/jobs/%s",
 		w.cfg.Manager.APIBase,
 		w.Name(),
 		jobMsg.name,
 	)
-	p := w.providers[jobMsg.name]
+	p := job.provider
 	smsg := MirrorStatus{
 		Name:     jobMsg.name,
 		Worker:   w.cfg.Global.Name,

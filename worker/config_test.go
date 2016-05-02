@@ -82,19 +82,19 @@ exec_on_failure = "bash -c 'echo ${TUNASYNC_JOB_EXIT_STATUS} > ${TUNASYNC_WORKIN
 		m := cfg.Mirrors[0]
 		So(m.Name, ShouldEqual, "AOSP")
 		So(m.MirrorDir, ShouldEqual, "/data/git/AOSP")
-		So(m.Provider, ShouldEqual, ProvCommand)
+		So(m.Provider, ShouldEqual, provCommand)
 		So(m.Interval, ShouldEqual, 720)
 		So(m.Env["REPO"], ShouldEqual, "/usr/local/bin/aosp-repo")
 
 		m = cfg.Mirrors[1]
 		So(m.Name, ShouldEqual, "debian")
 		So(m.MirrorDir, ShouldEqual, "")
-		So(m.Provider, ShouldEqual, ProvTwoStageRsync)
+		So(m.Provider, ShouldEqual, provTwoStageRsync)
 
 		m = cfg.Mirrors[2]
 		So(m.Name, ShouldEqual, "fedora")
 		So(m.MirrorDir, ShouldEqual, "")
-		So(m.Provider, ShouldEqual, ProvRsync)
+		So(m.Provider, ShouldEqual, provRsync)
 		So(m.ExcludeFile, ShouldEqual, "/etc/tunasync.d/fedora-exclude.txt")
 
 		So(len(cfg.Mirrors), ShouldEqual, 3)
@@ -112,14 +112,13 @@ exec_on_failure = "bash -c 'echo ${TUNASYNC_JOB_EXIT_STATUS} > ${TUNASYNC_WORKIN
 		cfg, err := LoadConfig(tmpfile.Name())
 		So(err, ShouldBeNil)
 
-		w := &Worker{
-			cfg:       cfg,
-			providers: make(map[string]mirrorProvider),
+		providers := map[string]mirrorProvider{}
+		for _, m := range cfg.Mirrors {
+			p := newMirrorProvider(m, cfg)
+			providers[p.Name()] = p
 		}
 
-		w.initProviders()
-
-		p := w.providers["AOSP"]
+		p := providers["AOSP"]
 		So(p.Name(), ShouldEqual, "AOSP")
 		So(p.LogDir(), ShouldEqual, "/var/log/tunasync/AOSP")
 		So(p.LogFile(), ShouldEqual, "/var/log/tunasync/AOSP/latest.log")
@@ -132,7 +131,7 @@ exec_on_failure = "bash -c 'echo ${TUNASYNC_JOB_EXIT_STATUS} > ${TUNASYNC_WORKIN
 			}
 		}
 
-		p = w.providers["debian"]
+		p = providers["debian"]
 		So(p.Name(), ShouldEqual, "debian")
 		So(p.LogDir(), ShouldEqual, "/var/log/tunasync/debian")
 		So(p.LogFile(), ShouldEqual, "/var/log/tunasync/debian/latest.log")
@@ -141,7 +140,7 @@ exec_on_failure = "bash -c 'echo ${TUNASYNC_JOB_EXIT_STATUS} > ${TUNASYNC_WORKIN
 		So(r2p.stage1Profile, ShouldEqual, "debian")
 		So(r2p.WorkingDir(), ShouldEqual, "/data/mirrors/debian")
 
-		p = w.providers["fedora"]
+		p = providers["fedora"]
 		So(p.Name(), ShouldEqual, "fedora")
 		So(p.LogDir(), ShouldEqual, "/var/log/tunasync/fedora")
 		So(p.LogFile(), ShouldEqual, "/var/log/tunasync/fedora/latest.log")

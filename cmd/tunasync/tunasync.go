@@ -2,6 +2,9 @@ package main
 
 import (
 	"os"
+	"os/signal"
+	"syscall"
+	"time"
 
 	"github.com/codegangsta/cli"
 	"github.com/gin-gonic/gin"
@@ -12,7 +15,7 @@ import (
 	"github.com/tuna/tunasync/worker"
 )
 
-var logger = logging.MustGetLogger("tunasync-cmd")
+var logger = logging.MustGetLogger("tunasync")
 
 func startManager(c *cli.Context) {
 	tunasync.InitLogger(c.Bool("verbose"), c.Bool("debug"), c.Bool("with-systemd"))
@@ -53,6 +56,24 @@ func startWorker(c *cli.Context) {
 		logger.Errorf("Error intializing TUNA sync worker.")
 		os.Exit(1)
 	}
+
+	go func() {
+		time.Sleep(1 * time.Second)
+		sigChan := make(chan os.Signal, 1)
+		signal.Notify(sigChan, syscall.SIGHUP)
+		for {
+			s := <-sigChan
+			switch s {
+			case syscall.SIGHUP:
+				logger.Info("Received reload signal")
+				newCfg, err := worker.LoadConfig(c.String("config"))
+				if err != nil {
+					logger.Errorf("Error loading config: %s", err.Error())
+				}
+				w.ReloadMirrorConfig(newCfg.Mirrors)
+			}
+		}
+	}()
 
 	logger.Info("Run tunasync worker.")
 	w.Run()

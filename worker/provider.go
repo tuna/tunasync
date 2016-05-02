@@ -1,9 +1,10 @@
 package worker
 
 import (
-	"os"
-	"sync"
-	"sync/atomic"
+	"bytes"
+	"errors"
+	"html/template"
+	"path/filepath"
 	"time"
 )
 
@@ -54,150 +55,136 @@ type mirrorProvider interface {
 	Context() *Context
 }
 
-type baseProvider struct {
-	sync.Mutex
+// newProvider creates a mirrorProvider instance
+// using a mirrorCfg and the global cfg
+func newMirrorProvider(mirror mirrorConfig, cfg *Config) mirrorProvider {
 
-	ctx      *Context
-	name     string
-	interval time.Duration
-	isMaster bool
-
-	cmd       *cmdJob
-	isRunning atomic.Value
-
-	logFile *os.File
-
-	cgroup *cgroupHook
-	hooks  []jobHook
-}
-
-func (p *baseProvider) Name() string {
-	return p.name
-}
-
-func (p *baseProvider) EnterContext() *Context {
-	p.ctx = p.ctx.Enter()
-	return p.ctx
-}
-
-func (p *baseProvider) ExitContext() *Context {
-	p.ctx, _ = p.ctx.Exit()
-	return p.ctx
-}
-
-func (p *baseProvider) Context() *Context {
-	return p.ctx
-}
-
-func (p *baseProvider) Interval() time.Duration {
-	// logger.Debug("interval for %s: %v", p.Name(), p.interval)
-	return p.interval
-}
-
-func (p *baseProvider) IsMaster() bool {
-	return p.isMaster
-}
-
-func (p *baseProvider) WorkingDir() string {
-	if v, ok := p.ctx.Get(_WorkingDirKey); ok {
-		if s, ok := v.(string); ok {
-			return s
-		}
-	}
-	panic("working dir is impossible to be non-exist")
-}
-
-func (p *baseProvider) LogDir() string {
-	if v, ok := p.ctx.Get(_LogDirKey); ok {
-		if s, ok := v.(string); ok {
-			return s
-		}
-	}
-	panic("log dir is impossible to be unavailable")
-}
-
-func (p *baseProvider) LogFile() string {
-	if v, ok := p.ctx.Get(_LogFileKey); ok {
-		if s, ok := v.(string); ok {
-			return s
-		}
-	}
-	panic("log dir is impossible to be unavailable")
-}
-
-func (p *baseProvider) AddHook(hook jobHook) {
-	if cg, ok := hook.(*cgroupHook); ok {
-		p.cgroup = cg
-	}
-	p.hooks = append(p.hooks, hook)
-}
-
-func (p *baseProvider) Hooks() []jobHook {
-	return p.hooks
-}
-
-func (p *baseProvider) Cgroup() *cgroupHook {
-	return p.cgroup
-}
-
-func (p *baseProvider) prepareLogFile() error {
-	if p.LogFile() == "/dev/null" {
-		p.cmd.SetLogFile(nil)
-		return nil
-	}
-	if p.logFile == nil {
-		logFile, err := os.OpenFile(p.LogFile(), os.O_WRONLY|os.O_CREATE, 0644)
+	formatLogDir := func(logDir string, m mirrorConfig) string {
+		tmpl, err := template.New("logDirTmpl-" + m.Name).Parse(logDir)
 		if err != nil {
-			logger.Errorf("Error opening logfile %s: %s", p.LogFile(), err.Error())
-			return err
+			panic(err)
 		}
-		p.logFile = logFile
+		var formatedLogDir bytes.Buffer
+		tmpl.Execute(&formatedLogDir, m)
+		return formatedLogDir.String()
 	}
-	p.cmd.SetLogFile(p.logFile)
-	return nil
-}
 
-func (p *baseProvider) Run() error {
-	panic("Not Implemented")
-}
+	logDir := mirror.LogDir
+	mirrorDir := mirror.MirrorDir
+	if logDir == "" {
+		logDir = cfg.Global.LogDir
+	}
+	if mirrorDir == "" {
+		mirrorDir = filepath.Join(
+			cfg.Global.MirrorDir, mirror.Name,
+		)
+	}
+	if mirror.Interval == 0 {
+		mirror.Interval = cfg.Global.Interval
+	}
+	logDir = formatLogDir(logDir, mirror)
 
-func (p *baseProvider) Start() error {
-	panic("Not Implemented")
-}
-
-func (p *baseProvider) IsRunning() bool {
-	isRunning, _ := p.isRunning.Load().(bool)
-	return isRunning
-}
-
-func (p *baseProvider) Wait() error {
-	defer func() {
-		p.Lock()
-		p.isRunning.Store(false)
-		if p.logFile != nil {
-			p.logFile.Close()
-			p.logFile = nil
+	// IsMaster
+	isMaster := true
+	if mirror.Role == "slave" {
+		isMaster = false
+	} else {
+		if mirror.Role != "" && mirror.Role != "master" {
+			logger.Warningf("Invalid role configuration for %s", mirror.Name)
 		}
-		p.Unlock()
-	}()
-	return p.cmd.Wait()
-}
-
-func (p *baseProvider) Terminate() error {
-	logger.Debugf("terminating provider: %s", p.Name())
-	if !p.IsRunning() {
-		return nil
 	}
 
-	p.Lock()
-	if p.logFile != nil {
-		p.logFile.Close()
-		p.logFile = nil
+	var provider mirrorProvider
+
+	switch mirror.Provider {
+	case provCommand:
+		pc := cmdConfig{
+			name:        mirror.Name,
+			upstreamURL: mirror.Upstream,
+			command:     mirror.Command,
+			workingDir:  mirrorDir,
+			logDir:      logDir,
+			logFile:     filepath.Join(logDir, "latest.log"),
+			interval:    time.Duration(mirror.Interval) * time.Minute,
+			env:         mirror.Env,
+		}
+		p, err := newCmdProvider(pc)
+		p.isMaster = isMaster
+		if err != nil {
+			panic(err)
+		}
+		provider = p
+	case provRsync:
+		rc := rsyncConfig{
+			name:        mirror.Name,
+			upstreamURL: mirror.Upstream,
+			rsyncCmd:    mirror.Command,
+			password:    mirror.Password,
+			excludeFile: mirror.ExcludeFile,
+			workingDir:  mirrorDir,
+			logDir:      logDir,
+			logFile:     filepath.Join(logDir, "latest.log"),
+			useIPv6:     mirror.UseIPv6,
+			interval:    time.Duration(mirror.Interval) * time.Minute,
+		}
+		p, err := newRsyncProvider(rc)
+		p.isMaster = isMaster
+		if err != nil {
+			panic(err)
+		}
+		provider = p
+	case provTwoStageRsync:
+		rc := twoStageRsyncConfig{
+			name:          mirror.Name,
+			stage1Profile: mirror.Stage1Profile,
+			upstreamURL:   mirror.Upstream,
+			rsyncCmd:      mirror.Command,
+			password:      mirror.Password,
+			excludeFile:   mirror.ExcludeFile,
+			workingDir:    mirrorDir,
+			logDir:        logDir,
+			logFile:       filepath.Join(logDir, "latest.log"),
+			useIPv6:       mirror.UseIPv6,
+			interval:      time.Duration(mirror.Interval) * time.Minute,
+		}
+		p, err := newTwoStageRsyncProvider(rc)
+		p.isMaster = isMaster
+		if err != nil {
+			panic(err)
+		}
+		provider = p
+	default:
+		panic(errors.New("Invalid mirror provider"))
 	}
-	p.Unlock()
 
-	err := p.cmd.Terminate()
-	p.isRunning.Store(false)
+	// Add Logging Hook
+	provider.AddHook(newLogLimiter(provider))
 
-	return err
+	// Add Cgroup Hook
+	if cfg.Cgroup.Enable {
+		provider.AddHook(
+			newCgroupHook(provider, cfg.Cgroup.BasePath, cfg.Cgroup.Group),
+		)
+	}
+
+	// ExecOnSuccess hook
+	if mirror.ExecOnSuccess != "" {
+		h, err := newExecPostHook(provider, execOnSuccess, mirror.ExecOnSuccess)
+		if err != nil {
+			logger.Errorf("Error initializing mirror %s: %s", mirror.Name, err.Error())
+			panic(err)
+		}
+		provider.AddHook(h)
+	}
+	// ExecOnFailure hook
+	if mirror.ExecOnFailure != "" {
+		h, err := newExecPostHook(provider, execOnFailure, mirror.ExecOnFailure)
+		if err != nil {
+			logger.Errorf("Error initializing mirror %s: %s", mirror.Name, err.Error())
+			panic(err)
+		}
+		provider.AddHook(h)
+	}
+
+	return provider
 }
