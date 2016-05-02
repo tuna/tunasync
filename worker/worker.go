@@ -109,7 +109,7 @@ func (w *Worker) ReloadMirrorConfig(newMirrors []mirrorConfig) {
 				job.SetState(statePaused)
 				go job.Run(w.managerChan, w.semaphore)
 			} else {
-				job.SetState(stateReady)
+				job.SetState(stateNone)
 				go job.Run(w.managerChan, w.semaphore)
 				w.schedule.AddJob(time.Now(), job)
 			}
@@ -125,7 +125,7 @@ func (w *Worker) ReloadMirrorConfig(newMirrors []mirrorConfig) {
 		job := newMirrorJob(provider)
 		w.jobs[provider.Name()] = job
 
-		job.SetState(stateReady)
+		job.SetState(stateNone)
 		go job.Run(w.managerChan, w.semaphore)
 		w.schedule.AddJob(time.Now(), job)
 		logger.Noticef("New job %s", job.Name())
@@ -166,6 +166,9 @@ func (w *Worker) makeHTTPServer() {
 		}
 
 		logger.Noticef("Received command: %v", cmd)
+		// No matter what command, the existing job
+		// schedule should be flushed
+		w.schedule.Remove(job.Name())
 		// if job disabled, start them first
 		switch cmd.Cmd {
 		case CmdStart, CmdRestart:
@@ -181,14 +184,13 @@ func (w *Worker) makeHTTPServer() {
 		case CmdStop:
 			// if job is disabled, no goroutine would be there
 			// receiving this signal
-			w.schedule.Remove(job.Name())
 			if job.State() != stateDisabled {
 				job.ctrlChan <- jobStop
 			}
 		case CmdDisable:
 			w.disableJob(job)
 		case CmdPing:
-			job.ctrlChan <- jobStart
+			// empty
 		default:
 			c.JSON(http.StatusNotAcceptable, gin.H{"msg": "Invalid Command"})
 			return
@@ -250,7 +252,7 @@ func (w *Worker) runSchedule() {
 				go job.Run(w.managerChan, w.semaphore)
 				continue
 			default:
-				job.SetState(stateReady)
+				job.SetState(stateNone)
 				go job.Run(w.managerChan, w.semaphore)
 				stime := m.LastUpdate.Add(job.provider.Interval())
 				logger.Debugf("Scheduling job %s @%s", job.Name(), stime.Format("2006-01-02 15:04:05"))
@@ -263,7 +265,7 @@ func (w *Worker) runSchedule() {
 	// manager's mirror list
 	for name := range unset {
 		job := w.jobs[name]
-		job.SetState(stateReady)
+		job.SetState(stateNone)
 		go job.Run(w.managerChan, w.semaphore)
 		w.schedule.AddJob(time.Now(), job)
 	}
