@@ -3,6 +3,7 @@ package worker
 import (
 	"errors"
 	"fmt"
+	"sync"
 	"sync/atomic"
 
 	tunasync "github.com/tuna/tunasync/internal"
@@ -18,6 +19,7 @@ const (
 	jobDisable            // disable the job (stops goroutine)
 	jobRestart            // restart syncing
 	jobPing               // ensure the goroutine is alive
+	jobHalt               // worker halts
 )
 
 type jobMessage struct {
@@ -36,7 +38,13 @@ const (
 	statePaused
 	// disabled by jobDisable
 	stateDisabled
+	// worker is halting
+	stateHalting
 )
+
+// use to ensure all jobs are finished before
+// worker exit
+var jobsDone sync.WaitGroup
 
 type mirrorJob struct {
 	provider mirrorProvider
@@ -82,11 +90,11 @@ func (m *mirrorJob) SetProvider(provider mirrorProvider) error {
 //    sempaphore: make sure the concurrent running syncing job won't explode
 // TODO: message struct for managerChan
 func (m *mirrorJob) Run(managerChan chan<- jobMessage, semaphore chan empty) error {
-
+	jobsDone.Add(1)
 	m.disabled = make(chan empty)
 	defer func() {
 		close(m.disabled)
-		m.SetState(stateDisabled)
+		jobsDone.Done()
 	}()
 
 	provider := m.provider
@@ -244,6 +252,11 @@ func (m *mirrorJob) Run(managerChan chan<- jobMessage, semaphore chan empty) err
 				case jobStart:
 					m.SetState(stateReady)
 					goto _wait_for_job
+				case jobHalt:
+					m.SetState(stateHalting)
+					close(kill)
+					<-jobDone
+					return nil
 				default:
 					// TODO: implement this
 					close(kill)

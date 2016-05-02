@@ -20,6 +20,7 @@ type Worker struct {
 
 	managerChan chan jobMessage
 	semaphore   chan empty
+	exit        chan empty
 
 	schedule   *scheduleQueue
 	httpEngine *gin.Engine
@@ -38,6 +39,7 @@ func GetTUNASyncWorker(cfg *Config) *Worker {
 
 		managerChan: make(chan jobMessage, 32),
 		semaphore:   make(chan empty, cfg.Global.Concurrent),
+		exit:        make(chan empty),
 
 		schedule: newScheduleQueue(),
 	}
@@ -57,12 +59,26 @@ func GetTUNASyncWorker(cfg *Config) *Worker {
 	return w
 }
 
-func (w *Worker) initJobs() {
-	for _, mirror := range w.cfg.Mirrors {
-		// Create Provider
-		provider := newMirrorProvider(mirror, w.cfg)
-		w.jobs[provider.Name()] = newMirrorJob(provider)
+// Run runs worker forever
+func (w *Worker) Run() {
+	w.registorWorker()
+	go w.runHTTPServer()
+	w.runSchedule()
+}
+
+// Halt stops all jobs
+func (w *Worker) Halt() {
+	w.L.Lock()
+	logger.Notice("Stopping all the jobs")
+	for _, job := range w.jobs {
+		if job.State() != stateDisabled {
+			job.ctrlChan <- jobHalt
+		}
 	}
+	jobsDone.Wait()
+	logger.Notice("All the jobs are stopped")
+	w.L.Unlock()
+	close(w.exit)
 }
 
 // ReloadMirrorConfig refresh the providers and jobs
@@ -132,7 +148,14 @@ func (w *Worker) ReloadMirrorConfig(newMirrors []mirrorConfig) {
 	}
 
 	w.cfg.Mirrors = newMirrors
+}
 
+func (w *Worker) initJobs() {
+	for _, mirror := range w.cfg.Mirrors {
+		// Create Provider
+		provider := newMirrorProvider(mirror, w.cfg)
+		w.jobs[provider.Name()] = newMirrorJob(provider)
+	}
 }
 
 func (w *Worker) disableJob(job *mirrorJob) {
@@ -222,13 +245,6 @@ func (w *Worker) runHTTPServer() {
 	}
 }
 
-// Run runs worker forever
-func (w *Worker) Run() {
-	w.registorWorker()
-	go w.runHTTPServer()
-	w.runSchedule()
-}
-
 func (w *Worker) runSchedule() {
 	w.L.Lock()
 
@@ -284,7 +300,7 @@ func (w *Worker) runSchedule() {
 				continue
 			}
 
-			if job.State() != stateReady {
+			if (job.State() != stateReady) && (job.State() != stateHalting) {
 				logger.Infof("Job %s state is not ready, skip adding new schedule", jobMsg.name)
 				continue
 			}
@@ -311,6 +327,25 @@ func (w *Worker) runSchedule() {
 			// check schedule every 5 seconds
 			if job := w.schedule.Pop(); job != nil {
 				job.ctrlChan <- jobStart
+			}
+		case <-w.exit:
+			// flush status update messages
+			w.L.Lock()
+			defer w.L.Unlock()
+			for {
+				select {
+				case jobMsg := <-w.managerChan:
+					logger.Debugf("status update from %s", jobMsg.name)
+					job, ok := w.jobs[jobMsg.name]
+					if !ok {
+						continue
+					}
+					if jobMsg.status == Failed || jobMsg.status == Success {
+						w.updateStatus(job, jobMsg)
+					}
+				default:
+					return
+				}
 			}
 		}
 	}
