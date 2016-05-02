@@ -61,8 +61,9 @@ func startWorker(c *cli.Context) {
 		time.Sleep(1 * time.Second)
 		sigChan := make(chan os.Signal, 1)
 		signal.Notify(sigChan, syscall.SIGHUP)
-		for {
-			s := <-sigChan
+		signal.Notify(sigChan, syscall.SIGINT)
+		signal.Notify(sigChan, syscall.SIGTERM)
+		for s := range sigChan {
 			switch s {
 			case syscall.SIGHUP:
 				logger.Info("Received reload signal")
@@ -71,6 +72,8 @@ func startWorker(c *cli.Context) {
 					logger.Errorf("Error loading config: %s", err.Error())
 				}
 				w.ReloadMirrorConfig(newCfg.Mirrors)
+			case syscall.SIGINT, syscall.SIGTERM:
+				w.Halt()
 			}
 		}
 	}()
