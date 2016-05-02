@@ -8,6 +8,7 @@ User=tunasync
 PermissionsStartOnly=true
 ExecStartPre=/usr/bin/cgcreate -t tunasync -a tunasync -g cpu:tunasync
 ExecStart=/home/bin/tunasync worker -c /etc/tunasync/worker.conf --with-systemd
+ExecReload=/bin/kill -SIGHUP $MAINPID
 ExecStopPost=/usr/bin/cgdelete cpu:tunasync
 
 [Install]
