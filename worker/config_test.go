@@ -1,8 +1,10 @@
 package worker
 
 import (
+	"fmt"
 	"io/ioutil"
 	"os"
+	"path/filepath"
 	"testing"
 
 	. "github.com/smartystreets/goconvey/convey"
@@ -45,7 +47,6 @@ stage1_profile = "debian"
 upstream = "rsync://ftp.debian.org/debian/"
 use_ipv6 = true
 
-
 [[mirrors]]
 name = "fedora"
 provider = "rsync"
@@ -66,9 +67,46 @@ exec_on_failure = "bash -c 'echo ${TUNASYNC_JOB_EXIT_STATUS} > ${TUNASYNC_WORKIN
 		So(err, ShouldEqual, nil)
 		defer os.Remove(tmpfile.Name())
 
+		tmpDir, err := ioutil.TempDir("", "tunasync")
+		So(err, ShouldBeNil)
+		defer os.RemoveAll(tmpDir)
+
+		incSection := fmt.Sprintf(
+			"\n[include]\n"+
+				"include_mirrors = \"%s/*.conf\"",
+			tmpDir,
+		)
+
+		cfgBlob = cfgBlob + incSection
+
 		err = ioutil.WriteFile(tmpfile.Name(), []byte(cfgBlob), 0644)
 		So(err, ShouldEqual, nil)
 		defer tmpfile.Close()
+
+		incBlob1 := `
+[[mirrors]]
+name = "debian-cd"
+provider = "two-stage-rsync"
+stage1_profile = "debian"
+use_ipv6 = true
+
+[[mirrors]]
+name = "debian-security"
+provider = "two-stage-rsync"
+stage1_profile = "debian"
+use_ipv6 = true
+		`
+		incBlob2 := `
+[[mirrors]]
+name = "ubuntu"
+provider = "two-stage-rsync"
+stage1_profile = "debian"
+use_ipv6 = true
+		`
+		err = ioutil.WriteFile(filepath.Join(tmpDir, "debian.conf"), []byte(incBlob1), 0644)
+		So(err, ShouldEqual, nil)
+		err = ioutil.WriteFile(filepath.Join(tmpDir, "ubuntu.conf"), []byte(incBlob2), 0644)
+		So(err, ShouldEqual, nil)
 
 		cfg, err := LoadConfig(tmpfile.Name())
 		So(err, ShouldBeNil)
@@ -97,7 +135,18 @@ exec_on_failure = "bash -c 'echo ${TUNASYNC_JOB_EXIT_STATUS} > ${TUNASYNC_WORKIN
 		So(m.Provider, ShouldEqual, provRsync)
 		So(m.ExcludeFile, ShouldEqual, "/etc/tunasync.d/fedora-exclude.txt")
 
-		So(len(cfg.Mirrors), ShouldEqual, 3)
+		m = cfg.Mirrors[3]
+		So(m.Name, ShouldEqual, "debian-cd")
+		So(m.MirrorDir, ShouldEqual, "")
+		So(m.Provider, ShouldEqual, provTwoStageRsync)
+
+		m = cfg.Mirrors[4]
+		So(m.Name, ShouldEqual, "debian-security")
+
+		m = cfg.Mirrors[5]
+		So(m.Name, ShouldEqual, "ubuntu")
+
+		So(len(cfg.Mirrors), ShouldEqual, 6)
 	})
 
 	Convey("Providers can be inited from a valid config file", t, func() {
