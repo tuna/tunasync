@@ -3,6 +3,7 @@ package worker
 import (
 	"errors"
 	"os"
+	"path/filepath"
 
 	"github.com/BurntSushi/toml"
 )
@@ -30,12 +31,13 @@ func (p *providerEnum) UnmarshalText(text []byte) error {
 	return nil
 }
 
-// Worker config options
+// Config represents worker config options
 type Config struct {
 	Global  globalConfig   `toml:"global"`
 	Manager managerConfig  `toml:"manager"`
 	Server  serverConfig   `toml:"server"`
 	Cgroup  cgroupConfig   `toml:"cgroup"`
+	Include includeConfig  `toml:"include"`
 	Mirrors []mirrorConfig `toml:"mirrors"`
 }
 
@@ -65,6 +67,14 @@ type cgroupConfig struct {
 	Enable   bool   `toml:"enable"`
 	BasePath string `toml:"base_path"`
 	Group    string `toml:"group"`
+}
+
+type includeConfig struct {
+	IncludeMirrors string `toml:"include_mirrors"`
+}
+
+type includedMirrorConfig struct {
+	Mirrors []mirrorConfig `toml:"mirrors"`
 }
 
 type mirrorConfig struct {
@@ -98,5 +108,22 @@ func LoadConfig(cfgFile string) (*Config, error) {
 		logger.Errorf(err.Error())
 		return nil, err
 	}
+
+	if cfg.Include.IncludeMirrors != "" {
+		includedFiles, err := filepath.Glob(cfg.Include.IncludeMirrors)
+		if err != nil {
+			logger.Errorf(err.Error())
+			return nil, err
+		}
+		for _, f := range includedFiles {
+			var incMirCfg includedMirrorConfig
+			if _, err := toml.DecodeFile(f, &incMirCfg); err != nil {
+				logger.Errorf(err.Error())
+				return nil, err
+			}
+			cfg.Mirrors = append(cfg.Mirrors, incMirCfg.Mirrors...)
+		}
+	}
+
 	return cfg, nil
 }
