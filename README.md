@@ -42,20 +42,6 @@ PreSyncing           Syncing                               Success
 					  +-----------------+
 ```
 
-## TODO
-
-- [x] split to `tunasync-manager` and `tunasync-worker` instances
-	- [x] use HTTP as communication protocol
-	- [x] implement manager as status server first, and use python worker
-	- [x] implement go worker
-- Web frontend for `tunasync-manager`
-	- [ ] start/stop/restart job
-	- [ ] enable/disable mirror
-	- [ ] view log
-- [ ] config file structure
-	- [ ] support multi-file configuration (`/etc/tunasync.d/mirror-enabled/*.conf`)
-
-
 ## Generate Self-Signed Certificate
 
 Fisrt, create root CA
