@@ -13,12 +13,22 @@ import (
 	"github.com/codeskyblue/go-sh"
 )
 
+var cgSubsystem string = "cpu"
+
 type cgroupHook struct {
 	emptyHook
 	provider  mirrorProvider
 	basePath  string
 	baseGroup string
 	created   bool
+}
+
+func initCgroup(basePath string) {
+	if _, err := os.Stat(filepath.Join(basePath, "memory")); err == nil {
+		cgSubsystem = "memory"
+		return
+	}
+	logger.Warning("Memory subsystem of cgroup not enabled, fallback to cpu")
 }
 
 func newCgroupHook(p mirrorProvider, basePath, baseGroup string) *cgroupHook {
@@ -37,7 +47,19 @@ func newCgroupHook(p mirrorProvider, basePath, baseGroup string) *cgroupHook {
 
 func (c *cgroupHook) preExec() error {
 	c.created = true
-	return sh.Command("cgcreate", "-g", c.Cgroup()).Run()
+	if err := sh.Command("cgcreate", "-g", c.Cgroup()).Run(); err != nil {
+		return err
+	}
+	if cgSubsystem != "memory" {
+		return nil
+	}
+	if c.provider.Type() == provRsync || c.provider.Type() == provTwoStageRsync {
+		gname := fmt.Sprintf("%s/%s", c.baseGroup, c.provider.Name())
+		return sh.Command(
+			"cgset", "-r", "memory.limit_in_bytes=128M", gname,
+		).Run()
+	}
+	return nil
 }
 
 func (c *cgroupHook) postExec() error {
@@ -52,7 +74,7 @@ func (c *cgroupHook) postExec() error {
 
 func (c *cgroupHook) Cgroup() string {
 	name := c.provider.Name()
-	return fmt.Sprintf("cpu:%s/%s", c.baseGroup, name)
+	return fmt.Sprintf("%s:%s/%s", cgSubsystem, c.baseGroup, name)
 }
 
 func (c *cgroupHook) killAll() error {
@@ -60,7 +82,7 @@ func (c *cgroupHook) killAll() error {
 		return nil
 	}
 	name := c.provider.Name()
-	taskFile, err := os.Open(filepath.Join(c.basePath, "cpu", c.baseGroup, name, "tasks"))
+	taskFile, err := os.Open(filepath.Join(c.basePath, cgSubsystem, c.baseGroup, name, "tasks"))
 	if err != nil {
 		return err
 	}

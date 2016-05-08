@@ -4,6 +4,7 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"testing"
 	"time"
@@ -71,6 +72,7 @@ sleep 30
 		provider, err := newCmdProvider(c)
 		So(err, ShouldBeNil)
 
+		initCgroup("/sys/fs/cgroup")
 		cg := newCgroupHook(provider, "/sys/fs/cgroup", "tunasync")
 		provider.AddHook(cg)
 
@@ -104,5 +106,39 @@ sleep 30
 		_, err = os.Stat(procDir)
 		So(os.IsNotExist(err), ShouldBeTrue)
 
+	})
+
+	Convey("Rsync Memory Should Be Limited", t, func() {
+		tmpDir, err := ioutil.TempDir("", "tunasync")
+		defer os.RemoveAll(tmpDir)
+		So(err, ShouldBeNil)
+		scriptFile := filepath.Join(tmpDir, "myrsync")
+		tmpFile := filepath.Join(tmpDir, "log_file")
+
+		c := rsyncConfig{
+			name:        "tuna-cgroup",
+			upstreamURL: "rsync://rsync.tuna.moe/tuna/",
+			rsyncCmd:    scriptFile,
+			workingDir:  tmpDir,
+			logDir:      tmpDir,
+			logFile:     tmpFile,
+			useIPv6:     true,
+			interval:    600 * time.Second,
+		}
+
+		provider, err := newRsyncProvider(c)
+		So(err, ShouldBeNil)
+
+		initCgroup("/sys/fs/cgroup")
+		cg := newCgroupHook(provider, "/sys/fs/cgroup", "tunasync")
+		provider.AddHook(cg)
+
+		cg.preExec()
+		if cgSubsystem == "memory" {
+			memoLimit, err := ioutil.ReadFile(filepath.Join(cg.basePath, "memory", cg.baseGroup, provider.Name(), "memory.limit_in_bytes"))
+			So(err, ShouldBeNil)
+			So(strings.Trim(string(memoLimit), "\n"), ShouldEqual, strconv.Itoa(128*1024*1024))
+		}
+		cg.postExec()
 	})
 }
