@@ -44,6 +44,10 @@ func newCmdProvider(c cmdConfig) (*cmdProvider, error) {
 	return provider, nil
 }
 
+func (p *cmdProvider) Type() providerEnum {
+	return provCommand
+}
+
 func (p *cmdProvider) Upstream() string {
 	return p.upstreamURL
 }

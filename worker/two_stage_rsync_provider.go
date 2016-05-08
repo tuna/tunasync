@@ -70,6 +70,10 @@ func newTwoStageRsyncProvider(c twoStageRsyncConfig) (*twoStageRsyncProvider, er
 	return provider, nil
 }
 
+func (p *twoStageRsyncProvider) Type() providerEnum {
+	return provTwoStageRsync
+}
+
 func (p *twoStageRsyncProvider) Upstream() string {
 	return p.upstreamURL
 }

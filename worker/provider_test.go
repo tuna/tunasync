@@ -33,6 +33,7 @@ func TestRsyncProvider(t *testing.T) {
 		provider, err := newRsyncProvider(c)
 		So(err, ShouldBeNil)
 
+		So(provider.Type(), ShouldEqual, provRsync)
 		So(provider.Name(), ShouldEqual, c.name)
 		So(provider.WorkingDir(), ShouldEqual, c.workingDir)
 		So(provider.LogDir(), ShouldEqual, c.logDir)
@@ -126,6 +127,7 @@ func TestCmdProvider(t *testing.T) {
 		provider, err := newCmdProvider(c)
 		So(err, ShouldBeNil)
 
+		So(provider.Type(), ShouldEqual, provCommand)
 		So(provider.Name(), ShouldEqual, c.name)
 		So(provider.WorkingDir(), ShouldEqual, c.workingDir)
 		So(provider.LogDir(), ShouldEqual, c.logDir)
@@ -218,6 +220,7 @@ func TestTwoStageRsyncProvider(t *testing.T) {
 		provider, err := newTwoStageRsyncProvider(c)
 		So(err, ShouldBeNil)
 
+		So(provider.Type(), ShouldEqual, provTwoStageRsync)
 		So(provider.Name(), ShouldEqual, c.name)
 		So(provider.WorkingDir(), ShouldEqual, c.workingDir)
 		So(provider.LogDir(), ShouldEqual, c.logDir)

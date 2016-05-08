@@ -63,6 +63,10 @@ func newRsyncProvider(c rsyncConfig) (*rsyncProvider, error) {
 	return provider, nil
 }
 
+func (p *rsyncProvider) Type() providerEnum {
+	return provRsync
+}
+
 func (p *rsyncProvider) Upstream() string {
 	return p.upstreamURL
 }
