@@ -53,7 +53,9 @@ func GetTUNASyncWorker(cfg *Config) *Worker {
 		w.httpClient = httpClient
 	}
 
-	initCgroup(cfg.Cgroup.BasePath)
+	if cfg.Cgroup.Enable {
+		initCgroup(cfg.Cgroup.BasePath)
+	}
 	w.initJobs()
 	w.makeHTTPServer()
 	tunasyncWorker = w
