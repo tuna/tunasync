@@ -70,8 +70,9 @@ func startWorker(c *cli.Context) {
 				newCfg, err := worker.LoadConfig(c.String("config"))
 				if err != nil {
 					logger.Errorf("Error loading config: %s", err.Error())
+				} else {
+					w.ReloadMirrorConfig(newCfg.Mirrors)
 				}
-				w.ReloadMirrorConfig(newCfg.Mirrors)
 			case syscall.SIGINT, syscall.SIGTERM:
 				w.Halt()
 			}
