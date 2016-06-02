@@ -3,6 +3,7 @@ tunasync
 
 [![Build Status](https://travis-ci.org/tuna/tunasync.svg?branch=dev)](https://travis-ci.org/tuna/tunasync)
 [![Coverage Status](https://coveralls.io/repos/github/tuna/tunasync/badge.svg?branch=dev)](https://coveralls.io/github/tuna/tunasync?branch=dev)
+[![Commitizen friendly](https://img.shields.io/badge/commitizen-friendly-brightgreen.svg)](http://commitizen.github.io/cz-cli/)
 ![GPLv3](https://img.shields.io/badge/license-GPLv3-blue.svg)
 
 ## Design
@@ -40,20 +41,6 @@ PreSyncing           Syncing                               Success
 			   +------+    post-fail    |<---------+
 					  +-----------------+
 ```
-
-## TODO
-
-- [x] split to `tunasync-manager` and `tunasync-worker` instances
-	- [x] use HTTP as communication protocol
-	- [x] implement manager as status server first, and use python worker
-	- [x] implement go worker
-- Web frontend for `tunasync-manager`
-	- [ ] start/stop/restart job
-	- [ ] enable/disable mirror
-	- [ ] view log
-- [ ] config file structure
-	- [ ] support multi-file configuration (`/etc/tunasync.d/mirror-enabled/*.conf`)
-
 
 ## Generate Self-Signed Certificate
 

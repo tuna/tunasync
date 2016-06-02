@@ -10,8 +10,6 @@ import (
 
 // mirror provider is the wrapper of mirror jobs
 
-type providerType uint8
-
 const (
 	_WorkingDirKey = "working_dir"
 	_LogDirKey     = "log_dir"
@@ -23,6 +21,8 @@ type mirrorProvider interface {
 	// name
 	Name() string
 	Upstream() string
+
+	Type() providerEnum
 
 	// run mirror job in background
 	Run() error

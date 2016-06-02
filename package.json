@@ -1,0 +1,13 @@
+{
+  "name": "tunasync",
+  "version": "1.0.0b1",
+  "description": "This is not a node project!",
+  "devDependencies": {
+    "cz-conventional-changelog": "^1.1.6"
+  },
+  "config": {
+    "commitizen": {
+      "path": "cz-conventional-changelog"
+    }
+  }
+}

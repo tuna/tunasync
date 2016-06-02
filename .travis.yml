@@ -11,7 +11,7 @@ os:
     - linux
 
 before_script:
-    - sudo cgcreate -t travis -a travis -g cpu:tunasync
+    - sudo cgcreate -t travis -a travis -g memory:tunasync
 
 script:
     - ./.testandcover.bash
