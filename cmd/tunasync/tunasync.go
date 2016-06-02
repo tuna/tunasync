@@ -8,6 +8,7 @@ import (
 
 	"github.com/codegangsta/cli"
 	"github.com/gin-gonic/gin"
+	"github.com/pkg/profile"
 	"gopkg.in/op/go-logging.v1"
 
 	tunasync "github.com/tuna/tunasync/internal"
@@ -57,6 +58,20 @@ func startWorker(c *cli.Context) {
 		os.Exit(1)
 	}
 
+	if profPath := c.String("prof-path"); profPath != "" {
+		valid := false
+		if fi, err := os.Stat(profPath); err == nil {
+			if fi.IsDir() {
+				valid = true
+				defer profile.Start(profile.ProfilePath(profPath)).Stop()
+			}
+		}
+		if !valid {
+			logger.Errorf("Invalid profiling path: %s", profPath)
+			os.Exit(1)
+		}
+	}
+
 	go func() {
 		time.Sleep(1 * time.Second)
 		sigChan := make(chan os.Signal, 1)
@@ -98,7 +113,6 @@ func main() {
 					Name:  "config, c",
 					Usage: "Load manager configurations from `FILE`",
 				},
-
 				cli.StringFlag{
 					Name:  "addr",
 					Usage: "The manager will listen on `ADDR`",
@@ -127,7 +141,6 @@ func main() {
 					Name:  "db-type",
 					Usage: "Use database type `TYPE`",
 				},
-
 				cli.BoolFlag{
 					Name:  "verbose, v",
 					Usage: "Enable verbose logging",
@@ -140,7 +153,6 @@ func main() {
 					Name:  "with-systemd",
 					Usage: "Enable systemd-compatible logging",
 				},
-
 				cli.StringFlag{
 					Name:  "pidfile",
 					Value: "/run/tunasync/tunasync.manager.pid",
@@ -158,7 +170,6 @@ func main() {
 					Name:  "config, c",
 					Usage: "Load worker configurations from `FILE`",
 				},
-
 				cli.BoolFlag{
 					Name:  "verbose, v",
 					Usage: "Enable verbose logging",
@@ -171,11 +182,15 @@ func main() {
 					Name:  "with-systemd",
 					Usage: "Enable systemd-compatible logging",
 				},
-
 				cli.StringFlag{
 					Name:  "pidfile",
 					Value: "/run/tunasync/tunasync.worker.pid",
 					Usage: "The pid file of the worker process",
+				},
+				cli.StringFlag{
+					Name:  "prof-path",
+					Value: "",
+					Usage: "Go profiling file path",
 				},
 			},
 		},
