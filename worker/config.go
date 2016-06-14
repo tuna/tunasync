@@ -93,6 +93,7 @@ type mirrorConfig struct {
 	Command       string `toml:"command"`
 	UseIPv6       bool   `toml:"use_ipv6"`
 	ExcludeFile   string `toml:"exclude_file"`
+	Username      string `toml:"username"`
 	Password      string `toml:"password"`
 	Stage1Profile string `toml:"stage1_profile"`
 }

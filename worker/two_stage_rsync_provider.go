@@ -8,13 +8,13 @@ import (
 )
 
 type twoStageRsyncConfig struct {
-	name                               string
-	rsyncCmd                           string
-	stage1Profile                      string
-	upstreamURL, password, excludeFile string
-	workingDir, logDir, logFile        string
-	useIPv6                            bool
-	interval                           time.Duration
+	name                                         string
+	rsyncCmd                                     string
+	stage1Profile                                string
+	upstreamURL, username, password, excludeFile string
+	workingDir, logDir, logFile                  string
+	useIPv6                                      bool
+	interval                                     time.Duration
 }
 
 // An RsyncProvider provides the implementation to rsync-based syncing jobs
@@ -110,6 +110,9 @@ func (p *twoStageRsyncProvider) Options(stage int) ([]string, error) {
 func (p *twoStageRsyncProvider) Run() error {
 
 	env := map[string]string{}
+	if p.username != "" {
+		env["USER"] = p.username
+	}
 	if p.password != "" {
 		env["RSYNC_PASSWORD"] = p.password
 	}
