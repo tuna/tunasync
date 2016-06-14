@@ -7,12 +7,12 @@ import (
 )
 
 type rsyncConfig struct {
-	name                               string
-	rsyncCmd                           string
-	upstreamURL, password, excludeFile string
-	workingDir, logDir, logFile        string
-	useIPv6                            bool
-	interval                           time.Duration
+	name                                         string
+	rsyncCmd                                     string
+	upstreamURL, username, password, excludeFile string
+	workingDir, logDir, logFile                  string
+	useIPv6                                      bool
+	interval                                     time.Duration
 }
 
 // An RsyncProvider provides the implementation to rsync-based syncing jobs
@@ -81,6 +81,9 @@ func (p *rsyncProvider) Run() error {
 func (p *rsyncProvider) Start() error {
 
 	env := map[string]string{}
+	if p.username != "" {
+		env["USER"] = p.username
+	}
 	if p.password != "" {
 		env["RSYNC_PASSWORD"] = p.password
 	}

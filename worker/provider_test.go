@@ -71,7 +71,7 @@ func TestRsyncProvider(t *testing.T) {
 		Convey("Let's try a run", func() {
 			scriptContent := `#!/bin/bash
 echo "syncing to $(pwd)"
-echo $@
+echo $RSYNC_PASSWORD $@
 sleep 1
 echo "Done"
 exit 0
@@ -89,6 +89,71 @@ exit 0
 						"--delete --delete-after --delay-updates --safe-links "+
 						"--timeout=120 --contimeout=120 -6 %s %s",
 					provider.upstreamURL, provider.WorkingDir(),
+				),
+			)
+
+			err = provider.Run()
+			So(err, ShouldBeNil)
+			loggedContent, err := ioutil.ReadFile(provider.LogFile())
+			So(err, ShouldBeNil)
+			So(string(loggedContent), ShouldEqual, expectedOutput)
+			// fmt.Println(string(loggedContent))
+		})
+
+	})
+}
+
+func TestRsyncProviderWithAuthentication(t *testing.T) {
+	Convey("Rsync Provider with password should work", t, func() {
+		tmpDir, err := ioutil.TempDir("", "tunasync")
+		defer os.RemoveAll(tmpDir)
+		So(err, ShouldBeNil)
+		scriptFile := filepath.Join(tmpDir, "myrsync")
+		tmpFile := filepath.Join(tmpDir, "log_file")
+
+		c := rsyncConfig{
+			name:        "tuna",
+			upstreamURL: "rsync://rsync.tuna.moe/tuna/",
+			rsyncCmd:    scriptFile,
+			username:    "tunasync",
+			password:    "tunasyncpassword",
+			workingDir:  tmpDir,
+			logDir:      tmpDir,
+			logFile:     tmpFile,
+			useIPv6:     true,
+			interval:    600 * time.Second,
+		}
+
+		provider, err := newRsyncProvider(c)
+		So(err, ShouldBeNil)
+
+		So(provider.Name(), ShouldEqual, c.name)
+		So(provider.WorkingDir(), ShouldEqual, c.workingDir)
+		So(provider.LogDir(), ShouldEqual, c.logDir)
+		So(provider.LogFile(), ShouldEqual, c.logFile)
+		So(provider.Interval(), ShouldEqual, c.interval)
+
+		Convey("Let's try a run", func() {
+			scriptContent := `#!/bin/bash
+echo "syncing to $(pwd)"
+echo $USER $RSYNC_PASSWORD $@
+sleep 1
+echo "Done"
+exit 0
+			`
+			err = ioutil.WriteFile(scriptFile, []byte(scriptContent), 0755)
+			So(err, ShouldBeNil)
+
+			expectedOutput := fmt.Sprintf(
+				"syncing to %s\n"+
+					"%s\n"+
+					"Done\n",
+				provider.WorkingDir(),
+				fmt.Sprintf(
+					"%s %s -aHvh --no-o --no-g --stats --exclude .~tmp~/ "+
+						"--delete --delete-after --delay-updates --safe-links "+
+						"--timeout=120 --contimeout=120 -6 %s %s",
+					provider.username, provider.password, provider.upstreamURL, provider.WorkingDir(),
 				),
 			)
 
