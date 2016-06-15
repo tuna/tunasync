@@ -6,13 +6,20 @@ import (
 	"io/ioutil"
 	"net/http"
 	"os"
+	"strconv"
 	"strings"
+	"time"
 
 	"github.com/BurntSushi/toml"
 	"github.com/codegangsta/cli"
 	"gopkg.in/op/go-logging.v1"
 
 	tunasync "github.com/tuna/tunasync/internal"
+)
+
+var (
+	buildstamp = ""
+	githash    = "No githash provided"
 )
 
 const (
@@ -225,7 +232,61 @@ func cmdJob(cmd tunasync.CmdVerb) cli.ActionFunc {
 	}
 }
 
+func cmdWorker(cmd tunasync.CmdVerb) cli.ActionFunc {
+	return func(c *cli.Context) error {
+		cmd := tunasync.ClientCmd{
+			Cmd:      cmd,
+			WorkerID: c.String("worker"),
+		}
+		resp, err := tunasync.PostJSON(baseURL+cmdPath, cmd, client)
+		if err != nil {
+			return cli.NewExitError(
+				fmt.Sprintf("Failed to correctly send command: %s",
+					err.Error()),
+				1)
+		}
+		defer resp.Body.Close()
+
+		if resp.StatusCode != http.StatusOK {
+			body, err := ioutil.ReadAll(resp.Body)
+			if err != nil {
+				return cli.NewExitError(
+					fmt.Sprintf("Failed to parse response: %s", err.Error()),
+					1)
+			}
+
+			return cli.NewExitError(fmt.Sprintf("Failed to correctly send"+
+				" command: HTTP status code is not 200: %s", body),
+				1)
+		}
+		logger.Info("Succesfully send command")
+
+		return nil
+	}
+}
+
 func main() {
+	cli.VersionPrinter = func(c *cli.Context) {
+		var builddate string
+		if buildstamp == "" {
+			builddate = "No build date provided"
+		} else {
+			ts, err := strconv.Atoi(buildstamp)
+			if err != nil {
+				builddate = "No build date provided"
+			} else {
+				t := time.Unix(int64(ts), 0)
+				builddate = t.String()
+			}
+		}
+		fmt.Printf(
+			"Version: %s\n"+
+				"Git Hash: %s\n"+
+				"Build Date: %s\n",
+			c.App.Version, githash, builddate,
+		)
+	}
+
 	app := cli.NewApp()
 	app.EnableBashCompletion = true
 	app.Version = "0.1"
@@ -303,6 +364,12 @@ func main() {
 			Usage:  "Restart a job",
 			Flags:  append(commonFlags, cmdFlags...),
 			Action: initializeWrapper(cmdJob(tunasync.CmdRestart)),
+		},
+		{
+			Name:   "reload",
+			Usage:  "Tell worker to reload configurations",
+			Flags:  append(commonFlags, cmdFlags...),
+			Action: initializeWrapper(cmdWorker(tunasync.CmdReload)),
 		},
 		{
 			Name:   "ping",
