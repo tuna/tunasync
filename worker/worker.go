@@ -3,7 +3,9 @@ package worker
 import (
 	"fmt"
 	"net/http"
+	"os"
 	"sync"
+	"syscall"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -185,16 +187,32 @@ func (w *Worker) makeHTTPServer() {
 			return
 		}
 
+		logger.Noticef("Received command: %v", cmd)
+
+		if cmd.MirrorID == "" {
+			// worker-level commands
+			switch cmd.Cmd {
+			case CmdReload:
+				// send myself a SIGHUP
+				pid := os.Getpid()
+				syscall.Kill(pid, syscall.SIGHUP)
+			default:
+				c.JSON(http.StatusNotAcceptable, gin.H{"msg": "Invalid Command"})
+				return
+			}
+		}
+
+		// job level comands
 		job, ok := w.jobs[cmd.MirrorID]
 		if !ok {
 			c.JSON(http.StatusNotFound, gin.H{"msg": fmt.Sprintf("Mirror ``%s'' not found", cmd.MirrorID)})
 			return
 		}
 
-		logger.Noticef("Received command: %v", cmd)
 		// No matter what command, the existing job
 		// schedule should be flushed
 		w.schedule.Remove(job.Name())
+
 		// if job disabled, start them first
 		switch cmd.Cmd {
 		case CmdStart, CmdRestart:

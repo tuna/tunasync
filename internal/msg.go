@@ -35,6 +35,7 @@ const (
 	CmdDisable         // disable the job (stops goroutine)
 	CmdRestart         // restart syncing
 	CmdPing            // ensure the goroutine is alive
+	CmdReload          // reload mirror config
 )
 
 func (c CmdVerb) String() string {
@@ -49,6 +50,8 @@ func (c CmdVerb) String() string {
 		return "restart"
 	case CmdPing:
 		return "ping"
+	case CmdReload:
+		return "reload"
 	}
 	return "unknown"
 }
