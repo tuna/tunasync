@@ -6,13 +6,20 @@ import (
 	"io/ioutil"
 	"net/http"
 	"os"
+	"strconv"
 	"strings"
+	"time"
 
 	"github.com/BurntSushi/toml"
 	"github.com/codegangsta/cli"
 	"gopkg.in/op/go-logging.v1"
 
 	tunasync "github.com/tuna/tunasync/internal"
+)
+
+var (
+	buildstamp = ""
+	githash    = "No githash provided"
 )
 
 const (
@@ -259,6 +266,27 @@ func cmdWorker(cmd tunasync.CmdVerb) cli.ActionFunc {
 }
 
 func main() {
+	cli.VersionPrinter = func(c *cli.Context) {
+		var builddate string
+		if buildstamp == "" {
+			builddate = "No build date provided"
+		} else {
+			ts, err := strconv.Atoi(buildstamp)
+			if err != nil {
+				builddate = "No build date provided"
+			} else {
+				t := time.Unix(int64(ts), 0)
+				builddate = t.String()
+			}
+		}
+		fmt.Printf(
+			"Version: %s\n"+
+				"Git Hash: %s\n"+
+				"Build Date: %s\n",
+			c.App.Version, githash, builddate,
+		)
+	}
+
 	app := cli.NewApp()
 	app.EnableBashCompletion = true
 	app.Version = "0.1"

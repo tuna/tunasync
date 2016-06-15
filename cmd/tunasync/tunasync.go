@@ -1,8 +1,10 @@
 package main
 
 import (
+	"fmt"
 	"os"
 	"os/signal"
+	"strconv"
 	"syscall"
 	"time"
 
@@ -14,6 +16,11 @@ import (
 	tunasync "github.com/tuna/tunasync/internal"
 	"github.com/tuna/tunasync/manager"
 	"github.com/tuna/tunasync/worker"
+)
+
+var (
+	buildstamp = ""
+	githash    = "No githash provided"
 )
 
 var logger = logging.MustGetLogger("tunasync")
@@ -99,6 +106,28 @@ func startWorker(c *cli.Context) {
 }
 
 func main() {
+
+	cli.VersionPrinter = func(c *cli.Context) {
+		var builddate string
+		if buildstamp == "" {
+			builddate = "No build date provided"
+		} else {
+			ts, err := strconv.Atoi(buildstamp)
+			if err != nil {
+				builddate = "No build date provided"
+			} else {
+				t := time.Unix(int64(ts), 0)
+				builddate = t.String()
+			}
+		}
+		fmt.Printf(
+			"Version: %s\n"+
+				"Git Hash: %s\n"+
+				"Build Date: %s\n",
+			c.App.Version, githash, builddate,
+		)
+	}
+
 	app := cli.NewApp()
 	app.EnableBashCompletion = true
 	app.Version = "0.1"

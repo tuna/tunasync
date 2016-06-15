@@ -8,6 +8,8 @@ function die() {
 
 export GOPATH=`pwd`:$GOPATH
 
+make
+
 # Initialize profile.cov
 echo "mode: count" > profile.cov
 
