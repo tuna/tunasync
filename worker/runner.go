@@ -5,6 +5,7 @@ import (
 	"os"
 	"os/exec"
 	"strings"
+	"sync"
 	"syscall"
 	"time"
 
@@ -17,12 +18,14 @@ import (
 var errProcessNotStarted = errors.New("Process Not Started")
 
 type cmdJob struct {
+	sync.Mutex
 	cmd        *exec.Cmd
 	workingDir string
 	env        map[string]string
 	logFile    *os.File
 	finished   chan empty
 	provider   mirrorProvider
+	retErr     error
 }
 
 func newCmdJob(provider mirrorProvider, cmdAndArgs []string, workingDir string, env map[string]string) *cmdJob {
@@ -69,9 +72,18 @@ func (c *cmdJob) Start() error {
 }
 
 func (c *cmdJob) Wait() error {
-	err := c.cmd.Wait()
-	close(c.finished)
-	return err
+	c.Lock()
+	defer c.Unlock()
+
+	select {
+	case <-c.finished:
+		return c.retErr
+	default:
+		err := c.cmd.Wait()
+		c.retErr = err
+		close(c.finished)
+		return err
+	}
 }
 
 func (c *cmdJob) SetLogFile(logFile *os.File) {
