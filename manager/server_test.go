@@ -70,7 +70,6 @@ func TestHTTPServer(t *testing.T) {
 			So(resp.StatusCode, ShouldEqual, http.StatusOK)
 
 			Convey("list all workers", func(ctx C) {
-				So(err, ShouldBeNil)
 				resp, err := http.Get(baseURL + "/workers")
 				So(err, ShouldBeNil)
 				defer resp.Body.Close()
@@ -78,6 +77,19 @@ func TestHTTPServer(t *testing.T) {
 				err = json.NewDecoder(resp.Body).Decode(&actualResponseObj)
 				So(err, ShouldBeNil)
 				So(len(actualResponseObj), ShouldEqual, 2)
+			})
+
+			Convey("flush  disabled jobs", func(ctx C) {
+				req, err := http.NewRequest("DELETE", baseURL+"/jobs/disabled", nil)
+				So(err, ShouldBeNil)
+				clt := &http.Client{}
+				resp, err := clt.Do(req)
+				So(err, ShouldBeNil)
+				defer resp.Body.Close()
+				res := map[string]string{}
+				err = json.NewDecoder(resp.Body).Decode(&res)
+				So(err, ShouldBeNil)
+				So(res[_infoKey], ShouldEqual, "flushed")
 			})
 
 			Convey("update mirror status of a existed worker", func(ctx C) {
@@ -292,6 +304,10 @@ func (b *mockDBAdapter) ListAllMirrorStatus() ([]MirrorStatus, error) {
 }
 
 func (b *mockDBAdapter) Close() error {
+	return nil
+}
+
+func (b *mockDBAdapter) FlushDisabledJobs() error {
 	return nil
 }
 

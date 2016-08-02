@@ -19,6 +19,7 @@ type dbAdapter interface {
 	GetMirrorStatus(workerID, mirrorID string) (MirrorStatus, error)
 	ListMirrorStatus(workerID string) ([]MirrorStatus, error)
 	ListAllMirrorStatus() ([]MirrorStatus, error)
+	FlushDisabledJobs() error
 	Close() error
 }
 
@@ -164,6 +165,26 @@ func (b *boltAdapter) ListAllMirrorStatus() (ms []MirrorStatus, err error) {
 				continue
 			}
 			ms = append(ms, m)
+		}
+		return err
+	})
+	return
+}
+
+func (b *boltAdapter) FlushDisabledJobs() (err error) {
+	err = b.db.Update(func(tx *bolt.Tx) error {
+		bucket := tx.Bucket([]byte(_statusBucketKey))
+		c := bucket.Cursor()
+		var m MirrorStatus
+		for k, v := c.First(); k != nil; k, v = c.Next() {
+			jsonErr := json.Unmarshal(v, &m)
+			if jsonErr != nil {
+				err = fmt.Errorf("%s; %s", err.Error(), jsonErr)
+				continue
+			}
+			if m.Status == Disabled {
+				err = c.Delete()
+			}
 		}
 		return err
 	})

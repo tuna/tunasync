@@ -27,15 +27,23 @@ type WorkerStatus struct {
 	LastOnline time.Time `json:"last_online"` // last seen
 }
 
+// A CmdVerb is an action to a job or worker
 type CmdVerb uint8
 
 const (
-	CmdStart   CmdVerb = iota
-	CmdStop            // stop syncing keep the job
-	CmdDisable         // disable the job (stops goroutine)
-	CmdRestart         // restart syncing
-	CmdPing            // ensure the goroutine is alive
-	CmdReload          // reload mirror config
+	// CmdStart start a job
+	CmdStart CmdVerb = iota
+	// CmdStop stop syncing, but keep the job
+	CmdStop
+	// CmdDisable disable the job (stops goroutine)
+	CmdDisable
+	// CmdRestart restart a syncing job
+	CmdRestart
+	// CmdPing ensures the goroutine is alive
+	CmdPing
+
+	// CmdReload tells a worker to reload mirror config
+	CmdReload
 )
 
 func (c CmdVerb) String() string {

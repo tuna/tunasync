@@ -72,6 +72,8 @@ func GetTUNASyncManager(cfg *Config) *Manager {
 	})
 	// list jobs, status page
 	s.engine.GET("/jobs", s.listAllJobs)
+	// flush disabled jobs
+	s.engine.DELETE("/jobs/disabled", s.flushDisabledJobs)
 
 	// list workers
 	s.engine.GET("/workers", s.listWorkers)
@@ -80,10 +82,12 @@ func GetTUNASyncManager(cfg *Config) *Manager {
 
 	// workerID should be valid in this route group
 	workerValidateGroup := s.engine.Group("/workers", s.workerIDValidator)
-	// get job list
-	workerValidateGroup.GET(":id/jobs", s.listJobsOfWorker)
-	// post job status
-	workerValidateGroup.POST(":id/jobs/:job", s.updateJobOfWorker)
+	{
+		// get job list
+		workerValidateGroup.GET(":id/jobs", s.listJobsOfWorker)
+		// post job status
+		workerValidateGroup.POST(":id/jobs/:job", s.updateJobOfWorker)
+	}
 
 	// for tunasynctl to post commands
 	s.engine.POST("/cmd", s.handleClientCmd)
@@ -137,6 +141,20 @@ func (s *Manager) listAllJobs(c *gin.Context) {
 		)
 	}
 	c.JSON(http.StatusOK, webMirStatusList)
+}
+
+// flushDisabledJobs deletes all jobs that marks as deleted
+func (s *Manager) flushDisabledJobs(c *gin.Context) {
+	err := s.adapter.FlushDisabledJobs()
+	if err != nil {
+		err := fmt.Errorf("failed to flush disabled jobs: %s",
+			err.Error(),
+		)
+		c.Error(err)
+		s.returnErrJSON(c, http.StatusInternalServerError, err)
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{_infoKey: "flushed"})
 }
 
 // listWrokers respond with informations of all the workers
