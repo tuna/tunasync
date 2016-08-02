@@ -108,6 +108,7 @@ func (p *twoStageRsyncProvider) Options(stage int) ([]string, error) {
 }
 
 func (p *twoStageRsyncProvider) Run() error {
+	defer p.Wait()
 
 	env := map[string]string{}
 	if p.username != "" {

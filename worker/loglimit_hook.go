@@ -79,7 +79,7 @@ func (l *logLimiter) preExec() error {
 
 	logLink := filepath.Join(logDir, "latest")
 
-	if _, err = os.Stat(logLink); err == nil {
+	if _, err = os.Lstat(logLink); err == nil {
 		os.Remove(logLink)
 	}
 	os.Symlink(logFileName, logLink)
