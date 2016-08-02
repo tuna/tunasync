@@ -58,33 +58,46 @@ func TestBoltAdapter(t *testing.T) {
 		})
 
 		Convey("update mirror status", func() {
-			status1 := MirrorStatus{
-				Name:       "arch-sync1",
-				Worker:     testWorkerIDs[0],
-				IsMaster:   true,
-				Status:     Success,
-				LastUpdate: time.Now(),
-				Upstream:   "mirrors.tuna.tsinghua.edu.cn",
-				Size:       "3GB",
-			}
-			status2 := MirrorStatus{
-				Name:       "arch-sync2",
-				Worker:     testWorkerIDs[1],
-				IsMaster:   true,
-				Status:     Success,
-				LastUpdate: time.Now(),
-				Upstream:   "mirrors.tuna.tsinghua.edu.cn",
-				Size:       "4GB",
+			status := []MirrorStatus{
+				MirrorStatus{
+					Name:       "arch-sync1",
+					Worker:     testWorkerIDs[0],
+					IsMaster:   true,
+					Status:     Success,
+					LastUpdate: time.Now(),
+					Upstream:   "mirrors.tuna.tsinghua.edu.cn",
+					Size:       "3GB",
+				},
+				MirrorStatus{
+					Name:       "arch-sync2",
+					Worker:     testWorkerIDs[1],
+					IsMaster:   true,
+					Status:     Disabled,
+					LastUpdate: time.Now(),
+					Upstream:   "mirrors.tuna.tsinghua.edu.cn",
+					Size:       "4GB",
+				},
+				MirrorStatus{
+					Name:       "arch-sync3",
+					Worker:     testWorkerIDs[1],
+					IsMaster:   true,
+					Status:     Success,
+					LastUpdate: time.Now(),
+					Upstream:   "mirrors.tuna.tsinghua.edu.cn",
+					Size:       "4GB",
+				},
 			}
 
-			_, err := boltDB.UpdateMirrorStatus(status1.Worker, status1.Name, status1)
-			_, err = boltDB.UpdateMirrorStatus(status2.Worker, status2.Name, status2)
-			So(err, ShouldBeNil)
+			for _, s := range status {
+				_, err := boltDB.UpdateMirrorStatus(s.Worker, s.Name, s)
+				So(err, ShouldBeNil)
+
+			}
 
 			Convey("get mirror status", func() {
-				m, err := boltDB.GetMirrorStatus(testWorkerIDs[0], status1.Name)
+				m, err := boltDB.GetMirrorStatus(testWorkerIDs[0], status[0].Name)
 				So(err, ShouldBeNil)
-				expectedJSON, err := json.Marshal(status1)
+				expectedJSON, err := json.Marshal(status[0])
 				So(err, ShouldBeNil)
 				actualJSON, err := json.Marshal(m)
 				So(err, ShouldBeNil)
@@ -94,7 +107,7 @@ func TestBoltAdapter(t *testing.T) {
 			Convey("list mirror status", func() {
 				ms, err := boltDB.ListMirrorStatus(testWorkerIDs[0])
 				So(err, ShouldBeNil)
-				expectedJSON, err := json.Marshal([]MirrorStatus{status1})
+				expectedJSON, err := json.Marshal([]MirrorStatus{status[0]})
 				So(err, ShouldBeNil)
 				actualJSON, err := json.Marshal(ms)
 				So(err, ShouldBeNil)
@@ -104,11 +117,22 @@ func TestBoltAdapter(t *testing.T) {
 			Convey("list all mirror status", func() {
 				ms, err := boltDB.ListAllMirrorStatus()
 				So(err, ShouldBeNil)
-				expectedJSON, err := json.Marshal([]MirrorStatus{status1, status2})
+				expectedJSON, err := json.Marshal(status)
 				So(err, ShouldBeNil)
 				actualJSON, err := json.Marshal(ms)
 				So(err, ShouldBeNil)
 				So(string(actualJSON), ShouldEqual, string(expectedJSON))
+			})
+
+			Convey("flush disabled jobs", func() {
+				ms, err := boltDB.ListAllMirrorStatus()
+				So(err, ShouldBeNil)
+				So(len(ms), ShouldEqual, 3)
+				err = boltDB.FlushDisabledJobs()
+				So(err, ShouldBeNil)
+				ms, err = boltDB.ListAllMirrorStatus()
+				So(err, ShouldBeNil)
+				So(len(ms), ShouldEqual, 2)
 			})
 
 		})

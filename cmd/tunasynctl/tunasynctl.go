@@ -23,9 +23,10 @@ var (
 )
 
 const (
-	listJobsPath    = "/jobs"
-	listWorkersPath = "/workers"
-	cmdPath         = "/cmd"
+	listJobsPath      = "/jobs"
+	listWorkersPath   = "/workers"
+	flushDisabledPath = "/jobs/disabled"
+	cmdPath           = "/cmd"
 
 	systemCfgFile = "/etc/tunasync/ctl.conf"          // system-wide conf
 	userCfgFile   = "$HOME/.config/tunasync/ctl.conf" // user-specific conf
@@ -182,6 +183,38 @@ func listJobs(c *cli.Context) error {
 	return nil
 }
 
+func flushDisabledJobs(c *cli.Context) error {
+	req, err := http.NewRequest("DELETE", baseURL+flushDisabledPath, nil)
+	if err != nil {
+		logger.Panicf("Invalid  HTTP Request: %s", err.Error())
+	}
+	resp, err := client.Do(req)
+
+	if err != nil {
+		return cli.NewExitError(
+			fmt.Sprintf("Failed to send request to manager: %s",
+				err.Error()),
+			1)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		body, err := ioutil.ReadAll(resp.Body)
+		if err != nil {
+			return cli.NewExitError(
+				fmt.Sprintf("Failed to parse response: %s", err.Error()),
+				1)
+		}
+
+		return cli.NewExitError(fmt.Sprintf("Failed to correctly send"+
+			" command: HTTP status code is not 200: %s", body),
+			1)
+	}
+
+	logger.Info("Successfully flushed disabled jobs")
+	return nil
+}
+
 func cmdJob(cmd tunasync.CmdVerb) cli.ActionFunc {
 	return func(c *cli.Context) error {
 		var mirrorID string
@@ -334,6 +367,12 @@ func main() {
 					},
 				}...),
 			Action: initializeWrapper(listJobs),
+		},
+		{
+			Name:   "flush",
+			Usage:  "Flush disabled jobs",
+			Flags:  commonFlags,
+			Action: initializeWrapper(flushDisabledJobs),
 		},
 		{
 			Name:   "workers",
