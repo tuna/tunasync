@@ -36,7 +36,9 @@ provider = "command"
 upstream = "https://aosp.google.com/"
 interval = 720
 mirror_dir = "/data/git/AOSP"
-exec_on_success = "bash -c 'echo ${TUNASYNC_JOB_EXIT_STATUS} > ${TUNASYNC_WORKING_DIR}/exit_status'"
+exec_on_success = [
+	"bash -c 'echo ${TUNASYNC_JOB_EXIT_STATUS} > ${TUNASYNC_WORKING_DIR}/exit_status'"
+]
 	[mirrors.env]
 	REPO = "/usr/local/bin/aosp-repo"
 
@@ -53,7 +55,9 @@ provider = "rsync"
 upstream = "rsync://ftp.fedoraproject.org/fedora/"
 use_ipv6 = true
 exclude_file = "/etc/tunasync.d/fedora-exclude.txt"
-exec_on_failure = "bash -c 'echo ${TUNASYNC_JOB_EXIT_STATUS} > ${TUNASYNC_WORKING_DIR}/exit_status'"
+exec_on_failure = [
+	"bash -c 'echo ${TUNASYNC_JOB_EXIT_STATUS} > ${TUNASYNC_WORKING_DIR}/exit_status'"
+]
 	`
 
 	Convey("When giving invalid file", t, func() {
