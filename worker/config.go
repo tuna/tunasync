@@ -47,6 +47,9 @@ type globalConfig struct {
 	MirrorDir  string `toml:"mirror_dir"`
 	Concurrent int    `toml:"concurrent"`
 	Interval   int    `toml:"interval"`
+
+	ExecOnSuccess []string `toml:"exec_on_success"`
+	ExecOnFailure []string `toml:"exec_on_failure"`
 }
 
 type managerConfig struct {
@@ -87,8 +90,13 @@ type mirrorConfig struct {
 	Env       map[string]string `toml:"env"`
 	Role      string            `toml:"role"`
 
-	ExecOnSuccess string `toml:"exec_on_success"`
-	ExecOnFailure string `toml:"exec_on_failure"`
+	// These two options over-write the global options
+	ExecOnSuccess []string `toml:"exec_on_success"`
+	ExecOnFailure []string `toml:"exec_on_failure"`
+
+	// These two options  the global options
+	ExecOnSuccessExtra []string `toml:"exec_on_success_extra"`
+	ExecOnFailureExtra []string `toml:"exec_on_failure_extra"`
 
 	Command       string `toml:"command"`
 	UseIPv6       bool   `toml:"use_ipv6"`

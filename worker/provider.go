@@ -169,24 +169,35 @@ func newMirrorProvider(mirror mirrorConfig, cfg *Config) mirrorProvider {
 		)
 	}
 
+	addHookFromCmdList := func(cmdList []string, execOn uint8) {
+		if execOn != execOnSuccess && execOn != execOnFailure {
+			panic("Invalid option for exec-on")
+		}
+		for _, cmd := range cmdList {
+			h, err := newExecPostHook(provider, execOn, cmd)
+			if err != nil {
+				logger.Errorf("Error initializing mirror %s: %s", mirror.Name, err.Error())
+				panic(err)
+			}
+			provider.AddHook(h)
+		}
+	}
+
 	// ExecOnSuccess hook
-	if mirror.ExecOnSuccess != "" {
-		h, err := newExecPostHook(provider, execOnSuccess, mirror.ExecOnSuccess)
-		if err != nil {
-			logger.Errorf("Error initializing mirror %s: %s", mirror.Name, err.Error())
-			panic(err)
-		}
-		provider.AddHook(h)
+	if len(mirror.ExecOnSuccess) > 0 {
+		addHookFromCmdList(mirror.ExecOnSuccess, execOnSuccess)
+	} else {
+		addHookFromCmdList(cfg.Global.ExecOnSuccess, execOnSuccess)
 	}
+	addHookFromCmdList(mirror.ExecOnSuccessExtra, execOnSuccess)
+
 	// ExecOnFailure hook
-	if mirror.ExecOnFailure != "" {
-		h, err := newExecPostHook(provider, execOnFailure, mirror.ExecOnFailure)
-		if err != nil {
-			logger.Errorf("Error initializing mirror %s: %s", mirror.Name, err.Error())
-			panic(err)
-		}
-		provider.AddHook(h)
+	if len(mirror.ExecOnFailure) > 0 {
+		addHookFromCmdList(mirror.ExecOnFailure, execOnFailure)
+	} else {
+		addHookFromCmdList(cfg.Global.ExecOnFailure, execOnFailure)
 	}
+	addHookFromCmdList(mirror.ExecOnFailureExtra, execOnFailure)
 
 	return provider
 }
