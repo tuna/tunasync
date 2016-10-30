@@ -6,6 +6,11 @@ tunasync
 [![Commitizen friendly](https://img.shields.io/badge/commitizen-friendly-brightgreen.svg)](http://commitizen.github.io/cz-cli/)
 ![GPLv3](https://img.shields.io/badge/license-GPLv3-blue.svg)
 
+## Get Started
+
+- [中文文档](https://github.com/tuna/tunasync/blob/master/docs/zh_CN/get_started.md)
+
+
 ## Design
 
 ```
