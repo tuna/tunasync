@@ -104,3 +104,17 @@ Finally generate and sign host cert with root CA
 ```
 openssl x509 -req -in host.csr -CA rootCA.crt -CAkey rootCA.key -CAcreateserial -out host.crt -days 365 -extensions v3_req -extfile req.cnf
 ```
+
+## Building
+
+Setup GOPATH like [this](https://golang.org/cmd/go/#hdr-GOPATH_environment_variable).
+
+Then:
+
+```
+go get -d github.com/tuna/tunasync/cmd/tunasync
+cd $GOPATH/src/github.com/tuna/tunasync
+make
+```
+
+If you have multiple `GOPATH`s, replace the `$GOPATH` with your first one.
