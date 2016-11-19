@@ -57,8 +57,11 @@ listen_port = 6000
 ssl_cert = ""
 ssl_key = ""
 
-[include]
-include_mirrors = "mirrors/*.conf"
+[[mirrors]]
+name = "elvish"
+provider = "rsync"
+upstream = "rsync://rsync.elvish.io/elvish/"
+use_ipv6 = false
 ```
 
 `~/tunasync_demo/manager.conf`:
@@ -76,20 +79,6 @@ ssl_key = ""
 db_type = "bolt"
 db_file = "/tmp/tunasync/manager.db"
 ca_cert = ""
-```
-
-### 镜像脚本
-
-```
-$ mkdir ~/tunasync_demo/mirrors
-$ cat > ~/tunasync_demo/mirrors/elvish.conf < EOF
-
-[[mirrors]]
-name = "elvish"
-provider = "rsync"
-upstream = "rsync://rsync.elvish.io/elvish/"
-use_ipv6 = false
-EOF
 ```
 
 ### 运行
