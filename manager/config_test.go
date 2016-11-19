@@ -8,8 +8,8 @@ import (
 	"testing"
 
 	"github.com/BurntSushi/toml"
-	"github.com/codegangsta/cli"
 	. "github.com/smartystreets/goconvey/convey"
+	"gopkg.in/urfave/cli.v1"
 )
 
 func TestConfig(t *testing.T) {
