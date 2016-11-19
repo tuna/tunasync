@@ -2,7 +2,7 @@ package manager
 
 import (
 	"github.com/BurntSushi/toml"
-	"github.com/codegangsta/cli"
+	"gopkg.in/urfave/cli.v1"
 )
 
 // A Config is the top-level toml-serializaible config struct

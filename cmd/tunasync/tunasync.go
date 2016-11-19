@@ -8,10 +8,10 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/codegangsta/cli"
 	"github.com/gin-gonic/gin"
 	"github.com/pkg/profile"
 	"gopkg.in/op/go-logging.v1"
+	"gopkg.in/urfave/cli.v1"
 
 	tunasync "github.com/tuna/tunasync/internal"
 	"github.com/tuna/tunasync/manager"
@@ -25,7 +25,7 @@ var (
 
 var logger = logging.MustGetLogger("tunasync")
 
-func startManager(c *cli.Context) {
+func startManager(c *cli.Context) error {
 	tunasync.InitLogger(c.Bool("verbose"), c.Bool("debug"), c.Bool("with-systemd"))
 
 	cfg, err := manager.LoadConfig(c.String("config"), c)
@@ -45,9 +45,10 @@ func startManager(c *cli.Context) {
 
 	logger.Info("Run tunasync manager server.")
 	m.Run()
+	return nil
 }
 
-func startWorker(c *cli.Context) {
+func startWorker(c *cli.Context) error {
 	tunasync.InitLogger(c.Bool("verbose"), c.Bool("debug"), c.Bool("with-systemd"))
 	if !c.Bool("debug") {
 		gin.SetMode(gin.ReleaseMode)
@@ -103,6 +104,7 @@ func startWorker(c *cli.Context) {
 
 	logger.Info("Run tunasync worker.")
 	w.Run()
+	return nil
 }
 
 func main() {
@@ -129,6 +131,8 @@ func main() {
 	}
 
 	app := cli.NewApp()
+	app.Name = "tunasync"
+	app.Usage = "tunasync mirror job management tool"
 	app.EnableBashCompletion = true
 	app.Version = "0.1"
 	app.Commands = []cli.Command{
@@ -157,10 +161,6 @@ func main() {
 				cli.StringFlag{
 					Name:  "key",
 					Usage: "Use SSL key from `FILE`",
-				},
-				cli.StringFlag{
-					Name:  "status-file",
-					Usage: "Write status file to `FILE`",
 				},
 				cli.StringFlag{
 					Name:  "db-file",
@@ -205,7 +205,7 @@ func main() {
 				},
 				cli.BoolFlag{
 					Name:  "debug",
-					Usage: "Run manager in debug mode",
+					Usage: "Run worker in debug mode",
 				},
 				cli.BoolFlag{
 					Name:  "with-systemd",

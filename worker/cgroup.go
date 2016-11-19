@@ -116,6 +116,7 @@ func (c *cgroupHook) killAll() error {
 			return nil
 		}
 		for _, pid := range taskList {
+			// TODO: deal with defunct processes
 			logger.Debugf("Killing process: %d", pid)
 			unix.Kill(pid, syscall.SIGKILL)
 		}

@@ -11,8 +11,8 @@ import (
 	"time"
 
 	"github.com/BurntSushi/toml"
-	"github.com/codegangsta/cli"
 	"gopkg.in/op/go-logging.v1"
+	"gopkg.in/urfave/cli.v1"
 
 	tunasync "github.com/tuna/tunasync/internal"
 )
@@ -323,6 +323,8 @@ func main() {
 	app := cli.NewApp()
 	app.EnableBashCompletion = true
 	app.Version = "0.1"
+	app.Name = "tunasynctl"
+	app.Usage = "control client for tunasync manager"
 
 	commonFlags := []cli.Flag{
 		cli.StringFlag{
