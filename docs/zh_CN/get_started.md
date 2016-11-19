@@ -15,7 +15,7 @@ date: 2016-10-31 00:50:00
 
 ### 二进制包
 
-TODO
+到 [Github Releases](https://github.com/tuna/tunasync/releases/latest) 下载 `tunasync-linux-bin.tar.gz` 即可。
 
 ### 自行编译
 
