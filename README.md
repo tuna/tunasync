@@ -10,6 +10,9 @@ tunasync
 
 - [中文文档](https://github.com/tuna/tunasync/blob/master/docs/zh_CN/get_started.md)
 
+## Download
+
+Pre-built binary for Linux x86_64 is available at [Github releases](https://github.com/tuna/tunasync/releases/latest).
 
 ## Design
 
