@@ -137,7 +137,7 @@ sleep 30
 		if cgSubsystem == "memory" {
 			memoLimit, err := ioutil.ReadFile(filepath.Join(cg.basePath, "memory", cg.baseGroup, provider.Name(), "memory.limit_in_bytes"))
 			So(err, ShouldBeNil)
-			So(strings.Trim(string(memoLimit), "\n"), ShouldEqual, strconv.Itoa(128*1024*1024))
+			So(strings.Trim(string(memoLimit), "\n"), ShouldEqual, strconv.Itoa(512*1024*1024))
 		}
 		cg.postExec()
 	})
