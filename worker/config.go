@@ -37,6 +37,7 @@ type Config struct {
 	Manager managerConfig  `toml:"manager"`
 	Server  serverConfig   `toml:"server"`
 	Cgroup  cgroupConfig   `toml:"cgroup"`
+	ZFS     zfsConfig      `toml:"zfs"`
 	Include includeConfig  `toml:"include"`
 	Mirrors []mirrorConfig `toml:"mirrors"`
 }
@@ -70,6 +71,11 @@ type cgroupConfig struct {
 	Enable   bool   `toml:"enable"`
 	BasePath string `toml:"base_path"`
 	Group    string `toml:"group"`
+}
+
+type zfsConfig struct {
+	Enable bool   `toml:"enable"`
+	Zpool  string `toml:"zpool"`
 }
 
 type includeConfig struct {
