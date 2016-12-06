@@ -37,6 +37,7 @@ type Config struct {
 	Manager managerConfig  `toml:"manager"`
 	Server  serverConfig   `toml:"server"`
 	Cgroup  cgroupConfig   `toml:"cgroup"`
+	ZFS     zfsConfig      `toml:"zfs"`
 	Include includeConfig  `toml:"include"`
 	Mirrors []mirrorConfig `toml:"mirrors"`
 }
@@ -53,9 +54,10 @@ type globalConfig struct {
 }
 
 type managerConfig struct {
-	APIBase string `toml:"api_base"`
-	CACert  string `toml:"ca_cert"`
-	Token   string `toml:"token"`
+	APIBase         string   `toml:"api_base"`
+	CACert          string   `toml:"ca_cert"`
+	ExtraStatusAPIs []string `toml:"extra_status_managers"`
+	// Token   string `toml:"token"`
 }
 
 type serverConfig struct {
@@ -70,6 +72,11 @@ type cgroupConfig struct {
 	Enable   bool   `toml:"enable"`
 	BasePath string `toml:"base_path"`
 	Group    string `toml:"group"`
+}
+
+type zfsConfig struct {
+	Enable bool   `toml:"enable"`
+	Zpool  string `toml:"zpool"`
 }
 
 type includeConfig struct {

@@ -182,7 +182,7 @@ func (b *boltAdapter) FlushDisabledJobs() (err error) {
 				err = fmt.Errorf("%s; %s", err.Error(), jsonErr)
 				continue
 			}
-			if m.Status == Disabled {
+			if m.Status == Disabled || len(m.Name) == 0 {
 				err = c.Delete()
 			}
 		}

@@ -23,6 +23,7 @@ type baseProvider struct {
 	logFile *os.File
 
 	cgroup *cgroupHook
+	zfs    *zfsHook
 	hooks  []jobHook
 }
 
@@ -77,12 +78,15 @@ func (p *baseProvider) LogFile() string {
 			return s
 		}
 	}
-	panic("log dir is impossible to be unavailable")
+	panic("log file is impossible to be unavailable")
 }
 
 func (p *baseProvider) AddHook(hook jobHook) {
-	if cg, ok := hook.(*cgroupHook); ok {
-		p.cgroup = cg
+	switch v := hook.(type) {
+	case *cgroupHook:
+		p.cgroup = v
+	case *zfsHook:
+		p.zfs = v
 	}
 	p.hooks = append(p.hooks, hook)
 }
@@ -93,6 +97,10 @@ func (p *baseProvider) Hooks() []jobHook {
 
 func (p *baseProvider) Cgroup() *cgroupHook {
 	return p.cgroup
+}
+
+func (p *baseProvider) ZFS() *zfsHook {
+	return p.zfs
 }
 
 func (p *baseProvider) prepareLogFile() error {
