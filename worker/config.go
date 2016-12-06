@@ -54,9 +54,10 @@ type globalConfig struct {
 }
 
 type managerConfig struct {
-	APIBase string `toml:"api_base"`
-	CACert  string `toml:"ca_cert"`
-	Token   string `toml:"token"`
+	APIBase         string   `toml:"api_base"`
+	CACert          string   `toml:"ca_cert"`
+	ExtraStatusAPIs []string `toml:"extra_status_managers"`
+	// Token   string `toml:"token"`
 }
 
 type serverConfig struct {

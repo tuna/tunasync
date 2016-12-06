@@ -405,12 +405,6 @@ func (w *Worker) registorWorker() {
 }
 
 func (w *Worker) updateStatus(job *mirrorJob, jobMsg jobMessage) {
-	url := fmt.Sprintf(
-		"%s/workers/%s/jobs/%s",
-		w.cfg.Manager.APIBase,
-		w.Name(),
-		jobMsg.name,
-	)
 	p := job.provider
 	smsg := MirrorStatus{
 		Name:     jobMsg.name,
@@ -422,8 +416,15 @@ func (w *Worker) updateStatus(job *mirrorJob, jobMsg jobMessage) {
 		ErrorMsg: jobMsg.msg,
 	}
 
-	if _, err := PostJSON(url, smsg, w.httpClient); err != nil {
-		logger.Errorf("Failed to update mirror(%s) status: %s", jobMsg.name, err.Error())
+	apiBases := []string{w.cfg.Manager.APIBase}
+	apiBases = append(apiBases, w.cfg.Manager.ExtraStatusAPIs...)
+	for _, root := range apiBases {
+		url := fmt.Sprintf(
+			"%s/workers/%s/jobs/%s", root, w.Name(), jobMsg.name,
+		)
+		if _, err := PostJSON(url, smsg, w.httpClient); err != nil {
+			logger.Errorf("Failed to update mirror(%s) status: %s", jobMsg.name, err.Error())
+		}
 	}
 }
 
