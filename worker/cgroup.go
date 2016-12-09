@@ -15,7 +15,7 @@ import (
 	"github.com/codeskyblue/go-sh"
 )
 
-var cgSubsystem = "cpu"
+var cgSubsystem = "cpuset"
 
 type cgroupHook struct {
 	emptyHook

@@ -1,3 +1,5 @@
+sudo: required
+
 language: go
 go:
     - 1.6
@@ -11,8 +13,14 @@ before_install:
 os:
     - linux
 
+services:
+    - docker
+
 before_script:
-    - sudo cgcreate -t travis -a travis -g memory:tunasync
+    - sudo mount -t memory -o memory memory /sys/fs/cgroup/memory
+    - mount
+    - sudo cgcreate -a $USER -t $USER -g memory:tunasync
+    - docker pull alpine
 
 script:
     - ./.testandcover.bash
