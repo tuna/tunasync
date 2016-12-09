@@ -15,35 +15,31 @@ import (
 	"github.com/codeskyblue/go-sh"
 )
 
-var cgSubsystem = "cpuset"
-
 type cgroupHook struct {
 	emptyHook
 	provider  mirrorProvider
 	basePath  string
 	baseGroup string
 	created   bool
+	subsystem string
+	memLimit  string
 }
 
-func initCgroup(basePath string) {
-	if _, err := os.Stat(filepath.Join(basePath, "memory")); err == nil {
-		cgSubsystem = "memory"
-		return
-	}
-	logger.Warning("Memory subsystem of cgroup not enabled, fallback to cpu")
-}
-
-func newCgroupHook(p mirrorProvider, basePath, baseGroup string) *cgroupHook {
+func newCgroupHook(p mirrorProvider, basePath, baseGroup, subsystem, memLimit string) *cgroupHook {
 	if basePath == "" {
 		basePath = "/sys/fs/cgroup"
 	}
 	if baseGroup == "" {
 		baseGroup = "tunasync"
 	}
+	if subsystem == "" {
+		subsystem = "cpu"
+	}
 	return &cgroupHook{
 		provider:  p,
 		basePath:  basePath,
 		baseGroup: baseGroup,
+		subsystem: subsystem,
 	}
 }
 
@@ -52,15 +48,17 @@ func (c *cgroupHook) preExec() error {
 	if err := sh.Command("cgcreate", "-g", c.Cgroup()).Run(); err != nil {
 		return err
 	}
-	// if cgSubsystem != "memory" {
-	// 	return nil
-	// }
-	// if c.provider.Type() == provRsync || c.provider.Type() == provTwoStageRsync {
-	// 	gname := fmt.Sprintf("%s/%s", c.baseGroup, c.provider.Name())
-	// 	return sh.Command(
-	// 		"cgset", "-r", "memory.limit_in_bytes=512M", gname,
-	// 	).Run()
-	// }
+	if c.subsystem != "memory" {
+		return nil
+	}
+	if c.memLimit != "" {
+		gname := fmt.Sprintf("%s/%s", c.baseGroup, c.provider.Name())
+		return sh.Command(
+			"cgset", "-r",
+			fmt.Sprintf("memory.limit_in_bytes=%s", c.memLimit),
+			gname,
+		).Run()
+	}
 	return nil
 }
 
@@ -76,7 +74,7 @@ func (c *cgroupHook) postExec() error {
 
 func (c *cgroupHook) Cgroup() string {
 	name := c.provider.Name()
-	return fmt.Sprintf("%s:%s/%s", cgSubsystem, c.baseGroup, name)
+	return fmt.Sprintf("%s:%s/%s", c.subsystem, c.baseGroup, name)
 }
 
 func (c *cgroupHook) killAll() error {
@@ -87,7 +85,7 @@ func (c *cgroupHook) killAll() error {
 
 	readTaskList := func() ([]int, error) {
 		taskList := []int{}
-		taskFile, err := os.Open(filepath.Join(c.basePath, cgSubsystem, c.baseGroup, name, "tasks"))
+		taskFile, err := os.Open(filepath.Join(c.basePath, c.subsystem, c.baseGroup, name, "tasks"))
 		if err != nil {
 			return taskList, err
 		}

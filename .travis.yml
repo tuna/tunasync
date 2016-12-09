@@ -17,8 +17,8 @@ services:
     - docker
 
 before_script:
-    - sudo mount -t memory -o memory memory /sys/fs/cgroup/memory
-    - mount
+    - lssubsys -am
+    - sudo cgcreate -a $USER -t $USER -g cpu:tunasync
     - sudo cgcreate -a $USER -t $USER -g memory:tunasync
     - docker pull alpine
 

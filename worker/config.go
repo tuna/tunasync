@@ -70,9 +70,10 @@ type serverConfig struct {
 }
 
 type cgroupConfig struct {
-	Enable   bool   `toml:"enable"`
-	BasePath string `toml:"base_path"`
-	Group    string `toml:"group"`
+	Enable    bool   `toml:"enable"`
+	BasePath  string `toml:"base_path"`
+	Group     string `toml:"group"`
+	Subsystem string `toml:"subsystem"`
 }
 
 type dockerConfig struct {
@@ -118,6 +119,8 @@ type mirrorConfig struct {
 	Username      string `toml:"username"`
 	Password      string `toml:"password"`
 	Stage1Profile string `toml:"stage1_profile"`
+
+	MemoryLimit string `toml:"memory_limit"`
 
 	DockerImage   string   `toml:"docker_image"`
 	DockerVolumes []string `toml:"docker_volumes"`

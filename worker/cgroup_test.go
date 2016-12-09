@@ -4,6 +4,7 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"testing"
 	"time"
@@ -71,11 +72,14 @@ sleep 30
 		provider, err := newCmdProvider(c)
 		So(err, ShouldBeNil)
 
-		initCgroup("/sys/fs/cgroup")
-		cg := newCgroupHook(provider, "/sys/fs/cgroup", "tunasync")
+		cg := newCgroupHook(provider, "/sys/fs/cgroup", "tunasync", "cpu", "")
 		provider.AddHook(cg)
 
 		err = cg.preExec()
+		if err != nil {
+			logger.Errorf("Failed to create cgroup")
+			return
+		}
 		So(err, ShouldBeNil)
 
 		go func() {
@@ -128,16 +132,19 @@ sleep 30
 		provider, err := newRsyncProvider(c)
 		So(err, ShouldBeNil)
 
-		initCgroup("/sys/fs/cgroup")
-		cg := newCgroupHook(provider, "/sys/fs/cgroup", "tunasync")
+		cg := newCgroupHook(provider, "/sys/fs/cgroup", "tunasync", "cpu", "512M")
 		provider.AddHook(cg)
 
-		cg.preExec()
-		//if cgSubsystem == "memory" {
-		//	memoLimit, err := ioutil.ReadFile(filepath.Join(cg.basePath, "memory", cg.baseGroup, provider.Name(), "memory.limit_in_bytes"))
-		//	So(err, ShouldBeNil)
-		//	So(strings.Trim(string(memoLimit), "\n"), ShouldEqual, strconv.Itoa(512*1024*1024))
-		//}
+		err = cg.preExec()
+		if err != nil {
+			logger.Errorf("Failed to create cgroup")
+			return
+		}
+		if cg.subsystem == "memory" {
+			memoLimit, err := ioutil.ReadFile(filepath.Join(cg.basePath, "memory", cg.baseGroup, provider.Name(), "memory.limit_in_bytes"))
+			So(err, ShouldBeNil)
+			So(strings.Trim(string(memoLimit), "\n"), ShouldEqual, strconv.Itoa(512*1024*1024))
+		}
 		cg.postExec()
 	})
 }
