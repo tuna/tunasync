@@ -24,7 +24,9 @@ type baseProvider struct {
 
 	cgroup *cgroupHook
 	zfs    *zfsHook
-	hooks  []jobHook
+	docker *dockerHook
+
+	hooks []jobHook
 }
 
 func (p *baseProvider) Name() string {
@@ -87,6 +89,8 @@ func (p *baseProvider) AddHook(hook jobHook) {
 		p.cgroup = v
 	case *zfsHook:
 		p.zfs = v
+	case *dockerHook:
+		p.docker = v
 	}
 	p.hooks = append(p.hooks, hook)
 }
@@ -101,6 +105,10 @@ func (p *baseProvider) Cgroup() *cgroupHook {
 
 func (p *baseProvider) ZFS() *zfsHook {
 	return p.zfs
+}
+
+func (p *baseProvider) Docker() *dockerHook {
+	return p.docker
 }
 
 func (p *baseProvider) prepareLogFile() error {
