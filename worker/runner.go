@@ -2,6 +2,7 @@ package worker
 
 import (
 	"errors"
+	"fmt"
 	"os"
 	"os/exec"
 	"strings"
@@ -9,6 +10,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/codeskyblue/go-sh"
 	"golang.org/x/sys/unix"
 )
 
@@ -31,11 +33,40 @@ type cmdJob struct {
 func newCmdJob(provider mirrorProvider, cmdAndArgs []string, workingDir string, env map[string]string) *cmdJob {
 	var cmd *exec.Cmd
 
-	if provider.Cgroup() != nil {
+	if d := provider.Docker(); d != nil {
+		c := "docker"
+		args := []string{
+			"run", "--rm",
+			"-a", "STDOUT", "-a", "STDERR",
+			"--name", d.Name(),
+			"-w", workingDir,
+		}
+		// add volumes
+		for _, vol := range d.Volumes() {
+			logger.Debugf("volume: %s", vol)
+			args = append(args, "-v", vol)
+		}
+		// set env
+		env["TUNASYNC_LOG_FILE"] = d.LogFile()
+		for k, v := range env {
+			kv := fmt.Sprintf("%s=%s", k, v)
+			args = append(args, "-e", kv)
+		}
+		// apply options
+		args = append(args, d.options...)
+		// apply image and command
+		args = append(args, d.image)
+		// apply command
+		args = append(args, cmdAndArgs...)
+
+		cmd = exec.Command(c, args...)
+
+	} else if provider.Cgroup() != nil {
 		c := "cgexec"
 		args := []string{"-g", provider.Cgroup().Cgroup()}
 		args = append(args, cmdAndArgs...)
 		cmd = exec.Command(c, args...)
+
 	} else {
 		if len(cmdAndArgs) == 1 {
 			cmd = exec.Command(cmdAndArgs[0])
@@ -48,25 +79,28 @@ func newCmdJob(provider mirrorProvider, cmdAndArgs []string, workingDir string, 
 		}
 	}
 
-	logger.Debugf("Executing command %s at %s", cmdAndArgs[0], workingDir)
-	if _, err := os.Stat(workingDir); os.IsNotExist(err) {
-		logger.Debugf("Making dir %s", workingDir)
-		if err = os.MkdirAll(workingDir, 0755); err != nil {
-			logger.Errorf("Error making dir %s", workingDir)
+	if provider.Docker() == nil {
+		logger.Debugf("Executing command %s at %s", cmdAndArgs[0], workingDir)
+		if _, err := os.Stat(workingDir); os.IsNotExist(err) {
+			logger.Debugf("Making dir %s", workingDir)
+			if err = os.MkdirAll(workingDir, 0755); err != nil {
+				logger.Errorf("Error making dir %s: %s", workingDir, err.Error())
+			}
 		}
+		cmd.Dir = workingDir
+		cmd.Env = newEnviron(env, true)
 	}
-
-	cmd.Dir = workingDir
-	cmd.Env = newEnviron(env, true)
 
 	return &cmdJob{
 		cmd:        cmd,
 		workingDir: workingDir,
 		env:        env,
+		provider:   provider,
 	}
 }
 
 func (c *cmdJob) Start() error {
+	// logger.Debugf("Command start: %v", c.cmd.Args)
 	c.finished = make(chan empty, 1)
 	return c.cmd.Start()
 }
@@ -95,6 +129,14 @@ func (c *cmdJob) Terminate() error {
 	if c.cmd == nil || c.cmd.Process == nil {
 		return errProcessNotStarted
 	}
+
+	if d := c.provider.Docker(); d != nil {
+		sh.Command(
+			"docker", "stop", "-t", "2", d.Name(),
+		).Run()
+		return nil
+	}
+
 	err := unix.Kill(c.cmd.Process.Pid, syscall.SIGTERM)
 	if err != nil {
 		return err

@@ -38,6 +38,8 @@ type mirrorProvider interface {
 	Cgroup() *cgroupHook
 	// ZFS
 	ZFS() *zfsHook
+	// Docker
+	Docker() *dockerHook
 
 	AddHook(hook jobHook)
 	Hooks() []jobHook
@@ -169,10 +171,17 @@ func newMirrorProvider(mirror mirrorConfig, cfg *Config) mirrorProvider {
 		provider.AddHook(newZfsHook(provider, cfg.ZFS.Zpool))
 	}
 
-	// Add Cgroup Hook
-	if cfg.Cgroup.Enable {
+	// Add Docker Hook
+	if cfg.Docker.Enable && len(mirror.DockerImage) > 0 {
+		provider.AddHook(newDockerHook(provider, cfg.Docker, mirror))
+
+	} else if cfg.Cgroup.Enable {
+		// Add Cgroup Hook
 		provider.AddHook(
-			newCgroupHook(provider, cfg.Cgroup.BasePath, cfg.Cgroup.Group),
+			newCgroupHook(
+				provider, cfg.Cgroup.BasePath, cfg.Cgroup.Group,
+				cfg.Cgroup.Subsystem, mirror.MemoryLimit,
+			),
 		)
 	}
 
