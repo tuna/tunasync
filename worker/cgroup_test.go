@@ -4,7 +4,6 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
-	"strconv"
 	"strings"
 	"testing"
 	"time"
@@ -134,11 +133,11 @@ sleep 30
 		provider.AddHook(cg)
 
 		cg.preExec()
-		if cgSubsystem == "memory" {
-			memoLimit, err := ioutil.ReadFile(filepath.Join(cg.basePath, "memory", cg.baseGroup, provider.Name(), "memory.limit_in_bytes"))
-			So(err, ShouldBeNil)
-			So(strings.Trim(string(memoLimit), "\n"), ShouldEqual, strconv.Itoa(512*1024*1024))
-		}
+		//if cgSubsystem == "memory" {
+		//	memoLimit, err := ioutil.ReadFile(filepath.Join(cg.basePath, "memory", cg.baseGroup, provider.Name(), "memory.limit_in_bytes"))
+		//	So(err, ShouldBeNil)
+		//	So(strings.Trim(string(memoLimit), "\n"), ShouldEqual, strconv.Itoa(512*1024*1024))
+		//}
 		cg.postExec()
 	})
 }

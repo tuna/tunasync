@@ -52,15 +52,15 @@ func (c *cgroupHook) preExec() error {
 	if err := sh.Command("cgcreate", "-g", c.Cgroup()).Run(); err != nil {
 		return err
 	}
-	if cgSubsystem != "memory" {
-		return nil
-	}
-	if c.provider.Type() == provRsync || c.provider.Type() == provTwoStageRsync {
-		gname := fmt.Sprintf("%s/%s", c.baseGroup, c.provider.Name())
-		return sh.Command(
-			"cgset", "-r", "memory.limit_in_bytes=512M", gname,
-		).Run()
-	}
+	// if cgSubsystem != "memory" {
+	// 	return nil
+	// }
+	// if c.provider.Type() == provRsync || c.provider.Type() == provTwoStageRsync {
+	// 	gname := fmt.Sprintf("%s/%s", c.baseGroup, c.provider.Name())
+	// 	return sh.Command(
+	// 		"cgset", "-r", "memory.limit_in_bytes=512M", gname,
+	// 	).Run()
+	// }
 	return nil
 }
 
