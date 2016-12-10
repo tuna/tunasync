@@ -99,8 +99,11 @@ func initialize(c *cli.Context) error {
 	}
 
 	// parse base url of the manager server
-	baseURL = fmt.Sprintf("https://%s:%d",
-		cfg.ManagerAddr, cfg.ManagerPort)
+	if cfg.CACert != "" {
+		baseURL = fmt.Sprintf("https://%s:%d", cfg.ManagerAddr, cfg.ManagerPort)
+	} else {
+		baseURL = fmt.Sprintf("http://%s:%d", cfg.ManagerAddr, cfg.ManagerPort)
+	}
 
 	logger.Infof("Use manager address: %s", baseURL)
 
