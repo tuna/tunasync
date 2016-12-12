@@ -325,7 +325,7 @@ func main() {
 
 	app := cli.NewApp()
 	app.EnableBashCompletion = true
-	app.Version = "0.1"
+	app.Version = tunasync.Version
 	app.Name = "tunasynctl"
 	app.Usage = "control client for tunasync manager"
 

@@ -134,7 +134,7 @@ func main() {
 	app.Name = "tunasync"
 	app.Usage = "tunasync mirror job management tool"
 	app.EnableBashCompletion = true
-	app.Version = "0.1"
+	app.Version = tunasync.Version
 	app.Commands = []cli.Command{
 		{
 			Name:    "manager",
