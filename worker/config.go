@@ -55,10 +55,18 @@ type globalConfig struct {
 }
 
 type managerConfig struct {
-	APIBase         string   `toml:"api_base"`
-	CACert          string   `toml:"ca_cert"`
-	ExtraStatusAPIs []string `toml:"extra_status_managers"`
+	APIBase string `toml:"api_base"`
+	// this option overrides the APIBase
+	APIList []string `toml:"api_base_list"`
+	CACert  string   `toml:"ca_cert"`
 	// Token   string `toml:"token"`
+}
+
+func (mc managerConfig) APIBaseList() []string {
+	if len(mc.APIList) > 0 {
+		return mc.APIList
+	}
+	return []string{mc.APIBase}
 }
 
 type serverConfig struct {
