@@ -5,7 +5,7 @@ import (
 	"time"
 )
 
-// A StatusUpdateMsg represents a msg when
+// A MirrorStatus represents a msg when
 // a worker has done syncing
 type MirrorStatus struct {
 	Name       string     `json:"name"`

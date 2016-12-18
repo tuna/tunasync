@@ -1,6 +1,7 @@
 package manager
 
 import (
+	"errors"
 	"fmt"
 	"net/http"
 	"time"
@@ -87,6 +88,7 @@ func GetTUNASyncManager(cfg *Config) *Manager {
 		workerValidateGroup.GET(":id/jobs", s.listJobsOfWorker)
 		// post job status
 		workerValidateGroup.POST(":id/jobs/:job", s.updateJobOfWorker)
+		workerValidateGroup.POST(":id/jobs/:job/size", s.updateMirrorSize)
 	}
 
 	// for tunasynctl to post commands
@@ -225,6 +227,12 @@ func (s *Manager) updateJobOfWorker(c *gin.Context) {
 	var status MirrorStatus
 	c.BindJSON(&status)
 	mirrorName := status.Name
+	if len(mirrorName) == 0 {
+		s.returnErrJSON(
+			c, http.StatusBadRequest,
+			errors.New("Mirror Name should not be empty"),
+		)
+	}
 
 	curStatus, _ := s.adapter.GetMirrorStatus(workerID, mirrorName)
 
@@ -235,21 +243,59 @@ func (s *Manager) updateJobOfWorker(c *gin.Context) {
 		status.LastUpdate = curStatus.LastUpdate
 	}
 
+	// Only message with meaningful size updates the mirror size
+	if len(curStatus.Size) > 0 && curStatus.Size != "unknown" {
+		if len(status.Size) == 0 || status.Size == "unknown" {
+			status.Size = curStatus.Size
+		}
+	}
+
 	// for logging
 	switch status.Status {
-	case Success:
-		logger.Noticef("Job [%s] @<%s> success", status.Name, status.Worker)
-	case Failed:
-		logger.Warningf("Job [%s] @<%s> failed", status.Name, status.Worker)
 	case Syncing:
 		logger.Noticef("Job [%s] @<%s> starts syncing", status.Name, status.Worker)
-	case Disabled:
-		logger.Noticef("Job [%s] @<%s> disabled", status.Name, status.Worker)
-	case Paused:
-		logger.Noticef("Job [%s] @<%s> paused", status.Name, status.Worker)
 	default:
-		logger.Infof("Job [%s] @<%s> status: %s", status.Name, status.Worker, status.Status)
+		logger.Noticef("Job [%s] @<%s> %s", status.Name, status.Worker, status.Status)
 	}
+
+	newStatus, err := s.adapter.UpdateMirrorStatus(workerID, mirrorName, status)
+	if err != nil {
+		err := fmt.Errorf("failed to update job %s of worker %s: %s",
+			mirrorName, workerID, err.Error(),
+		)
+		c.Error(err)
+		s.returnErrJSON(c, http.StatusInternalServerError, err)
+		return
+	}
+	c.JSON(http.StatusOK, newStatus)
+}
+
+func (s *Manager) updateMirrorSize(c *gin.Context) {
+	workerID := c.Param("id")
+	type SizeMsg struct {
+		Name string `json:"name"`
+		Size string `json:"size"`
+	}
+	var msg SizeMsg
+	c.BindJSON(&msg)
+
+	mirrorName := msg.Name
+	status, err := s.adapter.GetMirrorStatus(workerID, mirrorName)
+	if err != nil {
+		logger.Errorf(
+			"Failed to get status of mirror %s @<%s>: %s",
+			mirrorName, workerID, err.Error(),
+		)
+		s.returnErrJSON(c, http.StatusInternalServerError, err)
+		return
+	}
+
+	// Only message with meaningful size updates the mirror size
+	if len(msg.Size) > 0 || msg.Size != "unknown" {
+		status.Size = msg.Size
+	}
+
+	logger.Noticef("Mirror size of [%s] @<%s>: %s", status.Name, status.Worker, status.Size)
 
 	newStatus, err := s.adapter.UpdateMirrorStatus(workerID, mirrorName, status)
 	if err != nil {

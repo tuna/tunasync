@@ -125,7 +125,7 @@ func (b *boltAdapter) GetMirrorStatus(workerID, mirrorID string) (m MirrorStatus
 		bucket := tx.Bucket([]byte(_statusBucketKey))
 		v := bucket.Get([]byte(id))
 		if v == nil {
-			return fmt.Errorf("no mirror %s exists in worker %s", mirrorID, workerID)
+			return fmt.Errorf("no mirror '%s' exists in worker '%s'", mirrorID, workerID)
 		}
 		err := json.Unmarshal(v, &m)
 		return err
