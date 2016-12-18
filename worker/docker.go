@@ -32,6 +32,7 @@ func newDockerHook(p mirrorProvider, gCfg dockerConfig, mCfg mirrorConfig) *dock
 
 func (d *dockerHook) preExec() error {
 	p := d.provider
+	logDir := p.LogDir()
 	logFile := p.LogFile()
 	workingDir := p.WorkingDir()
 
@@ -42,17 +43,13 @@ func (d *dockerHook) preExec() error {
 		}
 	}
 
-	logFileNew := "/log_latest"
-	workingDirNew := "/data"
-
 	// Override workingDir
 	ctx := p.EnterContext()
-	ctx.Set(_WorkingDirKey, workingDirNew)
-	ctx.Set(_LogFileKey+":docker", logFileNew)
 	ctx.Set(
 		"volumes", []string{
-			fmt.Sprintf("%s:%s", logFile, logFileNew),
-			fmt.Sprintf("%s:%s", workingDir, workingDirNew),
+			fmt.Sprintf("%s:%s", logDir, logDir),
+			fmt.Sprintf("%s:%s", logFile, logFile),
+			fmt.Sprintf("%s:%s", workingDir, workingDir),
 		},
 	)
 	return nil
