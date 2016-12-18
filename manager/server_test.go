@@ -99,7 +99,7 @@ func TestHTTPServer(t *testing.T) {
 					IsMaster: true,
 					Status:   Success,
 					Upstream: "mirrors.tuna.tsinghua.edu.cn",
-					Size:     "3GB",
+					Size:     "unknown",
 				}
 				resp, err := PostJSON(fmt.Sprintf("%s/workers/%s/jobs/%s", baseURL, status.Worker, status.Name), status, nil)
 				defer resp.Body.Close()
@@ -138,6 +138,47 @@ func TestHTTPServer(t *testing.T) {
 					So(m.IsMaster, ShouldEqual, status.IsMaster)
 					So(time.Now().Sub(m.LastUpdate.Time), ShouldBeLessThan, 1*time.Second)
 
+				})
+
+				Convey("Update size of a valid mirror", func(ctx C) {
+					msg := struct {
+						Name string `json:"name"`
+						Size string `json:"size"`
+					}{status.Name, "5GB"}
+
+					url := fmt.Sprintf("%s/workers/%s/jobs/%s/size", baseURL, status.Worker, status.Name)
+					resp, err := PostJSON(url, msg, nil)
+					So(err, ShouldBeNil)
+					So(resp.StatusCode, ShouldEqual, http.StatusOK)
+
+					Convey("Get new size of a mirror", func(ctx C) {
+						var ms []MirrorStatus
+						resp, err := GetJSON(baseURL+"/workers/test_worker1/jobs", &ms, nil)
+
+						So(err, ShouldBeNil)
+						So(resp.StatusCode, ShouldEqual, http.StatusOK)
+						// err = json.NewDecoder(resp.Body).Decode(&mirrorStatusList)
+						m := ms[0]
+						So(m.Name, ShouldEqual, status.Name)
+						So(m.Worker, ShouldEqual, status.Worker)
+						So(m.Status, ShouldEqual, status.Status)
+						So(m.Upstream, ShouldEqual, status.Upstream)
+						So(m.Size, ShouldEqual, "5GB")
+						So(m.IsMaster, ShouldEqual, status.IsMaster)
+						So(time.Now().Sub(m.LastUpdate), ShouldBeLessThan, 1*time.Second)
+					})
+				})
+
+				Convey("Update size of an invalid mirror", func(ctx C) {
+					msg := struct {
+						Name string `json:"name"`
+						Size string `json:"size"`
+					}{"Invalid mirror", "5GB"}
+
+					url := fmt.Sprintf("%s/workers/%s/jobs/%s/size", baseURL, status.Worker, status.Name)
+					resp, err := PostJSON(url, msg, nil)
+					So(err, ShouldBeNil)
+					So(resp.StatusCode, ShouldEqual, http.StatusInternalServerError)
 				})
 			})
 
