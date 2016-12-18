@@ -186,6 +186,57 @@ func listJobs(c *cli.Context) error {
 	return nil
 }
 
+func updateMirrorSize(c *cli.Context) error {
+	args := c.Args()
+	if len(args) != 2 {
+		return cli.NewExitError("Usage: tunasynctl -w <worker-id> <mirror> <size>", 1)
+	}
+	workerID := c.String("worker")
+	mirrorID := args.Get(0)
+	mirrorSize := args.Get(1)
+
+	msg := struct {
+		Name string `json:"name"`
+		Size string `json:"size"`
+	}{
+		Name: mirrorID,
+		Size: mirrorSize,
+	}
+
+	url := fmt.Sprintf(
+		"%s/workers/%s/jobs/%s/size", baseURL, workerID, mirrorID,
+	)
+
+	resp, err := tunasync.PostJSON(url, msg, client)
+	if err != nil {
+		return cli.NewExitError(
+			fmt.Sprintf("Failed to send request to manager: %s",
+				err.Error()),
+			1)
+	}
+	defer resp.Body.Close()
+	body, _ := ioutil.ReadAll(resp.Body)
+	if resp.StatusCode != http.StatusOK {
+		return cli.NewExitError(
+			fmt.Sprintf("Manager failed to update mirror size: %s", body), 1,
+		)
+	}
+
+	var status tunasync.MirrorStatus
+	json.Unmarshal(body, &status)
+	if status.Size != mirrorSize {
+		return cli.NewExitError(
+			fmt.Sprintf(
+				"Mirror size error, expecting %s, manager returned %s",
+				mirrorSize, status.Size,
+			), 1,
+		)
+	}
+
+	logger.Infof("Successfully updated mirror size to %s", mirrorSize)
+	return nil
+}
+
 func flushDisabledJobs(c *cli.Context) error {
 	req, err := http.NewRequest("DELETE", baseURL+flushDisabledPath, nil)
 	if err != nil {
@@ -384,6 +435,18 @@ func main() {
 			Usage:  "List workers",
 			Flags:  commonFlags,
 			Action: initializeWrapper(listWorkers),
+		},
+		{
+			Name:  "set-size",
+			Usage: "Set mirror size",
+			Flags: append(
+				commonFlags,
+				cli.StringFlag{
+					Name:  "worker, w",
+					Usage: "specify worker-id of the mirror job",
+				},
+			),
+			Action: initializeWrapper(updateMirrorSize),
 		},
 		{
 			Name:   "start",
