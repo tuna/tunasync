@@ -71,6 +71,7 @@ func (h *execPostHook) Do() error {
 		"TUNASYNC_MIRROR_NAME":     p.Name(),
 		"TUNASYNC_WORKING_DIR":     p.WorkingDir(),
 		"TUNASYNC_UPSTREAM_URL":    p.Upstream(),
+		"TUNASYNC_LOG_DIR":         p.LogDir(),
 		"TUNASYNC_LOG_FILE":        p.LogFile(),
 		"TUNASYNC_JOB_EXIT_STATUS": exitStatus,
 	}
