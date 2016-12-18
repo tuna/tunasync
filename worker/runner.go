@@ -41,13 +41,17 @@ func newCmdJob(provider mirrorProvider, cmdAndArgs []string, workingDir string, 
 			"--name", d.Name(),
 			"-w", workingDir,
 		}
+		// specify user
+		args = append(
+			args, "-u",
+			fmt.Sprintf("%d:%d", os.Getuid(), os.Getgid()),
+		)
 		// add volumes
 		for _, vol := range d.Volumes() {
 			logger.Debugf("volume: %s", vol)
 			args = append(args, "-v", vol)
 		}
 		// set env
-		env["TUNASYNC_LOG_FILE"] = d.LogFile()
 		for k, v := range env {
 			kv := fmt.Sprintf("%s=%s", k, v)
 			args = append(args, "-e", kv)
