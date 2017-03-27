@@ -49,6 +49,7 @@ type globalConfig struct {
 	MirrorDir  string `toml:"mirror_dir"`
 	Concurrent int    `toml:"concurrent"`
 	Interval   int    `toml:"interval"`
+	Retry      int    `toml:"retry"`
 
 	ExecOnSuccess []string `toml:"exec_on_success"`
 	ExecOnFailure []string `toml:"exec_on_failure"`
@@ -108,6 +109,7 @@ type mirrorConfig struct {
 	Provider  providerEnum      `toml:"provider"`
 	Upstream  string            `toml:"upstream"`
 	Interval  int               `toml:"interval"`
+	Retry     int               `toml:"retry"`
 	MirrorDir string            `toml:"mirror_dir"`
 	LogDir    string            `toml:"log_dir"`
 	Env       map[string]string `toml:"env"`

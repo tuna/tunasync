@@ -92,7 +92,7 @@ exit 1
 			job.ctrlChan <- jobStart
 			msg := <-managerChan
 			So(msg.status, ShouldEqual, PreSyncing)
-			for i := 0; i < maxRetry; i++ {
+			for i := 0; i < defaultMaxRetry; i++ {
 				msg = <-managerChan
 				So(msg.status, ShouldEqual, Syncing)
 				msg = <-managerChan

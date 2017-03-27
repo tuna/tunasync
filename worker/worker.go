@@ -35,6 +35,10 @@ func GetTUNASyncWorker(cfg *Config) *Worker {
 		return tunasyncWorker
 	}
 
+	if cfg.Global.Retry == 0 {
+		cfg.Global.Retry = defaultMaxRetry
+	}
+
 	w := &Worker{
 		cfg:  cfg,
 		jobs: make(map[string]*mirrorJob),

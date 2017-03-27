@@ -18,6 +18,7 @@ log_dir = "/var/log/tunasync/{{.Name}}"
 mirror_dir = "/data/mirrors"
 concurrent = 10
 interval = 240
+retry = 3
 
 [manager]
 api_base = "https://127.0.0.1:5000"
@@ -35,6 +36,7 @@ name = "AOSP"
 provider = "command"
 upstream = "https://aosp.google.com/"
 interval = 720
+retry = 2
 mirror_dir = "/data/git/AOSP"
 exec_on_success = [
 	"bash -c 'echo ${TUNASYNC_JOB_EXIT_STATUS} > ${TUNASYNC_WORKING_DIR}/exit_status'"
@@ -116,6 +118,7 @@ use_ipv6 = true
 		So(err, ShouldBeNil)
 		So(cfg.Global.Name, ShouldEqual, "test_worker")
 		So(cfg.Global.Interval, ShouldEqual, 240)
+		So(cfg.Global.Retry, ShouldEqual, 3)
 		So(cfg.Global.MirrorDir, ShouldEqual, "/data/mirrors")
 
 		So(cfg.Manager.APIBase, ShouldEqual, "https://127.0.0.1:5000")
@@ -126,6 +129,7 @@ use_ipv6 = true
 		So(m.MirrorDir, ShouldEqual, "/data/git/AOSP")
 		So(m.Provider, ShouldEqual, provCommand)
 		So(m.Interval, ShouldEqual, 720)
+		So(m.Retry, ShouldEqual, 2)
 		So(m.Env["REPO"], ShouldEqual, "/usr/local/bin/aosp-repo")
 
 		m = cfg.Mirrors[1]
