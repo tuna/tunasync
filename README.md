@@ -52,7 +52,7 @@ PreSyncing           Syncing                               Success
 
 ## Generate Self-Signed Certificate
 
-Fisrt, create root CA
+First, create root CA
 
 ```
 openssl genrsa -out rootCA.key 2048
