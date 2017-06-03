@@ -86,7 +86,7 @@ exit 0
 				provider.WorkingDir(),
 				fmt.Sprintf(
 					"-aHvh --no-o --no-g --stats --exclude .~tmp~/ "+
-						"--delete --delete-after --delay-updates --safe-links "+
+						"--delete --delete-after --delete-excluded --delay-updates --safe-links "+
 						"--timeout=120 --contimeout=120 -6 %s %s",
 					provider.upstreamURL, provider.WorkingDir(),
 				),
@@ -151,7 +151,7 @@ exit 0
 				provider.WorkingDir(),
 				fmt.Sprintf(
 					"%s %s -aHvh --no-o --no-g --stats --exclude .~tmp~/ "+
-						"--delete --delete-after --delay-updates --safe-links "+
+						"--delete --delete-after --delete-excluded --delay-updates --safe-links "+
 						"--timeout=120 --contimeout=120 -6 %s %s",
 					provider.username, provider.password, provider.upstreamURL, provider.WorkingDir(),
 				),
@@ -323,7 +323,7 @@ exit 0
 				provider.WorkingDir(),
 				fmt.Sprintf(
 					"-aHvh --no-o --no-g --stats --exclude .~tmp~/ "+
-						"--delete --delete-after --delay-updates --safe-links "+
+						"--delete --delete-after --delete-excluded --delay-updates --safe-links "+
 						"--timeout=120 --contimeout=120 -6 --exclude-from %s %s %s",
 					provider.excludeFile, provider.upstreamURL, provider.WorkingDir(),
 				),
