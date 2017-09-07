@@ -49,8 +49,6 @@ func newRsyncProvider(c rsyncConfig) (*rsyncProvider, error) {
 
 	if c.useIPv6 {
 		options = append(options, "-6")
-	} else {
-		options = append(options, "-4")
 	}
 
 	if c.excludeFile != "" {
