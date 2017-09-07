@@ -130,6 +130,7 @@ func newMirrorProvider(mirror mirrorConfig, cfg *Config) mirrorProvider {
 			logDir:      logDir,
 			logFile:     filepath.Join(logDir, "latest.log"),
 			useIPv6:     mirror.UseIPv6,
+			useIPv4:     mirror.UseIPv4,
 			interval:    time.Duration(mirror.Interval) * time.Minute,
 		}
 		p, err := newRsyncProvider(rc)
