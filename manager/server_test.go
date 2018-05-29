@@ -125,7 +125,7 @@ func TestHTTPServer(t *testing.T) {
 				})
 
 				Convey("list all job status of all workers", func(ctx C) {
-					var ms []webMirrorStatus
+					var ms []WebMirrorStatus
 					resp, err := GetJSON(baseURL+"/jobs", &ms, nil)
 					So(err, ShouldBeNil)
 					So(resp.StatusCode, ShouldEqual, http.StatusOK)
