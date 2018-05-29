@@ -20,8 +20,6 @@ type baseProvider struct {
 	cmd       *cmdJob
 	isRunning atomic.Value
 
-	logFile *os.File
-
 	cgroup *cgroupHook
 	zfs    *zfsHook
 	docker *dockerHook
@@ -116,15 +114,12 @@ func (p *baseProvider) prepareLogFile() error {
 		p.cmd.SetLogFile(nil)
 		return nil
 	}
-	if p.logFile == nil {
-		logFile, err := os.OpenFile(p.LogFile(), os.O_WRONLY|os.O_CREATE, 0644)
-		if err != nil {
-			logger.Errorf("Error opening logfile %s: %s", p.LogFile(), err.Error())
-			return err
-		}
-		p.logFile = logFile
+	logFile, err := os.OpenFile(p.LogFile(), os.O_WRONLY|os.O_CREATE, 0644)
+	if err != nil {
+		logger.Errorf("Error opening logfile %s: %s", p.LogFile(), err.Error())
+		return err
 	}
-	p.cmd.SetLogFile(p.logFile)
+	p.cmd.SetLogFile(logFile)
 	return nil
 }
 
@@ -143,13 +138,7 @@ func (p *baseProvider) IsRunning() bool {
 
 func (p *baseProvider) Wait() error {
 	defer func() {
-		p.Lock()
 		p.isRunning.Store(false)
-		if p.logFile != nil {
-			p.logFile.Close()
-			p.logFile = nil
-		}
-		p.Unlock()
 	}()
 	return p.cmd.Wait()
 }
@@ -159,13 +148,6 @@ func (p *baseProvider) Terminate() error {
 	if !p.IsRunning() {
 		return nil
 	}
-
-	p.Lock()
-	if p.logFile != nil {
-		p.logFile.Close()
-		p.logFile = nil
-	}
-	p.Unlock()
 
 	err := p.cmd.Terminate()
 	p.isRunning.Store(false)
