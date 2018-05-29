@@ -1,11 +1,9 @@
-package manager
+package internal
 
 import (
 	"encoding/json"
 	"strconv"
 	"time"
-
-	. "github.com/tuna/tunasync/internal"
 )
 
 type textTime struct {
@@ -38,24 +36,28 @@ func (t *stampTime) UnmarshalJSON(b []byte) error {
 	return err
 }
 
-// webMirrorStatus is the mirror status to be shown in the web page
-type webMirrorStatus struct {
+// WebMirrorStatus is the mirror status to be shown in the web page
+type WebMirrorStatus struct {
 	Name         string     `json:"name"`
 	IsMaster     bool       `json:"is_master"`
 	Status       SyncStatus `json:"status"`
 	LastUpdate   textTime   `json:"last_update"`
 	LastUpdateTs stampTime  `json:"last_update_ts"`
+	LastEnded    textTime   `json:"last_ended"`
+	LastEndedTs  stampTime  `json:"last_ended_ts"`
 	Upstream     string     `json:"upstream"`
 	Size         string     `json:"size"` // approximate size
 }
 
-func convertMirrorStatus(m MirrorStatus) webMirrorStatus {
-	return webMirrorStatus{
+func BuildWebMirrorStatus(m MirrorStatus) WebMirrorStatus {
+	return WebMirrorStatus{
 		Name:         m.Name,
 		IsMaster:     m.IsMaster,
 		Status:       m.Status,
 		LastUpdate:   textTime{m.LastUpdate},
 		LastUpdateTs: stampTime{m.LastUpdate},
+		LastEnded:    textTime{m.LastEnded},
+		LastEndedTs:  stampTime{m.LastEnded},
 		Upstream:     m.Upstream,
 		Size:         m.Size,
 	}

@@ -135,11 +135,11 @@ func (s *Manager) listAllJobs(c *gin.Context) {
 		s.returnErrJSON(c, http.StatusInternalServerError, err)
 		return
 	}
-	webMirStatusList := []webMirrorStatus{}
+	webMirStatusList := []WebMirrorStatus{}
 	for _, m := range mirrorStatusList {
 		webMirStatusList = append(
 			webMirStatusList,
-			convertMirrorStatus(m),
+			BuildWebMirrorStatus(m),
 		)
 	}
 	c.JSON(http.StatusOK, webMirStatusList)
@@ -241,6 +241,11 @@ func (s *Manager) updateJobOfWorker(c *gin.Context) {
 		status.LastUpdate = time.Now()
 	} else {
 		status.LastUpdate = curStatus.LastUpdate
+	}
+	if status.Status == Success || status.Status == Failed {
+		status.LastEnded = time.Now()
+	} else {
+		status.LastEnded = curStatus.LastEnded
 	}
 
 	// Only message with meaningful size updates the mirror size
