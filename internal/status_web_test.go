@@ -1,11 +1,9 @@
-package manager
+package internal
 
 import (
 	"encoding/json"
 	"testing"
 	"time"
-
-	tunasync "github.com/tuna/tunasync/internal"
 
 	. "github.com/smartystreets/goconvey/convey"
 )
@@ -16,9 +14,9 @@ func TestStatus(t *testing.T) {
 		loc, err := time.LoadLocation(tz)
 		So(err, ShouldBeNil)
 		t := time.Date(2016, time.April, 16, 23, 8, 10, 0, loc)
-		m := webMirrorStatus{
+		m := WebMirrorStatus{
 			Name:         "tunalinux",
-			Status:       tunasync.Success,
+			Status:       Success,
 			LastUpdate:   textTime{t},
 			LastUpdateTs: stampTime{t},
 			Size:         "5GB",
@@ -28,7 +26,7 @@ func TestStatus(t *testing.T) {
 		b, err := json.Marshal(m)
 		So(err, ShouldBeNil)
 		//fmt.Println(string(b))
-		var m2 webMirrorStatus
+		var m2 WebMirrorStatus
 		err = json.Unmarshal(b, &m2)
 		So(err, ShouldBeNil)
 		// fmt.Printf("%#v", m2)

@@ -140,8 +140,7 @@ func listWorkers(c *cli.Context) error {
 }
 
 func listJobs(c *cli.Context) error {
-	// FIXME: there should be an API on manager server side that return MirrorStatus list to tunasynctl
-	var jobs []tunasync.MirrorStatus
+	var jobs []tunasync.WebMirrorStatus
 	if c.Bool("all") {
 		_, err := tunasync.GetJSON(baseURL+listJobsPath, &jobs, client)
 		if err != nil {
@@ -158,10 +157,10 @@ func listJobs(c *cli.Context) error {
 				fmt.Sprintf("Usage Error: jobs command need at"+
 					" least one arguments or \"--all\" flag."), 1)
 		}
-		ans := make(chan []tunasync.MirrorStatus, len(args))
+		ans := make(chan []tunasync.WebMirrorStatus, len(args))
 		for _, workerID := range args {
 			go func(workerID string) {
-				var workerJobs []tunasync.MirrorStatus
+				var workerJobs []tunasync.WebMirrorStatus
 				_, err := tunasync.GetJSON(fmt.Sprintf("%s/workers/%s/jobs",
 					baseURL, workerID), &workerJobs, client)
 				if err != nil {

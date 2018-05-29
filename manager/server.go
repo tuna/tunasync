@@ -135,11 +135,11 @@ func (s *Manager) listAllJobs(c *gin.Context) {
 		s.returnErrJSON(c, http.StatusInternalServerError, err)
 		return
 	}
-	webMirStatusList := []webMirrorStatus{}
+	webMirStatusList := []WebMirrorStatus{}
 	for _, m := range mirrorStatusList {
 		webMirStatusList = append(
 			webMirStatusList,
-			convertMirrorStatus(m),
+			BuildWebMirrorStatus(m),
 		)
 	}
 	c.JSON(http.StatusOK, webMirStatusList)
