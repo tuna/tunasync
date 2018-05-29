@@ -121,6 +121,7 @@ func TestHTTPServer(t *testing.T) {
 					So(m.Size, ShouldEqual, status.Size)
 					So(m.IsMaster, ShouldEqual, status.IsMaster)
 					So(time.Now().Sub(m.LastUpdate), ShouldBeLessThan, 1*time.Second)
+					So(time.Now().Sub(m.LastEnded), ShouldBeLessThan, 1*time.Second)
 
 				})
 
@@ -137,6 +138,7 @@ func TestHTTPServer(t *testing.T) {
 					So(m.Size, ShouldEqual, status.Size)
 					So(m.IsMaster, ShouldEqual, status.IsMaster)
 					So(time.Now().Sub(m.LastUpdate.Time), ShouldBeLessThan, 1*time.Second)
+					So(time.Now().Sub(m.LastEnded.Time), ShouldBeLessThan, 1*time.Second)
 
 				})
 
@@ -166,6 +168,7 @@ func TestHTTPServer(t *testing.T) {
 						So(m.Size, ShouldEqual, "5GB")
 						So(m.IsMaster, ShouldEqual, status.IsMaster)
 						So(time.Now().Sub(m.LastUpdate), ShouldBeLessThan, 1*time.Second)
+						So(time.Now().Sub(m.LastEnded), ShouldBeLessThan, 1*time.Second)
 					})
 				})
 
@@ -180,6 +183,32 @@ func TestHTTPServer(t *testing.T) {
 					So(err, ShouldBeNil)
 					So(resp.StatusCode, ShouldEqual, http.StatusInternalServerError)
 				})
+
+				// what if status changed to failed
+				status.Status = Failed
+				time.Sleep(3 * time.Second)
+				resp, err = PostJSON(fmt.Sprintf("%s/workers/%s/jobs/%s", baseURL, status.Worker, status.Name), status, nil)
+				defer resp.Body.Close()
+				So(err, ShouldBeNil)
+				So(resp.StatusCode, ShouldEqual, http.StatusOK)
+
+				Convey("What if syncing job failed", func(ctx C) {
+					var ms []MirrorStatus
+					resp, err := GetJSON(baseURL+"/workers/test_worker1/jobs", &ms, nil)
+
+					So(err, ShouldBeNil)
+					So(resp.StatusCode, ShouldEqual, http.StatusOK)
+					// err = json.NewDecoder(resp.Body).Decode(&mirrorStatusList)
+					m := ms[0]
+					So(m.Name, ShouldEqual, status.Name)
+					So(m.Worker, ShouldEqual, status.Worker)
+					So(m.Status, ShouldEqual, status.Status)
+					So(m.Upstream, ShouldEqual, status.Upstream)
+					So(m.Size, ShouldEqual, status.Size)
+					So(m.IsMaster, ShouldEqual, status.IsMaster)
+					So(time.Now().Sub(m.LastUpdate), ShouldBeGreaterThan, 3*time.Second)
+					So(time.Now().Sub(m.LastEnded), ShouldBeLessThan, 1*time.Second)
+				})
 			})
 
 			Convey("update mirror status of an inexisted worker", func(ctx C) {
@@ -190,6 +219,7 @@ func TestHTTPServer(t *testing.T) {
 					IsMaster:   true,
 					Status:     Success,
 					LastUpdate: time.Now(),
+					LastEnded:  time.Now(),
 					Upstream:   "mirrors.tuna.tsinghua.edu.cn",
 					Size:       "4GB",
 				}

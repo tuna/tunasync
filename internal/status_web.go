@@ -43,6 +43,8 @@ type WebMirrorStatus struct {
 	Status       SyncStatus `json:"status"`
 	LastUpdate   textTime   `json:"last_update"`
 	LastUpdateTs stampTime  `json:"last_update_ts"`
+	LastEnded    textTime   `json:"last_ended"`
+	LastEndedTs  stampTime  `json:"last_ended_ts"`
 	Upstream     string     `json:"upstream"`
 	Size         string     `json:"size"` // approximate size
 }
@@ -54,6 +56,8 @@ func BuildWebMirrorStatus(m MirrorStatus) WebMirrorStatus {
 		Status:       m.Status,
 		LastUpdate:   textTime{m.LastUpdate},
 		LastUpdateTs: stampTime{m.LastUpdate},
+		LastEnded:    textTime{m.LastEnded},
+		LastEndedTs:  stampTime{m.LastEnded},
 		Upstream:     m.Upstream,
 		Size:         m.Size,
 	}

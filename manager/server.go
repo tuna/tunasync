@@ -242,6 +242,11 @@ func (s *Manager) updateJobOfWorker(c *gin.Context) {
 	} else {
 		status.LastUpdate = curStatus.LastUpdate
 	}
+	if status.Status == Success || status.Status == Failed {
+		status.LastEnded = time.Now()
+	} else {
+		status.LastEnded = curStatus.LastEnded
+	}
 
 	// Only message with meaningful size updates the mirror size
 	if len(curStatus.Size) > 0 && curStatus.Size != "unknown" {

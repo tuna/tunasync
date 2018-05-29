@@ -13,6 +13,7 @@ type MirrorStatus struct {
 	IsMaster   bool       `json:"is_master"`
 	Status     SyncStatus `json:"status"`
 	LastUpdate time.Time  `json:"last_update"`
+	LastEnded  time.Time  `json:"last_ended"`
 	Upstream   string     `json:"upstream"`
 	Size       string     `json:"size"`
 	ErrorMsg   string     `json:"error_msg"`
