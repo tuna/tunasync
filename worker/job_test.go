@@ -135,6 +135,8 @@ echo $TUNASYNC_WORKING_DIR
 				msg = <-managerChan
 				So(msg.status, ShouldEqual, Syncing)
 
+				job.ctrlChan <- jobStart // should be ignored
+
 				job.ctrlChan <- jobStop
 
 				msg = <-managerChan
@@ -167,6 +169,97 @@ echo $TUNASYNC_WORKING_DIR
 				loggedContent, err := ioutil.ReadFile(provider.LogFile())
 				So(err, ShouldBeNil)
 				So(string(loggedContent), ShouldEqual, expectedOutput)
+				job.ctrlChan <- jobDisable
+				<-job.disabled
+			})
+
+			Convey("If we restart it", func(ctx C) {
+				go job.Run(managerChan, semaphore)
+				job.ctrlChan <- jobStart
+
+				msg := <-managerChan
+				So(msg.status, ShouldEqual, PreSyncing)
+				msg = <-managerChan
+				So(msg.status, ShouldEqual, Syncing)
+
+				job.ctrlChan <- jobRestart
+
+				msg = <-managerChan
+				So(msg.status, ShouldEqual, Failed)
+				So(msg.msg, ShouldEqual, "killed by manager")
+
+				msg = <-managerChan
+				So(msg.status, ShouldEqual, PreSyncing)
+				msg = <-managerChan
+				So(msg.status, ShouldEqual, Syncing)
+				msg = <-managerChan
+				So(msg.status, ShouldEqual, Success)
+
+				expectedOutput := fmt.Sprintf(
+					"%s\n%s\n",
+					provider.WorkingDir(), provider.WorkingDir(),
+				)
+
+				loggedContent, err := ioutil.ReadFile(provider.LogFile())
+				So(err, ShouldBeNil)
+				So(string(loggedContent), ShouldEqual, expectedOutput)
+				job.ctrlChan <- jobDisable
+				<-job.disabled
+			})
+
+			Convey("If we disable it", func(ctx C) {
+				go job.Run(managerChan, semaphore)
+				job.ctrlChan <- jobStart
+
+				msg := <-managerChan
+				So(msg.status, ShouldEqual, PreSyncing)
+				msg = <-managerChan
+				So(msg.status, ShouldEqual, Syncing)
+
+				job.ctrlChan <- jobDisable
+
+				msg = <-managerChan
+				So(msg.status, ShouldEqual, Failed)
+				So(msg.msg, ShouldEqual, "killed by manager")
+
+				<-job.disabled
+			})
+
+			Convey("If we stop it twice, than start it", func(ctx C) {
+				go job.Run(managerChan, semaphore)
+				job.ctrlChan <- jobStart
+
+				msg := <-managerChan
+				So(msg.status, ShouldEqual, PreSyncing)
+				msg = <-managerChan
+				So(msg.status, ShouldEqual, Syncing)
+
+				job.ctrlChan <- jobStop
+
+				msg = <-managerChan
+				So(msg.status, ShouldEqual, Failed)
+				So(msg.msg, ShouldEqual, "killed by manager")
+
+				job.ctrlChan <- jobStop // should be ignored
+
+				job.ctrlChan <- jobStart
+
+				msg = <-managerChan
+				So(msg.status, ShouldEqual, PreSyncing)
+				msg = <-managerChan
+				So(msg.status, ShouldEqual, Syncing)
+				msg = <-managerChan
+				So(msg.status, ShouldEqual, Success)
+
+				expectedOutput := fmt.Sprintf(
+					"%s\n%s\n",
+					provider.WorkingDir(), provider.WorkingDir(),
+				)
+
+				loggedContent, err := ioutil.ReadFile(provider.LogFile())
+				So(err, ShouldBeNil)
+				So(string(loggedContent), ShouldEqual, expectedOutput)
+
 				job.ctrlChan <- jobDisable
 				<-job.disabled
 			})
