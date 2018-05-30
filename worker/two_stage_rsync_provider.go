@@ -108,7 +108,12 @@ func (p *twoStageRsyncProvider) Options(stage int) ([]string, error) {
 }
 
 func (p *twoStageRsyncProvider) Run() error {
-	defer p.Wait()
+	p.Lock()
+	defer p.Unlock()
+
+	if p.IsRunning() {
+		return errors.New("provider is currently running")
+	}
 
 	env := map[string]string{}
 	if p.username != "" {
@@ -129,7 +134,7 @@ func (p *twoStageRsyncProvider) Run() error {
 		command = append(command, p.upstreamURL, p.WorkingDir())
 
 		p.cmd = newCmdJob(p, command, p.WorkingDir(), env)
-		if err := p.prepareLogFile(); err != nil {
+		if err := p.prepareLogFile(stage > 1); err != nil {
 			return err
 		}
 
@@ -137,9 +142,11 @@ func (p *twoStageRsyncProvider) Run() error {
 			return err
 		}
 		p.isRunning.Store(true)
+		logger.Debugf("set isRunning to true: %s", p.Name())
 
-		err = p.cmd.Wait()
-		p.isRunning.Store(false)
+		p.Unlock()
+		err = p.Wait()
+		p.Lock()
 		if err != nil {
 			return err
 		}

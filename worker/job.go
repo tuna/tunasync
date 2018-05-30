@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"sync"
 	"sync/atomic"
+	"time"
 
 	tunasync "github.com/tuna/tunasync/internal"
 )
@@ -154,9 +155,7 @@ func (m *mirrorJob) Run(managerChan chan<- jobMessage, semaphore chan empty) err
 			syncDone := make(chan error, 1)
 			go func() {
 				err := provider.Run()
-				if !stopASAP {
-					syncDone <- err
-				}
+				syncDone <- err
 			}()
 
 			select {
@@ -248,6 +247,7 @@ func (m *mirrorJob) Run(managerChan chan<- jobMessage, semaphore chan empty) err
 					m.SetState(stateReady)
 					close(kill)
 					<-jobDone
+					time.Sleep(time.Second) // Restart may fail if the process was not exited yet
 					continue
 				case jobStart:
 					m.SetState(stateReady)
