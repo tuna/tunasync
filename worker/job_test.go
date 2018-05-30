@@ -268,3 +268,123 @@ echo $TUNASYNC_WORKING_DIR
 	})
 
 }
+
+func TestConcurrentMirrorJobs(t *testing.T) {
+
+	InitLogger(true, true, false)
+
+	Convey("Concurrent MirrorJobs should work", t, func(ctx C) {
+		tmpDir, err := ioutil.TempDir("", "tunasync")
+		defer os.RemoveAll(tmpDir)
+		So(err, ShouldBeNil)
+
+		const CONCURRENT = 5
+
+		var providers [CONCURRENT]*cmdProvider
+		var jobs [CONCURRENT]*mirrorJob
+		for i := 0; i < CONCURRENT; i++ {
+			c := cmdConfig{
+				name:        fmt.Sprintf("job-%d", i),
+				upstreamURL: "http://mirrors.tuna.moe/",
+				command:     "sleep 3",
+				workingDir:  tmpDir,
+				logDir:      tmpDir,
+				logFile:     "/dev/null",
+				interval:    10 * time.Second,
+			}
+
+			var err error
+			providers[i], err = newCmdProvider(c)
+			So(err, ShouldBeNil)
+			jobs[i] = newMirrorJob(providers[i])
+		}
+
+		managerChan := make(chan jobMessage, 10)
+		semaphore := make(chan empty, CONCURRENT-2)
+
+		Convey("When we run them all", func(ctx C) {
+			for _, job := range jobs {
+				go job.Run(managerChan, semaphore)
+				job.ctrlChan <- jobStart
+			}
+
+			counterEnded := 0
+			counterRunning := 0
+			maxRunning := 0
+			counterFailed := 0
+			for counterEnded < CONCURRENT {
+				msg := <-managerChan
+				switch msg.status {
+				case PreSyncing:
+					counterRunning++
+				case Syncing:
+				case Failed:
+					counterFailed++
+					fallthrough
+				case Success:
+					counterEnded++
+					counterRunning--
+				default:
+					So(0, ShouldEqual, 1)
+				}
+				// Test if semaphore works
+				So(counterRunning, ShouldBeLessThanOrEqualTo, CONCURRENT-2)
+				if counterRunning > maxRunning {
+					maxRunning = counterRunning
+				}
+			}
+
+			So(maxRunning, ShouldEqual, CONCURRENT-2)
+			So(counterFailed, ShouldEqual, 0)
+
+			for _, job := range jobs {
+				job.ctrlChan <- jobDisable
+				<-job.disabled
+			}
+		})
+		Convey("If we cancel one job", func(ctx C) {
+			for _, job := range jobs {
+				go job.Run(managerChan, semaphore)
+				job.ctrlChan <- jobRestart
+				time.Sleep(200 * time.Millisecond)
+			}
+
+			// Cancel the one waiting for semaphore
+			jobs[len(jobs)-1].ctrlChan <- jobStop
+
+			counterEnded := 0
+			counterRunning := 0
+			maxRunning := 0
+			counterFailed := 0
+			for counterEnded < CONCURRENT-1 {
+				msg := <-managerChan
+				switch msg.status {
+				case PreSyncing:
+					counterRunning++
+				case Syncing:
+				case Failed:
+					counterFailed++
+					fallthrough
+				case Success:
+					counterEnded++
+					counterRunning--
+				default:
+					So(0, ShouldEqual, 1)
+				}
+				// Test if semaphore works
+				So(counterRunning, ShouldBeLessThanOrEqualTo, CONCURRENT-2)
+				if counterRunning > maxRunning {
+					maxRunning = counterRunning
+				}
+			}
+
+			So(maxRunning, ShouldEqual, CONCURRENT-2)
+			So(counterFailed, ShouldEqual, 0)
+
+			for _, job := range jobs {
+				job.ctrlChan <- jobDisable
+				<-job.disabled
+			}
+		})
+	})
+}
