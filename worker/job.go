@@ -218,6 +218,7 @@ func (m *mirrorJob) Run(managerChan chan<- jobMessage, semaphore chan empty) err
 			defer func() { <-semaphore }()
 			runJobWrapper(kill, jobDone)
 		case <-bypassSemaphore:
+			logger.Noticef("Concurrent limit ignored by %s", m.Name())
 			runJobWrapper(kill, jobDone)
 		case <-kill:
 			jobDone <- empty{}

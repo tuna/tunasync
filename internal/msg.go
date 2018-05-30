@@ -68,9 +68,10 @@ func (c CmdVerb) String() string {
 // A WorkerCmd is the command message send from the
 // manager to a worker
 type WorkerCmd struct {
-	Cmd      CmdVerb  `json:"cmd"`
-	MirrorID string   `json:"mirror_id"`
-	Args     []string `json:"args"`
+	Cmd      CmdVerb         `json:"cmd"`
+	MirrorID string          `json:"mirror_id"`
+	Args     []string        `json:"args"`
+	Options  map[string]bool `json:"options"`
 }
 
 func (c WorkerCmd) String() string {
@@ -83,8 +84,9 @@ func (c WorkerCmd) String() string {
 // A ClientCmd is the command message send from client
 // to the manager
 type ClientCmd struct {
-	Cmd      CmdVerb  `json:"cmd"`
-	MirrorID string   `json:"mirror_id"`
-	WorkerID string   `json:"worker_id"`
-	Args     []string `json:"args"`
+	Cmd      CmdVerb         `json:"cmd"`
+	MirrorID string          `json:"mirror_id"`
+	WorkerID string          `json:"worker_id"`
+	Args     []string        `json:"args"`
+	Options  map[string]bool `json:"options"`
 }

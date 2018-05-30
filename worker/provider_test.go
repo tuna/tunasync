@@ -268,9 +268,9 @@ sleep 5
 		So(err, ShouldBeNil)
 
 		c := cmdConfig{
-			name:        "run-pwd",
+			name:        "run-ls",
 			upstreamURL: "http://mirrors.tuna.moe/",
-			command:     "pwd",
+			command:     "ls",
 			workingDir:  tmpDir,
 			logDir:      tmpDir,
 			logFile:     "/dev/null",

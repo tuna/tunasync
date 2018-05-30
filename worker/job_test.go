@@ -286,7 +286,7 @@ func TestConcurrentMirrorJobs(t *testing.T) {
 			c := cmdConfig{
 				name:        fmt.Sprintf("job-%d", i),
 				upstreamURL: "http://mirrors.tuna.moe/",
-				command:     "sleep 3",
+				command:     "sleep 2",
 				workingDir:  tmpDir,
 				logDir:      tmpDir,
 				logFile:     "/dev/null",
@@ -302,17 +302,12 @@ func TestConcurrentMirrorJobs(t *testing.T) {
 		managerChan := make(chan jobMessage, 10)
 		semaphore := make(chan empty, CONCURRENT-2)
 
-		Convey("When we run them all", func(ctx C) {
-			for _, job := range jobs {
-				go job.Run(managerChan, semaphore)
-				job.ctrlChan <- jobStart
-			}
-
+		countingJobs := func(managerChan chan jobMessage, totalJobs, concurrentCheck int) (peakConcurrent, counterFailed int) {
 			counterEnded := 0
 			counterRunning := 0
-			maxRunning := 0
-			counterFailed := 0
-			for counterEnded < CONCURRENT {
+			peakConcurrent = 0
+			counterFailed = 0
+			for counterEnded < totalJobs {
 				msg := <-managerChan
 				switch msg.status {
 				case PreSyncing:
@@ -328,13 +323,29 @@ func TestConcurrentMirrorJobs(t *testing.T) {
 					So(0, ShouldEqual, 1)
 				}
 				// Test if semaphore works
-				So(counterRunning, ShouldBeLessThanOrEqualTo, CONCURRENT-2)
-				if counterRunning > maxRunning {
-					maxRunning = counterRunning
+				So(counterRunning, ShouldBeLessThanOrEqualTo, concurrentCheck)
+				if counterRunning > peakConcurrent {
+					peakConcurrent = counterRunning
 				}
 			}
+			// select {
+			// case msg := <-managerChan:
+			// 	logger.Errorf("extra message received: %v", msg)
+			// 	So(0, ShouldEqual, 1)
+			// case <-time.After(2 * time.Second):
+			// }
+			return
+		}
 
-			So(maxRunning, ShouldEqual, CONCURRENT-2)
+		Convey("When we run them all", func(ctx C) {
+			for _, job := range jobs {
+				go job.Run(managerChan, semaphore)
+				job.ctrlChan <- jobStart
+			}
+
+			peakConcurrent, counterFailed := countingJobs(managerChan, CONCURRENT, CONCURRENT-2)
+
+			So(peakConcurrent, ShouldEqual, CONCURRENT-2)
 			So(counterFailed, ShouldEqual, 0)
 
 			for _, job := range jobs {
@@ -352,33 +363,42 @@ func TestConcurrentMirrorJobs(t *testing.T) {
 			// Cancel the one waiting for semaphore
 			jobs[len(jobs)-1].ctrlChan <- jobStop
 
-			counterEnded := 0
-			counterRunning := 0
-			maxRunning := 0
-			counterFailed := 0
-			for counterEnded < CONCURRENT-1 {
-				msg := <-managerChan
-				switch msg.status {
-				case PreSyncing:
-					counterRunning++
-				case Syncing:
-				case Failed:
-					counterFailed++
-					fallthrough
-				case Success:
-					counterEnded++
-					counterRunning--
-				default:
-					So(0, ShouldEqual, 1)
-				}
-				// Test if semaphore works
-				So(counterRunning, ShouldBeLessThanOrEqualTo, CONCURRENT-2)
-				if counterRunning > maxRunning {
-					maxRunning = counterRunning
-				}
+			peakConcurrent, counterFailed := countingJobs(managerChan, CONCURRENT-1, CONCURRENT-2)
+
+			So(peakConcurrent, ShouldEqual, CONCURRENT-2)
+			So(counterFailed, ShouldEqual, 0)
+
+			for _, job := range jobs {
+				job.ctrlChan <- jobDisable
+				<-job.disabled
+			}
+		})
+		Convey("If we override the concurrent limit", func(ctx C) {
+			for _, job := range jobs {
+				go job.Run(managerChan, semaphore)
+				job.ctrlChan <- jobStart
+				time.Sleep(200 * time.Millisecond)
 			}
 
-			So(maxRunning, ShouldEqual, CONCURRENT-2)
+			jobs[len(jobs)-1].ctrlChan <- jobForceStart
+			jobs[len(jobs)-2].ctrlChan <- jobForceStart
+
+			peakConcurrent, counterFailed := countingJobs(managerChan, CONCURRENT, CONCURRENT)
+
+			So(peakConcurrent, ShouldEqual, CONCURRENT)
+			So(counterFailed, ShouldEqual, 0)
+
+			time.Sleep(1 * time.Second)
+
+			// fmt.Println("Restart them")
+
+			for _, job := range jobs {
+				job.ctrlChan <- jobStart
+			}
+
+			peakConcurrent, counterFailed = countingJobs(managerChan, CONCURRENT, CONCURRENT-2)
+
+			So(peakConcurrent, ShouldEqual, CONCURRENT-2)
 			So(counterFailed, ShouldEqual, 0)
 
 			for _, job := range jobs {
