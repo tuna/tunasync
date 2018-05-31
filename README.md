@@ -47,7 +47,7 @@ PreSyncing           Syncing                               Success
 			   |                                   |
 			   |      +-----------------+          | Failed
 			   +------+    post-fail    |<---------+
-					  +-----------------+
+			          +-----------------+
 ```
 
 ## Generate Self-Signed Certificate
