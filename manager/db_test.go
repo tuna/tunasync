@@ -40,20 +40,38 @@ func TestBoltAdapter(t *testing.T) {
 				So(err, ShouldBeNil)
 			}
 
-			Convey("get exists worker", func() {
+			Convey("get existent worker", func() {
 				_, err := boltDB.GetWorker(testWorkerIDs[0])
 				So(err, ShouldBeNil)
 			})
 
-			Convey("list exist worker", func() {
+			Convey("list existent workers", func() {
 				ws, err := boltDB.ListWorkers()
 				So(err, ShouldBeNil)
 				So(len(ws), ShouldEqual, 2)
 			})
 
-			Convey("get inexist worker", func() {
+			Convey("get non-existent worker", func() {
 				_, err := boltDB.GetWorker("invalid workerID")
 				So(err, ShouldNotBeNil)
+			})
+
+			Convey("delete existent worker", func() {
+				err := boltDB.DeleteWorker(testWorkerIDs[0])
+				So(err, ShouldBeNil)
+				_, err = boltDB.GetWorker(testWorkerIDs[0])
+				So(err, ShouldNotBeNil)
+				ws, err := boltDB.ListWorkers()
+				So(err, ShouldBeNil)
+				So(len(ws), ShouldEqual, 1)
+			})
+
+			Convey("delete non-existent worker", func() {
+				err := boltDB.DeleteWorker("invalid workerID")
+				So(err, ShouldNotBeNil)
+				ws, err := boltDB.ListWorkers()
+				So(err, ShouldBeNil)
+				So(len(ws), ShouldEqual, 2)
 			})
 		})
 

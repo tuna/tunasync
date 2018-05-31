@@ -79,6 +79,33 @@ func TestHTTPServer(t *testing.T) {
 				So(len(actualResponseObj), ShouldEqual, 2)
 			})
 
+			Convey("delete an existent worker", func(ctx C) {
+				req, err := http.NewRequest("DELETE", fmt.Sprintf("%s/workers/%s", baseURL, w.ID), nil)
+				So(err, ShouldBeNil)
+				clt := &http.Client{}
+				resp, err := clt.Do(req)
+				So(err, ShouldBeNil)
+				defer resp.Body.Close()
+				res := map[string]string{}
+				err = json.NewDecoder(resp.Body).Decode(&res)
+				So(err, ShouldBeNil)
+				So(res[_infoKey], ShouldEqual, "deleted")
+			})
+
+			Convey("delete non-existent worker", func(ctx C) {
+				invalidWorker := "test_worker233"
+				req, err := http.NewRequest("DELETE", fmt.Sprintf("%s/workers/%s", baseURL, invalidWorker), nil)
+				So(err, ShouldBeNil)
+				clt := &http.Client{}
+				resp, err := clt.Do(req)
+				So(err, ShouldBeNil)
+				defer resp.Body.Close()
+				res := map[string]string{}
+				err = json.NewDecoder(resp.Body).Decode(&res)
+				So(err, ShouldBeNil)
+				So(res[_errorKey], ShouldEqual, "invalid workerID "+invalidWorker)
+			})
+
 			Convey("flush  disabled jobs", func(ctx C) {
 				req, err := http.NewRequest("DELETE", baseURL+"/jobs/disabled", nil)
 				So(err, ShouldBeNil)
@@ -321,6 +348,11 @@ func (b *mockDBAdapter) GetWorker(workerID string) (WorkerStatus, error) {
 		return WorkerStatus{}, fmt.Errorf("invalid workerId")
 	}
 	return w, nil
+}
+
+func (b *mockDBAdapter) DeleteWorker(workerID string) error {
+	delete(b.workerStore, workerID)
+	return nil
 }
 
 func (b *mockDBAdapter) CreateWorker(w WorkerStatus) (WorkerStatus, error) {
