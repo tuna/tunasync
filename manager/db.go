@@ -14,6 +14,7 @@ type dbAdapter interface {
 	Init() error
 	ListWorkers() ([]WorkerStatus, error)
 	GetWorker(workerID string) (WorkerStatus, error)
+	DeleteWorker(workerID string) error
 	CreateWorker(w WorkerStatus) (WorkerStatus, error)
 	UpdateMirrorStatus(workerID, mirrorID string, status MirrorStatus) (MirrorStatus, error)
 	GetMirrorStatus(workerID, mirrorID string) (MirrorStatus, error)
@@ -90,6 +91,19 @@ func (b *boltAdapter) GetWorker(workerID string) (w WorkerStatus, err error) {
 			return fmt.Errorf("invalid workerID %s", workerID)
 		}
 		err := json.Unmarshal(v, &w)
+		return err
+	})
+	return
+}
+
+func (b *boltAdapter) DeleteWorker(workerID string) (err error) {
+	err = b.db.Update(func(tx *bolt.Tx) error {
+		bucket := tx.Bucket([]byte(_workerBucketKey))
+		v := bucket.Get([]byte(workerID))
+		if v == nil {
+			return fmt.Errorf("invalid workerID %s", workerID)
+		}
+		err := bucket.Delete([]byte(workerID))
 		return err
 	})
 	return

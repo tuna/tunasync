@@ -236,6 +236,52 @@ func updateMirrorSize(c *cli.Context) error {
 	return nil
 }
 
+func removeWorker(c *cli.Context) error {
+	args := c.Args()
+	if len(args) != 0 {
+		return cli.NewExitError("Usage: tunasynctl -w <worker-id>", 1)
+	}
+	workerID := c.String("worker")
+	if len(workerID) == 0 {
+		return cli.NewExitError("Please specify the <worker-id>", 1)
+	}
+	url := fmt.Sprintf("%s/workers/%s", baseURL, workerID)
+
+	req, err := http.NewRequest("DELETE", url, nil)
+	if err != nil {
+		logger.Panicf("Invalid HTTP Request: %s", err.Error())
+	}
+	resp, err := client.Do(req)
+
+	if err != nil {
+		return cli.NewExitError(
+			fmt.Sprintf("Failed to send request to manager: %s", err.Error()), 1)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		body, err := ioutil.ReadAll(resp.Body)
+		if err != nil {
+			return cli.NewExitError(
+				fmt.Sprintf("Failed to parse response: %s", err.Error()),
+				1)
+		}
+
+		return cli.NewExitError(fmt.Sprintf("Failed to correctly send"+
+			" command: HTTP status code is not 200: %s", body),
+			1)
+	}
+
+	res := map[string]string{}
+	err = json.NewDecoder(resp.Body).Decode(&res)
+	if res["message"] == "deleted" {
+		logger.Info("Successfully removed the worker")
+	} else {
+		logger.Info("Failed to remove the worker")
+	}
+	return nil
+}
+
 func flushDisabledJobs(c *cli.Context) error {
 	req, err := http.NewRequest("DELETE", baseURL+flushDisabledPath, nil)
 	if err != nil {
@@ -434,6 +480,18 @@ func main() {
 			Usage:  "List workers",
 			Flags:  commonFlags,
 			Action: initializeWrapper(listWorkers),
+		},
+		{
+			Name:  "rm-worker",
+			Usage: "Remove a worker",
+			Flags: append(
+				commonFlags,
+				cli.StringFlag{
+					Name:  "worker, w",
+					Usage: "worker-id of the worker to be removed",
+				},
+			),
+			Action: initializeWrapper(removeWorker),
 		},
 		{
 			Name:  "set-size",

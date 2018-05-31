@@ -84,6 +84,8 @@ func GetTUNASyncManager(cfg *Config) *Manager {
 	// workerID should be valid in this route group
 	workerValidateGroup := s.engine.Group("/workers", s.workerIDValidator)
 	{
+		// delete specified worker
+		workerValidateGroup.DELETE(":id", s.deleteWorker)
 		// get job list
 		workerValidateGroup.GET(":id/jobs", s.listJobsOfWorker)
 		// post job status
@@ -157,6 +159,22 @@ func (s *Manager) flushDisabledJobs(c *gin.Context) {
 		return
 	}
 	c.JSON(http.StatusOK, gin.H{_infoKey: "flushed"})
+}
+
+// deleteWorker deletes one worker by id
+func (s *Manager) deleteWorker(c *gin.Context) {
+	workerID := c.Param("id")
+	err := s.adapter.DeleteWorker(workerID)
+	if err != nil {
+		err := fmt.Errorf("failed to delete worker: %s",
+			err.Error(),
+		)
+		c.Error(err)
+		s.returnErrJSON(c, http.StatusInternalServerError, err)
+		return
+	}
+	logger.Noticef("Worker <%s> deleted", workerID)
+	c.JSON(http.StatusOK, gin.H{_infoKey: "deleted"})
 }
 
 // listWrokers respond with informations of all the workers
