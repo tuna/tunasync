@@ -79,11 +79,12 @@ exit 0
 			err = ioutil.WriteFile(scriptFile, []byte(scriptContent), 0755)
 			So(err, ShouldBeNil)
 
+			targetDir, _ := filepath.EvalSymlinks(provider.WorkingDir())
 			expectedOutput := fmt.Sprintf(
 				"syncing to %s\n"+
 					"%s\n"+
 					"Done\n",
-				provider.WorkingDir(),
+				targetDir,
 				fmt.Sprintf(
 					"-aHvh --no-o --no-g --stats --exclude .~tmp~/ "+
 						"--delete --delete-after --delay-updates --safe-links "+
@@ -144,11 +145,12 @@ exit 0
 			err = ioutil.WriteFile(scriptFile, []byte(scriptContent), 0755)
 			So(err, ShouldBeNil)
 
+			targetDir, _ := filepath.EvalSymlinks(provider.WorkingDir())
 			expectedOutput := fmt.Sprintf(
 				"syncing to %s\n"+
 					"%s\n"+
 					"Done\n",
-				provider.WorkingDir(),
+				targetDir,
 				fmt.Sprintf(
 					"%s %s -aHvh --no-o --no-g --stats --exclude .~tmp~/ "+
 						"--delete --delete-after --delay-updates --safe-links "+
@@ -260,6 +262,40 @@ sleep 5
 
 		})
 	})
+	Convey("Command Provider without log file should work", t, func(ctx C) {
+		tmpDir, err := ioutil.TempDir("", "tunasync")
+		defer os.RemoveAll(tmpDir)
+		So(err, ShouldBeNil)
+
+		c := cmdConfig{
+			name:        "run-ls",
+			upstreamURL: "http://mirrors.tuna.moe/",
+			command:     "ls",
+			workingDir:  tmpDir,
+			logDir:      tmpDir,
+			logFile:     "/dev/null",
+			interval:    600 * time.Second,
+		}
+
+		provider, err := newCmdProvider(c)
+		So(err, ShouldBeNil)
+
+		So(provider.IsMaster(), ShouldEqual, false)
+		So(provider.ZFS(), ShouldBeNil)
+		So(provider.Type(), ShouldEqual, provCommand)
+		So(provider.Name(), ShouldEqual, c.name)
+		So(provider.WorkingDir(), ShouldEqual, c.workingDir)
+		So(provider.LogDir(), ShouldEqual, c.logDir)
+		So(provider.LogFile(), ShouldEqual, c.logFile)
+		So(provider.Interval(), ShouldEqual, c.interval)
+
+		Convey("Run the command", func() {
+
+			err = provider.Run()
+			So(err, ShouldBeNil)
+
+		})
+	})
 }
 
 func TestTwoStageRsyncProvider(t *testing.T) {
@@ -280,6 +316,8 @@ func TestTwoStageRsyncProvider(t *testing.T) {
 			logFile:       tmpFile,
 			useIPv6:       true,
 			excludeFile:   tmpFile,
+			username:      "hello",
+			password:      "world",
 		}
 
 		provider, err := newTwoStageRsyncProvider(c)
@@ -306,6 +344,7 @@ exit 0
 			err = provider.Run()
 			So(err, ShouldBeNil)
 
+			targetDir, _ := filepath.EvalSymlinks(provider.WorkingDir())
 			expectedOutput := fmt.Sprintf(
 				"syncing to %s\n"+
 					"%s\n"+
@@ -313,14 +352,14 @@ exit 0
 					"syncing to %s\n"+
 					"%s\n"+
 					"Done\n",
-				provider.WorkingDir(),
+				targetDir,
 				fmt.Sprintf(
 					"-aHvh --no-o --no-g --stats --exclude .~tmp~/ --safe-links "+
 						"--timeout=120 --contimeout=120 --exclude dists/ -6 "+
 						"--exclude-from %s %s %s",
 					provider.excludeFile, provider.upstreamURL, provider.WorkingDir(),
 				),
-				provider.WorkingDir(),
+				targetDir,
 				fmt.Sprintf(
 					"-aHvh --no-o --no-g --stats --exclude .~tmp~/ "+
 						"--delete --delete-after --delay-updates --safe-links "+

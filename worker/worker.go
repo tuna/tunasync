@@ -219,7 +219,11 @@ func (w *Worker) makeHTTPServer() {
 		}
 		switch cmd.Cmd {
 		case CmdStart:
-			job.ctrlChan <- jobStart
+			if cmd.Options["force"] {
+				job.ctrlChan <- jobForceStart
+			} else {
+				job.ctrlChan <- jobStart
+			}
 		case CmdRestart:
 			job.ctrlChan <- jobRestart
 		case CmdStop:

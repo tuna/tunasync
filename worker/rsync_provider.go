@@ -81,6 +81,12 @@ func (p *rsyncProvider) Run() error {
 }
 
 func (p *rsyncProvider) Start() error {
+	p.Lock()
+	defer p.Unlock()
+
+	if p.IsRunning() {
+		return errors.New("provider is currently running")
+	}
 
 	env := map[string]string{}
 	if p.username != "" {
@@ -94,7 +100,7 @@ func (p *rsyncProvider) Start() error {
 	command = append(command, p.upstreamURL, p.WorkingDir())
 
 	p.cmd = newCmdJob(p, command, p.WorkingDir(), env)
-	if err := p.prepareLogFile(); err != nil {
+	if err := p.prepareLogFile(false); err != nil {
 		return err
 	}
 

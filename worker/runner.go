@@ -118,6 +118,9 @@ func (c *cmdJob) Wait() error {
 		return c.retErr
 	default:
 		err := c.cmd.Wait()
+		if c.cmd.Stdout != nil {
+			c.cmd.Stdout.(*os.File).Close()
+		}
 		c.retErr = err
 		close(c.finished)
 		return err

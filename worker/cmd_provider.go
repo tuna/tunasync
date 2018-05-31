@@ -1,6 +1,7 @@
 package worker
 
 import (
+	"errors"
 	"time"
 
 	"github.com/anmitsu/go-shlex"
@@ -60,6 +61,13 @@ func (p *cmdProvider) Run() error {
 }
 
 func (p *cmdProvider) Start() error {
+	p.Lock()
+	defer p.Unlock()
+
+	if p.IsRunning() {
+		return errors.New("provider is currently running")
+	}
+
 	env := map[string]string{
 		"TUNASYNC_MIRROR_NAME":  p.Name(),
 		"TUNASYNC_WORKING_DIR":  p.WorkingDir(),
@@ -71,7 +79,7 @@ func (p *cmdProvider) Start() error {
 		env[k] = v
 	}
 	p.cmd = newCmdJob(p, p.command, p.WorkingDir(), env)
-	if err := p.prepareLogFile(); err != nil {
+	if err := p.prepareLogFile(false); err != nil {
 		return err
 	}
 

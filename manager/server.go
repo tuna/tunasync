@@ -337,6 +337,7 @@ func (s *Manager) handleClientCmd(c *gin.Context) {
 		Cmd:      clientCmd.Cmd,
 		MirrorID: clientCmd.MirrorID,
 		Args:     clientCmd.Args,
+		Options:  clientCmd.Options,
 	}
 
 	// update job status, even if the job did not disable successfully,

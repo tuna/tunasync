@@ -285,11 +285,16 @@ func cmdJob(cmd tunasync.CmdVerb) cli.ActionFunc {
 				"argument WORKER", 1)
 		}
 
+		options := map[string]bool{}
+		if c.Bool("force") {
+			options["force"] = true
+		}
 		cmd := tunasync.ClientCmd{
 			Cmd:      cmd,
 			MirrorID: mirrorID,
 			WorkerID: c.String("worker"),
 			Args:     argsList,
+			Options:  options,
 		}
 		resp, err := tunasync.PostJSON(baseURL+cmdPath, cmd, client)
 		if err != nil {
@@ -410,6 +415,11 @@ func main() {
 		},
 	}
 
+	forceStartFlag := cli.BoolFlag{
+		Name:  "force, f",
+		Usage: "Override the concurrent limit",
+	}
+
 	app.Commands = []cli.Command{
 		{
 			Name:  "list",
@@ -450,7 +460,7 @@ func main() {
 		{
 			Name:   "start",
 			Usage:  "Start a job",
-			Flags:  append(commonFlags, cmdFlags...),
+			Flags:  append(append(commonFlags, cmdFlags...), forceStartFlag),
 			Action: initializeWrapper(cmdJob(tunasync.CmdStart)),
 		},
 		{
