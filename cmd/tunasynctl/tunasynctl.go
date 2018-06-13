@@ -140,8 +140,9 @@ func listWorkers(c *cli.Context) error {
 }
 
 func listJobs(c *cli.Context) error {
-	var jobs []tunasync.WebMirrorStatus
+	var genericJobs interface{}
 	if c.Bool("all") {
+		var jobs []tunasync.WebMirrorStatus
 		_, err := tunasync.GetJSON(baseURL+listJobsPath, &jobs, client)
 		if err != nil {
 			return cli.NewExitError(
@@ -149,18 +150,20 @@ func listJobs(c *cli.Context) error {
 					"of all jobs from manager server: %s", err.Error()),
 				1)
 		}
+		genericJobs = jobs
 
 	} else {
+		var jobs []tunasync.MirrorStatus
 		args := c.Args()
 		if len(args) == 0 {
 			return cli.NewExitError(
 				fmt.Sprintf("Usage Error: jobs command need at"+
 					" least one arguments or \"--all\" flag."), 1)
 		}
-		ans := make(chan []tunasync.WebMirrorStatus, len(args))
+		ans := make(chan []tunasync.MirrorStatus, len(args))
 		for _, workerID := range args {
 			go func(workerID string) {
-				var workerJobs []tunasync.WebMirrorStatus
+				var workerJobs []tunasync.MirrorStatus
 				_, err := tunasync.GetJSON(fmt.Sprintf("%s/workers/%s/jobs",
 					baseURL, workerID), &workerJobs, client)
 				if err != nil {
@@ -173,9 +176,10 @@ func listJobs(c *cli.Context) error {
 		for range args {
 			jobs = append(jobs, <-ans...)
 		}
+		genericJobs = jobs
 	}
 
-	b, err := json.MarshalIndent(jobs, "", "  ")
+	b, err := json.MarshalIndent(genericJobs, "", "  ")
 	if err != nil {
 		return cli.NewExitError(
 			fmt.Sprintf("Error printing out informations: %s", err.Error()),
