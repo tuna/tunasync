@@ -41,7 +41,7 @@ func newRsyncProvider(c rsyncConfig) (*rsyncProvider, error) {
 	}
 
 	options := []string{
-		"-aHvh", "--no-o", "--no-g", "--stats", "-n",
+		"-aHvh", "--no-o", "--no-g", "--stats",
 		"--exclude", ".~tmp~/","--include",
 		"--delete", "--delete-after", "--delay-updates",
 		"--safe-links", "--timeout=120", "--contimeout=120",
