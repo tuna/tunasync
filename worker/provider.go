@@ -126,6 +126,7 @@ func newMirrorProvider(mirror mirrorConfig, cfg *Config) mirrorProvider {
 			username:    mirror.Username,
 			password:    mirror.Password,
 			excludeFile: mirror.ExcludeFile,
+			includeFile: mirror.IncludeFile,
 			workingDir:  mirrorDir,
 			logDir:      logDir,
 			logFile:     filepath.Join(logDir, "latest.log"),

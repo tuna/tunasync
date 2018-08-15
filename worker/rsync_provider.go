@@ -9,7 +9,7 @@ import (
 type rsyncConfig struct {
 	name                                         string
 	rsyncCmd                                     string
-	upstreamURL, username, password, excludeFile string
+	upstreamURL, username, password, excludeFile,includeFile string
 	workingDir, logDir, logFile                  string
 	useIPv6, useIPv4                             bool
 	interval                                     time.Duration
@@ -41,8 +41,8 @@ func newRsyncProvider(c rsyncConfig) (*rsyncProvider, error) {
 	}
 
 	options := []string{
-		"-aHvh", "--no-o", "--no-g", "--stats",
-		"--exclude", ".~tmp~/",
+		"-aHvh", "--no-o", "--no-g", "--stats", "-n",
+		"--exclude", ".~tmp~/","--include",
 		"--delete", "--delete-after", "--delay-updates",
 		"--safe-links", "--timeout=120", "--contimeout=120",
 	}
@@ -51,6 +51,10 @@ func newRsyncProvider(c rsyncConfig) (*rsyncProvider, error) {
 		options = append(options, "-6")
 	} else if c.useIPv4 {
 		options = append(options, "-4")
+	}
+
+	if c.includeFile !="" {
+		options =  append(options, "--include-from", c.includeFile)
 	}
 
 	if c.excludeFile != "" {
