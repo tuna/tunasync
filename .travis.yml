@@ -35,9 +35,10 @@ deploy:
     file:
         - "build/tunasync-linux-bin.tar.gz"
     api_key:
-        secure: "F9kaVaR1mxEh2+EL9Nm8GZmbVY98pXCJA0LGDNrq1C2vU61AUNOeX6yI1mMklHNZPLBqoFDvGN1M5HnJ+xWCFH+KnJgLD2GVIAcAxFNpcNWQe8XKE5heklNsIQNQfuh/rJKM6YzeDB9G5RN4Y76iL4WIAXhNnMm48W6jLnWhf70="
+        secure: ZOYL/CALrVJsZzbZqUMSI89Gw4zsBJH1StD/2yTyG45GfKgvtK4hG0S5cQM/L0wcikjEkgxSMsmr4ycq+OwbN++gc0umfoAQ/VSjzetiobAlT1E854aRKRjT82WxYdnPW2fsFjuEJTcyZmcbgJGTMi86MDt7w8tEjLomhd1+rUo=
     skip_cleanup: true
     overwrite: true
     on:
         tags: true
         all_branches: true
+        repo: tuna/tunasync
