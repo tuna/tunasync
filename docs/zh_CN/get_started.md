@@ -100,3 +100,5 @@ $ tunasync worker --help
 ```
 
 可以看一下 log 目录
+
+一些 worker 配置文件示例 [workers.conf](workers.conf) 
