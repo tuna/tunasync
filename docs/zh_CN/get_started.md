@@ -90,6 +90,14 @@ $ tunasync worker --config ~/tunasync_demo/worker.conf
 
 本例中，镜像的数据在`/tmp/tunasync/`
 
+### 控制
+
+查看同步状态
+
+```
+$ tunasynctl list -p 12345 --all
+```
+
 ## 更进一步
 
 可以参看
