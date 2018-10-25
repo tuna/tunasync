@@ -2,7 +2,7 @@ sudo: required
 
 language: go
 go:
-    - 1.6
+    - 1.8
 
 before_install:
     - sudo apt-get install cgroup-bin
