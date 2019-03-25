@@ -3,6 +3,7 @@ package worker
 import (
 	"fmt"
 	"os"
+	"os/user"
 	"strings"
 
 	"github.com/codeskyblue/go-sh"
@@ -38,6 +39,14 @@ func (z *zfsHook) preJob() error {
 		}
 		logger.Infof("Mount ZFS dataset %s to %s", zfsDataset, workingDir)
 		if err := sh.Command("sudo", "zfs", "set", "mountpoint="+workingDir, zfsDataset).Run(); err != nil {
+			return err
+		}
+		usr, err := user.Current()
+		if err != nil {
+			return err
+		}
+		logger.Infof("Chown %s to %s(%s)", workingDir, usr.Uid, usr.Username)
+		if err := sh.Command("sudo", "chown", usr.Uid, workingDir).Run(); err != nil {
 			return err
 		}
 	}
