@@ -3,6 +3,7 @@ package worker
 import (
 	"fmt"
 	"os"
+	"os/user"
 	"strings"
 
 	"github.com/codeskyblue/go-sh"
@@ -21,25 +22,32 @@ func newZfsHook(provider mirrorProvider, zpool string) *zfsHook {
 	}
 }
 
-// create zfs dataset for a new mirror
+func (z *zfsHook) printHelpMessage() {
+	zfsDataset := fmt.Sprintf("%s/%s", z.zpool, z.provider.Name())
+	zfsDataset = strings.ToLower(zfsDataset)
+	workingDir := z.provider.WorkingDir()
+	logger.Infof("You may create the ZFS dataset with:")
+	logger.Infof("    zfs create '%s'", zfsDataset)
+	logger.Infof("    zfs set mountpoint='%s' '%s'", workingDir, zfsDataset)
+	usr, err := user.Current()
+	if err != nil || usr.Uid == "0" {
+		return
+	}
+	logger.Infof("    chown %s '%s'", usr.Uid, workingDir)
+}
+
+// check if working directory is a zfs dataset
 func (z *zfsHook) preJob() error {
 	workingDir := z.provider.WorkingDir()
 	if _, err := os.Stat(workingDir); os.IsNotExist(err) {
-		// sudo zfs create $zfsDataset
-		// sudo zfs set mountpoint=${absPath} ${zfsDataset}
-
-		zfsDataset := fmt.Sprintf("%s/%s", z.zpool, z.provider.Name())
-		// Unknown issue of ZFS:
-		// dataset name should not contain upper case letters
-		zfsDataset = strings.ToLower(zfsDataset)
-		logger.Infof("Creating ZFS dataset %s", zfsDataset)
-		if err := sh.Command("sudo", "zfs", "create", zfsDataset).Run(); err != nil {
-			return err
-		}
-		logger.Infof("Mount ZFS dataset %s to %s", zfsDataset, workingDir)
-		if err := sh.Command("sudo", "zfs", "set", "mountpoint="+workingDir, zfsDataset).Run(); err != nil {
-			return err
-		}
+		logger.Errorf("Directory %s doesn't exist", workingDir);
+		z.printHelpMessage()
+		return err
+	}
+	if err := sh.Command("mountpoint", "-q", workingDir).Run(); err != nil {
+		logger.Errorf("%s is not a mount point", workingDir);
+		z.printHelpMessage()
+		return err
 	}
 	return nil
 }
