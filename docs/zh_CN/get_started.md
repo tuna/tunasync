@@ -98,6 +98,16 @@ $ tunasync worker --config ~/tunasync_demo/worker.conf
 $ tunasynctl list -p 12345 --all
 ```
 
+tunasynctl 也支持配置文件。配置文件可以放在 `/etc/tunasync/ctl.conf` 或者 `~/.config/tunasync/ctl.conf` 两个位置，后者可以覆盖前者的配置值。
+
+配置文件内容为：
+
+```
+manager_addr = "127.0.0.1"
+manager_port = 12345
+ca_cert = ""
+```
+
 ### 安全
 
 worker 和 manager 之间用 http(s) 通信，如果你 worker 和 manager 都是在本机，那么没必要使用 https。此时 manager 就不指定 `ssl_key` 和 `ssl_cert`，留空；worker 的 `ca_cert` 留空，`api_base` 以 `http://` 开头。
