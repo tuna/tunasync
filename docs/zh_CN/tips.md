@@ -40,6 +40,8 @@ e.g. <code>$ tunasynctl rm-worker -w test_worker</code>
 
 <li>更新镜像的大小
   
-由于<code>du -s</code>比较耗时，故镜像大小直接由rsync的日志文件读出
+由于<code>du -s</code>比较耗时，故镜像大小可直接由rsync的日志文件读出
 
-<code>$ tunasynctl set-size -w [worker_id] [mirror_name] size</code>
+<code>$ tunasynctl set-size -w [worker_id] [mirror_name] [size]</code>
+
+其中，末尾的[size]参数，由操作者设定
