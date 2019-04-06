@@ -42,7 +42,7 @@ interval = 1
 
 [manager]
 api_base = "http://localhost:12345"
-token = "some_token"
+token = ""
 ca_cert = ""
 
 [cgroup]
@@ -97,6 +97,12 @@ $ tunasync worker --config ~/tunasync_demo/worker.conf
 ```
 $ tunasynctl list -p 12345 --all
 ```
+
+### 安全
+
+worker 和 manager 之间用 http(s) 通信，如果你 worker 和 manager 都是在本机，那么没必要使用 https。此时 manager 就不指定 `ssl_key` 和 `ssl_cert`，留空；worker 的 `ca_cert` 留空，`api_base` 以 `http://` 开头。
+
+如果需要加密的通信，manager 需要指定 `ssl_key` 和 `ssl_cert`，worker 要指定 `ca_cert`，并且 `api_base` 应该是 `https://` 开头。
 
 ## 更进一步
 
