@@ -20,14 +20,14 @@ e.g. 删除<code>test_worker</code>的<code>elvish</code>镜像：
 
 1. 删除存放镜像的文件夹
 
-1. 删除<code>worker.conf</code>中对应的mirror段落
+2. 删除<code>worker.conf</code>中对应的mirror段落
 
-1. 接着操作：
+3. 接着操作：
 <pre><code>$ tunasynctl reload -w test_worker
 $ tunasynctl disable -w test_worker elvish
 $ tunasynctl flush</code></pre>
 
-1. （可选）最后删除日志文件夹里的日志
+4. （可选）最后删除日志文件夹里的日志
 ----
 
 <li>删除worker
@@ -35,3 +35,11 @@ $ tunasynctl flush</code></pre>
 <code>$ tunasynctl rm-worker -w [worker_id]</code>
 
 e.g. <code>$ tunasynctl rm-worker -w test_worker</code>
+
+----
+
+<li>更新镜像的大小
+  
+由于<code>du -s</code>比较耗时，故镜像大小直接由rsync的日志文件读出
+
+<code>$ tunasynctl set-size -w [worker_id] [mirror_name] size</code>
