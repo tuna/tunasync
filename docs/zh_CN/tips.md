@@ -1,4 +1,4 @@
-* 删除某worker的某镜像
+## 删除某worker的某镜像
 
 先确定已经给tunasynctl写好config文件：`~/.config/tunasync/ctl.conf`
 
@@ -11,15 +11,15 @@ ca_cert = ""
 接着
 
 ```
-$ tunasynctl disable -w [worker_id] [mirror_name]
+$ tunasynctl disable -w <worker_id> <mirror_name>
 $ tunasynctl flush
 ```
 
 ----
 
-* 热重载 `worker.conf`
+## 热重载 `worker.conf`
 
-`$ tunasynctl reload -w [worker_id]`
+`$ tunasynctl reload -w <worker_id]>
 
 ----
 
@@ -41,18 +41,18 @@ $ tunasynctl flush
 
 ----
 
-* 删除worker
+## 删除worker
 
-`$ tunasynctl rm-worker -w [worker_id]`
+`$ tunasynctl rm-worker -w <worker_id]>
 
 e.g. `$ tunasynctl rm-worker -w test_worker`
 
 ----
 
-* 更新镜像的大小
+## 更新镜像的大小
 
-`$ tunasynctl set-size -w [worker_id] [mirror_name] [size]`
+`$ tunasynctl set-size -w <worker_id> <mirror_name> <size>
 
-其中，末尾的[size]参数，由操作者设定，或由某定时脚本生成
+其中，末尾的 <size> 参数，由操作者设定，或由某定时脚本生成
 
 由于 `du -s` 比较耗时，故镜像大小可直接由rsync的日志文件读出
