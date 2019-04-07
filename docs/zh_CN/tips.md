@@ -15,13 +15,11 @@ $ tunasynctl disable -w <worker_id> <mirror_name>
 $ tunasynctl flush
 ```
 
-----
 
 ## 热重载 `worker.conf`
 
-`$ tunasynctl reload -w <worker_id]>
+`$ tunasynctl reload -w <worker_id>`
 
-----
 
 e.g. 删除 `test_worker` 的 `elvish` 镜像：
 
@@ -39,19 +37,17 @@ $ tunasynctl flush
 
 4. （可选）最后删除日志文件夹里的日志
 
-----
 
 ## 删除worker
 
-`$ tunasynctl rm-worker -w <worker_id]>
+`$ tunasynctl rm-worker -w <worker_id>`
 
 e.g. `$ tunasynctl rm-worker -w test_worker`
 
-----
 
 ## 更新镜像的大小
 
-`$ tunasynctl set-size -w <worker_id> <mirror_name> <size>
+`$ tunasynctl set-size -w <worker_id> <mirror_name> <size>`
 
 其中，末尾的 <size> 参数，由操作者设定，或由某定时脚本生成
 
