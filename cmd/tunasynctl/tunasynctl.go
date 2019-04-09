@@ -375,6 +375,11 @@ func cmdJob(cmd tunasync.CmdVerb) cli.ActionFunc {
 
 func cmdWorker(cmd tunasync.CmdVerb) cli.ActionFunc {
 	return func(c *cli.Context) error {
+
+		if c.String("worker") == "" {
+			return cli.NewExitError("Please specify the worker with -w <worker-id>", 1)
+		}
+
 		cmd := tunasync.ClientCmd{
 			Cmd:      cmd,
 			WorkerID: c.String("worker"),
