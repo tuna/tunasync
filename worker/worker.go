@@ -12,8 +12,6 @@ import (
 	. "github.com/tuna/tunasync/internal"
 )
 
-var tunasyncWorker *Worker
-
 // A Worker is a instance of tunasync worker
 type Worker struct {
 	L    sync.Mutex
@@ -29,11 +27,8 @@ type Worker struct {
 	httpClient *http.Client
 }
 
-// GetTUNASyncWorker returns a singalton worker
-func GetTUNASyncWorker(cfg *Config) *Worker {
-	if tunasyncWorker != nil {
-		return tunasyncWorker
-	}
+// NewTUNASyncWorker creates a worker
+func NewTUNASyncWorker(cfg *Config) *Worker {
 
 	w := &Worker{
 		cfg:  cfg,
@@ -57,7 +52,6 @@ func GetTUNASyncWorker(cfg *Config) *Worker {
 
 	w.initJobs()
 	w.makeHTTPServer()
-	tunasyncWorker = w
 	return w
 }
 

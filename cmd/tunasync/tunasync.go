@@ -60,7 +60,7 @@ func startWorker(c *cli.Context) error {
 		os.Exit(1)
 	}
 
-	w := worker.GetTUNASyncWorker(cfg)
+	w := worker.NewTUNASyncWorker(cfg)
 	if w == nil {
 		logger.Errorf("Error intializing TUNA sync worker.")
 		os.Exit(1)
