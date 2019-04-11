@@ -91,6 +91,7 @@ func GetTUNASyncManager(cfg *Config) *Manager {
 		// post job status
 		workerValidateGroup.POST(":id/jobs/:job", s.updateJobOfWorker)
 		workerValidateGroup.POST(":id/jobs/:job/size", s.updateMirrorSize)
+		workerValidateGroup.POST(":id/schedules", s.updateSchedulesOfWorker)
 	}
 
 	// for tunasynctl to post commands
@@ -238,6 +239,48 @@ func (s *Manager) returnErrJSON(c *gin.Context, code int, err error) {
 	c.JSON(code, gin.H{
 		_errorKey: err.Error(),
 	})
+}
+
+func (s *Manager) updateSchedulesOfWorker(c *gin.Context) {
+	workerID := c.Param("id")
+	var schedules MirrorSchedules
+	c.BindJSON(&schedules)
+
+	for _, schedule := range schedules.Schedules {
+		mirrorName := schedule.MirrorName
+		if len(mirrorName) == 0 {
+			s.returnErrJSON(
+				c, http.StatusBadRequest,
+				errors.New("Mirror Name should not be empty"),
+			)
+		}
+
+		curStatus, err := s.adapter.GetMirrorStatus(workerID, mirrorName)
+		if err != nil {
+			fmt.Errorf("failed to get job %s of worker %s: %s",
+				mirrorName, workerID, err.Error(),
+			)
+			continue
+		}
+
+		if curStatus.Scheduled == schedule.NextSchedule {
+			// no changes, skip update
+			continue
+		}
+
+		curStatus.Scheduled = schedule.NextSchedule
+		_, err = s.adapter.UpdateMirrorStatus(workerID, mirrorName, curStatus)
+		if err != nil {
+			err := fmt.Errorf("failed to update job %s of worker %s: %s",
+				mirrorName, workerID, err.Error(),
+			)
+			c.Error(err)
+			s.returnErrJSON(c, http.StatusInternalServerError, err)
+			return
+		}
+	}
+	type empty struct{}
+	c.JSON(http.StatusOK, empty{})
 }
 
 func (s *Manager) updateJobOfWorker(c *gin.Context) {

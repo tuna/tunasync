@@ -15,6 +15,11 @@ type scheduleQueue struct {
 	jobs map[string]bool
 }
 
+type jobScheduleInfo struct {
+	jobName       string
+	nextScheduled time.Time
+}
+
 func timeLessThan(l, r interface{}) bool {
 	tl := l.(time.Time)
 	tr := r.(time.Time)
@@ -26,6 +31,20 @@ func newScheduleQueue() *scheduleQueue {
 	queue.list = skiplist.NewCustomMap(timeLessThan)
 	queue.jobs = make(map[string]bool)
 	return queue
+}
+
+func (q *scheduleQueue) GetJobs() (jobs []jobScheduleInfo) {
+	cur := q.list.Iterator()
+	defer cur.Close()
+
+	for cur.Next() {
+		cj := cur.Value().(*mirrorJob)
+		jobs = append(jobs, jobScheduleInfo{
+			cj.Name(),
+			cur.Key().(time.Time),
+		})
+	}
+	return
 }
 
 func (q *scheduleQueue) AddJob(schedTime time.Time, job *mirrorJob) {

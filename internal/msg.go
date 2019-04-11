@@ -14,6 +14,7 @@ type MirrorStatus struct {
 	Status     SyncStatus `json:"status"`
 	LastUpdate time.Time  `json:"last_update"`
 	LastEnded  time.Time  `json:"last_ended"`
+	Scheduled  time.Time  `json:"next_schedule"`
 	Upstream   string     `json:"upstream"`
 	Size       string     `json:"size"`
 	ErrorMsg   string     `json:"error_msg"`
@@ -26,6 +27,15 @@ type WorkerStatus struct {
 	URL        string    `json:"url"`         // worker url
 	Token      string    `json:"token"`       // session token
 	LastOnline time.Time `json:"last_online"` // last seen
+}
+
+type MirrorSchedules struct {
+	Schedules []MirrorSchedule `json:"schedules"`
+}
+
+type MirrorSchedule struct {
+	MirrorName   string    `json:"name"`
+	NextSchedule time.Time `json:"next_schedule"`
 }
 
 // A CmdVerb is an action to a job or worker

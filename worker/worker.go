@@ -304,6 +304,9 @@ func (w *Worker) runSchedule() {
 
 	w.L.Unlock()
 
+	schedInfo := w.schedule.GetJobs()
+	w.updateSchedInfo(schedInfo)
+
 	tick := time.Tick(5 * time.Second)
 	for {
 		select {
@@ -339,6 +342,9 @@ func (w *Worker) runSchedule() {
 				)
 				w.schedule.AddJob(schedTime, job)
 			}
+
+			schedInfo = w.schedule.GetJobs()
+			w.updateSchedInfo(schedInfo)
 
 		case <-tick:
 			// check schedule every 5 seconds
@@ -417,6 +423,27 @@ func (w *Worker) updateStatus(job *mirrorJob, jobMsg jobMessage) {
 		logger.Debugf("reporting on manager url: %s", url)
 		if _, err := PostJSON(url, smsg, w.httpClient); err != nil {
 			logger.Errorf("Failed to update mirror(%s) status: %s", jobMsg.name, err.Error())
+		}
+	}
+}
+
+func (w *Worker) updateSchedInfo(schedInfo []jobScheduleInfo) {
+	var s []MirrorSchedule
+	for _, sched := range schedInfo {
+		s = append(s, MirrorSchedule{
+			MirrorName:   sched.jobName,
+			NextSchedule: sched.nextScheduled,
+		})
+	}
+	msg := MirrorSchedules{Schedules: s}
+
+	for _, root := range w.cfg.Manager.APIBaseList() {
+		url := fmt.Sprintf(
+			"%s/workers/%s/schedules", root, w.Name(),
+		)
+		logger.Debugf("reporting on manager url: %s", url)
+		if _, err := PostJSON(url, msg, w.httpClient); err != nil {
+			logger.Errorf("Failed to upload schedules: %s", err.Error())
 		}
 	}
 }
