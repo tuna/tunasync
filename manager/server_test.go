@@ -202,6 +202,20 @@ func TestHTTPServer(t *testing.T) {
 					})
 				})
 
+				Convey("Update schedule of valid mirrors", func(ctx C) {
+					msg := MirrorSchedules{
+						[]MirrorSchedule{
+							MirrorSchedule{"arch-sync1", time.Now().Add(time.Minute * 10)},
+							MirrorSchedule{"arch-sync2", time.Now().Add(time.Minute * 7)},
+						},
+					}
+
+					url := fmt.Sprintf("%s/workers/%s/schedules", baseURL, status.Worker)
+					resp, err := PostJSON(url, msg, nil)
+					So(err, ShouldBeNil)
+					So(resp.StatusCode, ShouldEqual, http.StatusOK)
+				})
+
 				Convey("Update size of an invalid mirror", func(ctx C) {
 					msg := struct {
 						Name string `json:"name"`
@@ -255,6 +269,24 @@ func TestHTTPServer(t *testing.T) {
 				}
 				resp, err := PostJSON(fmt.Sprintf("%s/workers/%s/jobs/%s",
 					baseURL, status.Worker, status.Name), status, nil)
+				So(err, ShouldBeNil)
+				So(resp.StatusCode, ShouldEqual, http.StatusBadRequest)
+				defer resp.Body.Close()
+				var msg map[string]string
+				err = json.NewDecoder(resp.Body).Decode(&msg)
+				So(err, ShouldBeNil)
+				So(msg[_errorKey], ShouldEqual, "invalid workerID "+invalidWorker)
+			})
+			Convey("update schedule of an non-existent worker", func(ctx C) {
+				invalidWorker := "test_worker2"
+				sch := MirrorSchedules{
+					[]MirrorSchedule{
+						MirrorSchedule{"arch-sync1", time.Now().Add(time.Minute * 10)},
+						MirrorSchedule{"arch-sync2", time.Now().Add(time.Minute * 7)},
+					},
+				}
+				resp, err := PostJSON(fmt.Sprintf("%s/workers/%s/schedules",
+					baseURL, invalidWorker), sch, nil)
 				So(err, ShouldBeNil)
 				So(resp.StatusCode, ShouldEqual, http.StatusBadRequest)
 				defer resp.Body.Close()

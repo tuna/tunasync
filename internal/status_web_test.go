@@ -21,6 +21,8 @@ func TestStatus(t *testing.T) {
 			LastUpdateTs: stampTime{t},
 			LastEnded:    textTime{t},
 			LastEndedTs:  stampTime{t},
+			Scheduled:    textTime{t},
+			ScheduledTs:  stampTime{t},
 			Size:         "5GB",
 			Upstream:     "rsync://mirrors.tuna.tsinghua.edu.cn/tunalinux/",
 		}
@@ -42,6 +44,10 @@ func TestStatus(t *testing.T) {
 		So(m2.LastEndedTs.Unix(), ShouldEqual, m.LastEnded.Unix())
 		So(m2.LastEnded.UnixNano(), ShouldEqual, m.LastEnded.UnixNano())
 		So(m2.LastEndedTs.UnixNano(), ShouldEqual, m.LastEnded.UnixNano())
+		So(m2.Scheduled.Unix(), ShouldEqual, m.Scheduled.Unix())
+		So(m2.ScheduledTs.Unix(), ShouldEqual, m.Scheduled.Unix())
+		So(m2.Scheduled.UnixNano(), ShouldEqual, m.Scheduled.UnixNano())
+		So(m2.ScheduledTs.UnixNano(), ShouldEqual, m.Scheduled.UnixNano())
 		So(m2.Size, ShouldEqual, m.Size)
 		So(m2.Upstream, ShouldEqual, m.Upstream)
 	})
@@ -53,6 +59,7 @@ func TestStatus(t *testing.T) {
 			Status:     Failed,
 			LastUpdate: time.Now().Add(-time.Minute * 30),
 			LastEnded:  time.Now(),
+			Scheduled:  time.Now().Add(time.Minute * 5),
 			Upstream:   "mirrors.tuna.tsinghua.edu.cn",
 			Size:       "4GB",
 		}
@@ -70,6 +77,10 @@ func TestStatus(t *testing.T) {
 		So(m2.LastEndedTs.Unix(), ShouldEqual, m.LastEnded.Unix())
 		So(m2.LastEnded.UnixNano(), ShouldEqual, m.LastEnded.UnixNano())
 		So(m2.LastEndedTs.UnixNano(), ShouldEqual, m.LastEnded.UnixNano())
+		So(m2.Scheduled.Unix(), ShouldEqual, m.Scheduled.Unix())
+		So(m2.ScheduledTs.Unix(), ShouldEqual, m.Scheduled.Unix())
+		So(m2.Scheduled.UnixNano(), ShouldEqual, m.Scheduled.UnixNano())
+		So(m2.ScheduledTs.UnixNano(), ShouldEqual, m.Scheduled.UnixNano())
 		So(m2.Size, ShouldEqual, m.Size)
 		So(m2.Upstream, ShouldEqual, m.Upstream)
 	})
