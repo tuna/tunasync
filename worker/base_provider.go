@@ -15,6 +15,7 @@ type baseProvider struct {
 	ctx      *Context
 	name     string
 	interval time.Duration
+	retry    int
 	isMaster bool
 
 	cmd       *cmdJob
@@ -48,6 +49,10 @@ func (p *baseProvider) Context() *Context {
 func (p *baseProvider) Interval() time.Duration {
 	// logger.Debug("interval for %s: %v", p.Name(), p.interval)
 	return p.interval
+}
+
+func (p *baseProvider) Retry() int {
+	return p.retry
 }
 
 func (p *baseProvider) IsMaster() bool {

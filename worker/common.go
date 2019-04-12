@@ -8,6 +8,6 @@ import (
 
 type empty struct{}
 
-const maxRetry = 2
+const defaultMaxRetry = 2
 
 var logger = logging.MustGetLogger("tunasync")

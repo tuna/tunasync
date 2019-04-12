@@ -30,6 +30,10 @@ type Worker struct {
 // NewTUNASyncWorker creates a worker
 func NewTUNASyncWorker(cfg *Config) *Worker {
 
+	if cfg.Global.Retry == 0 {
+		cfg.Global.Retry = defaultMaxRetry
+	}
+
 	w := &Worker{
 		cfg:  cfg,
 		jobs: make(map[string]*mirrorJob),

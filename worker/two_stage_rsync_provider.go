@@ -18,6 +18,7 @@ type twoStageRsyncConfig struct {
 	workingDir, logDir, logFile                  string
 	useIPv6                                      bool
 	interval                                     time.Duration
+	retry                                        int
 }
 
 // An RsyncProvider provides the implementation to rsync-based syncing jobs
@@ -48,6 +49,7 @@ func newTwoStageRsyncProvider(c twoStageRsyncConfig) (*twoStageRsyncProvider, er
 			name:     c.name,
 			ctx:      NewContext(),
 			interval: c.interval,
+			retry:    c.retry,
 		},
 		twoStageRsyncConfig: c,
 		stage1Options: []string{

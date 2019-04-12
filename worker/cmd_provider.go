@@ -12,6 +12,7 @@ type cmdConfig struct {
 	upstreamURL, command        string
 	workingDir, logDir, logFile string
 	interval                    time.Duration
+	retry                       int
 	env                         map[string]string
 }
 
@@ -28,6 +29,7 @@ func newCmdProvider(c cmdConfig) (*cmdProvider, error) {
 			name:     c.name,
 			ctx:      NewContext(),
 			interval: c.interval,
+			retry:    c.retry,
 		},
 		cmdConfig: c,
 	}

@@ -16,6 +16,7 @@ type rsyncConfig struct {
 	workingDir, logDir, logFile                  string
 	useIPv6, useIPv4                             bool
 	interval                                     time.Duration
+	retry                                        int
 }
 
 // An RsyncProvider provides the implementation to rsync-based syncing jobs
@@ -36,6 +37,7 @@ func newRsyncProvider(c rsyncConfig) (*rsyncProvider, error) {
 			name:     c.name,
 			ctx:      NewContext(),
 			interval: c.interval,
+			retry:    c.retry,
 		},
 		rsyncConfig: c,
 	}

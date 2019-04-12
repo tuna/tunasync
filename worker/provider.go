@@ -45,6 +45,7 @@ type mirrorProvider interface {
 	Hooks() []jobHook
 
 	Interval() time.Duration
+	Retry() int
 
 	WorkingDir() string
 	LogDir() string
@@ -87,6 +88,9 @@ func newMirrorProvider(mirror mirrorConfig, cfg *Config) mirrorProvider {
 	if mirror.Interval == 0 {
 		mirror.Interval = cfg.Global.Interval
 	}
+	if mirror.Retry == 0 {
+		mirror.Retry = cfg.Global.Retry
+	}
 	logDir = formatLogDir(logDir, mirror)
 
 	// IsMaster
@@ -111,6 +115,7 @@ func newMirrorProvider(mirror mirrorConfig, cfg *Config) mirrorProvider {
 			logDir:      logDir,
 			logFile:     filepath.Join(logDir, "latest.log"),
 			interval:    time.Duration(mirror.Interval) * time.Minute,
+			retry:       mirror.Retry,
 			env:         mirror.Env,
 		}
 		p, err := newCmdProvider(pc)
@@ -133,6 +138,7 @@ func newMirrorProvider(mirror mirrorConfig, cfg *Config) mirrorProvider {
 			useIPv6:     mirror.UseIPv6,
 			useIPv4:     mirror.UseIPv4,
 			interval:    time.Duration(mirror.Interval) * time.Minute,
+			retry:       mirror.Retry,
 		}
 		p, err := newRsyncProvider(rc)
 		p.isMaster = isMaster
@@ -154,6 +160,7 @@ func newMirrorProvider(mirror mirrorConfig, cfg *Config) mirrorProvider {
 			logFile:       filepath.Join(logDir, "latest.log"),
 			useIPv6:       mirror.UseIPv6,
 			interval:      time.Duration(mirror.Interval) * time.Minute,
+			retry:         mirror.Retry,
 		}
 		p, err := newTwoStageRsyncProvider(rc)
 		p.isMaster = isMaster

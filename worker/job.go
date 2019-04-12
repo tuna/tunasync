@@ -139,7 +139,7 @@ func (m *mirrorJob) Run(managerChan chan<- jobMessage, semaphore chan empty) err
 			return err
 		}
 
-		for retry := 0; retry < maxRetry; retry++ {
+		for retry := 0; retry < provider.Retry(); retry++ {
 			stopASAP := false // stop job as soon as possible
 
 			if retry > 0 {
@@ -196,7 +196,7 @@ func (m *mirrorJob) Run(managerChan chan<- jobMessage, semaphore chan empty) err
 
 			// syncing failed
 			logger.Warningf("failed syncing %s: %s", m.Name(), syncErr.Error())
-			managerChan <- jobMessage{tunasync.Failed, m.Name(), syncErr.Error(), (retry == maxRetry-1) && (m.State() == stateReady)}
+			managerChan <- jobMessage{tunasync.Failed, m.Name(), syncErr.Error(), (retry == provider.Retry()-1) && (m.State() == stateReady)}
 
 			// post-fail hooks
 			logger.Debug("post-fail hooks")
