@@ -50,6 +50,7 @@ type mirrorProvider interface {
 	LogDir() string
 	LogFile() string
 	IsMaster() bool
+	DataSize() string
 
 	// enter context
 	EnterContext() *Context

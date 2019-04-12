@@ -416,6 +416,12 @@ func (w *Worker) updateStatus(job *mirrorJob, jobMsg jobMessage) {
 		ErrorMsg: jobMsg.msg,
 	}
 
+	// Certain Providers (rsync for example) may know the size of mirror,
+	// so we report it to Manager here
+	if len(job.size) != 0 {
+		smsg.Size = job.size
+	}
+
 	for _, root := range w.cfg.Manager.APIBaseList() {
 		url := fmt.Sprintf(
 			"%s/workers/%s/jobs/%s", root, w.Name(), jobMsg.name,

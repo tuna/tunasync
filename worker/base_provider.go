@@ -161,3 +161,7 @@ func (p *baseProvider) Terminate() error {
 
 	return err
 }
+
+func (p *baseProvider) DataSize() string {
+	return ""
+}

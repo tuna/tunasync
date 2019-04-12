@@ -2,8 +2,11 @@ package worker
 
 import (
 	"errors"
+	"io/ioutil"
 	"strings"
 	"time"
+
+	"github.com/tuna/tunasync/internal"
 )
 
 type rsyncConfig struct {
@@ -19,7 +22,8 @@ type rsyncConfig struct {
 type rsyncProvider struct {
 	baseProvider
 	rsyncConfig
-	options []string
+	options  []string
+	dataSize string
 }
 
 func newRsyncProvider(c rsyncConfig) (*rsyncProvider, error) {
@@ -73,11 +77,22 @@ func (p *rsyncProvider) Upstream() string {
 	return p.upstreamURL
 }
 
+func (p *rsyncProvider) DataSize() string {
+	return p.dataSize
+}
+
 func (p *rsyncProvider) Run() error {
+	p.dataSize = ""
 	if err := p.Start(); err != nil {
 		return err
 	}
-	return p.Wait()
+	if err := p.Wait(); err != nil {
+		return err
+	}
+	if logContent, err := ioutil.ReadFile(p.LogFile()); err == nil {
+		p.dataSize = internal.ExtractSizeFromRsyncLog(logContent)
+	}
+	return nil
 }
 
 func (p *rsyncProvider) Start() error {

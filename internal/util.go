@@ -8,6 +8,7 @@ import (
 	"errors"
 	"io/ioutil"
 	"net/http"
+	"regexp"
 	"time"
 )
 
@@ -83,4 +84,15 @@ func GetJSON(url string, obj interface{}, client *http.Client) (*http.Response, 
 		return resp, err
 	}
 	return resp, json.Unmarshal(body, obj)
+}
+
+func ExtractSizeFromRsyncLog(content []byte) string {
+	// (?m) flag enables multi-line mode
+	re := regexp.MustCompile(`(?m)^Total file size: ([0-9\.]+[KMGTP]?) bytes`)
+	matches := re.FindAllSubmatch(content, -1)
+	// fmt.Printf("%q\n", matches)
+	if len(matches) == 0 {
+		return ""
+	}
+	return string(matches[len(matches)-1][1])
 }

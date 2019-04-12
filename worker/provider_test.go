@@ -73,6 +73,7 @@ func TestRsyncProvider(t *testing.T) {
 echo "syncing to $(pwd)"
 echo $RSYNC_PASSWORD $@
 sleep 1
+echo "Total file size: 1.33T bytes"
 echo "Done"
 exit 0
 			`
@@ -83,6 +84,7 @@ exit 0
 			expectedOutput := fmt.Sprintf(
 				"syncing to %s\n"+
 					"%s\n"+
+					"Total file size: 1.33T bytes\n"+
 					"Done\n",
 				targetDir,
 				fmt.Sprintf(
@@ -99,6 +101,7 @@ exit 0
 			So(err, ShouldBeNil)
 			So(string(loggedContent), ShouldEqual, expectedOutput)
 			// fmt.Println(string(loggedContent))
+			So(provider.DataSize(), ShouldEqual, "1.33T")
 		})
 
 	})

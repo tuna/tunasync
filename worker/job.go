@@ -53,6 +53,7 @@ type mirrorJob struct {
 	ctrlChan chan ctrlAction
 	disabled chan empty
 	state    uint32
+	size     string
 }
 
 func newMirrorJob(provider mirrorProvider) *mirrorJob {
@@ -182,6 +183,7 @@ func (m *mirrorJob) Run(managerChan chan<- jobMessage, semaphore chan empty) err
 			if syncErr == nil {
 				// syncing success
 				logger.Noticef("succeeded syncing %s", m.Name())
+				m.size = provider.DataSize()
 				managerChan <- jobMessage{tunasync.Success, m.Name(), "", (m.State() == stateReady)}
 				// post-success hooks
 				err := runHooks(rHooks, func(h jobHook) error { return h.postSuccess() }, "post-success")

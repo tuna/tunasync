@@ -3,8 +3,11 @@ package worker
 import (
 	"errors"
 	"fmt"
+	"io/ioutil"
 	"strings"
 	"time"
+
+	"github.com/tuna/tunasync/internal"
 )
 
 type twoStageRsyncConfig struct {
@@ -23,6 +26,7 @@ type twoStageRsyncProvider struct {
 	twoStageRsyncConfig
 	stage1Options []string
 	stage2Options []string
+	dataSize      string
 }
 
 var rsyncStage1Profiles = map[string]([]string){
@@ -78,6 +82,10 @@ func (p *twoStageRsyncProvider) Upstream() string {
 	return p.upstreamURL
 }
 
+func (p *twoStageRsyncProvider) DataSize() string {
+	return p.dataSize
+}
+
 func (p *twoStageRsyncProvider) Options(stage int) ([]string, error) {
 	var options []string
 	if stage == 1 {
@@ -123,6 +131,7 @@ func (p *twoStageRsyncProvider) Run() error {
 		env["RSYNC_PASSWORD"] = p.password
 	}
 
+	p.dataSize = ""
 	stages := []int{1, 2}
 	for _, stage := range stages {
 		command := []string{p.rsyncCmd}
@@ -150,6 +159,9 @@ func (p *twoStageRsyncProvider) Run() error {
 		if err != nil {
 			return err
 		}
+	}
+	if logContent, err := ioutil.ReadFile(p.LogFile()); err == nil {
+		p.dataSize = internal.ExtractSizeFromRsyncLog(logContent)
 	}
 	return nil
 }
