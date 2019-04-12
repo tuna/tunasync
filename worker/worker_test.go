@@ -13,6 +13,9 @@ import (
 
 type workTestFunc func(*Worker)
 
+var managerPort = 5001
+var workerPort = 5002
+
 func makeMockManagerServer(recvData chan interface{}) *gin.Engine {
 	r := gin.Default()
 	r.GET("/ping", func(c *gin.Context) {
@@ -30,6 +33,12 @@ func makeMockManagerServer(recvData chan interface{}) *gin.Engine {
 		c.BindJSON(&_sch)
 		recvData <- _sch
 		c.JSON(http.StatusOK, empty{})
+	})
+	r.POST("/workers/dut/jobs/:job", func(c *gin.Context) {
+		var status MirrorStatus
+		c.BindJSON(&status)
+		recvData <- status
+		c.JSON(http.StatusOK, status)
 	})
 	r.GET("/workers/dut/jobs", func(c *gin.Context) {
 		mirrorStatusList := []MirrorStatus{}
@@ -59,9 +68,17 @@ func startWorkerThenStop(cfg *Config, tester workTestFunc) {
 	}
 
 }
+func sendCommandToWorker(workerURL string, httpClient *http.Client, cmd CmdVerb, mirror string) {
+	workerCmd := WorkerCmd{
+		Cmd:      cmd,
+		MirrorID: mirror,
+	}
+	logger.Debugf("POST to %s with cmd %s", workerURL, cmd)
+	_, err := PostJSON(workerURL, workerCmd, httpClient)
+	So(err, ShouldBeNil)
+}
 
 func TestWorker(t *testing.T) {
-	managerPort := 5001
 	InitLogger(false, true, false)
 
 	recvDataChan := make(chan interface{})
@@ -79,6 +96,11 @@ func TestWorker(t *testing.T) {
 
 	Convey("Worker should work", t, func(ctx C) {
 
+		httpClient, err := CreateHTTPClient("")
+		So(err, ShouldBeNil)
+
+		workerPort++
+
 		workerCfg := Config{
 			Global: globalConfig{
 				Name:       "dut",
@@ -87,21 +109,32 @@ func TestWorker(t *testing.T) {
 				Concurrent: 2,
 				Interval:   1,
 			},
+			Server: serverConfig{
+				Hostname: "localhost",
+				Addr:     "127.0.0.1",
+				Port:     workerPort,
+			},
 			Manager: managerConfig{
 				APIBase: "http://localhost:" + strconv.Itoa(managerPort),
 			},
 		}
+		logger.Debugf("worker port %d", workerPort)
 		Convey("with no job", func(ctx C) {
 			dummyTester := func(*Worker) {
+				registered := false
 				for {
 					select {
 					case data := <-recvDataChan:
 						if reg, ok := data.(WorkerStatus); ok {
 							So(reg.ID, ShouldEqual, "dut")
+							registered = true
+							time.Sleep(500 * time.Millisecond)
+							sendCommandToWorker(reg.URL, httpClient, CmdStart, "foobar")
 						} else if sch, ok := data.(MirrorSchedules); ok {
 							So(len(sch.Schedules), ShouldEqual, 0)
 						}
-					case <-time.After(2 * time.Second):
+					case <-time.After(1 * time.Second):
+						So(registered, ShouldBeTrue)
 						return
 					}
 				}
@@ -119,20 +152,36 @@ func TestWorker(t *testing.T) {
 			}
 
 			dummyTester := func(*Worker) {
+				url := ""
+				jobRunning := false
+				lastStatus := SyncStatus(None)
 				for {
 					select {
 					case data := <-recvDataChan:
 						if reg, ok := data.(WorkerStatus); ok {
 							So(reg.ID, ShouldEqual, "dut")
+							url = reg.URL
+							time.Sleep(500 * time.Millisecond)
+							sendCommandToWorker(url, httpClient, CmdStart, "job-ls")
 						} else if sch, ok := data.(MirrorSchedules); ok {
-							So(len(sch.Schedules), ShouldEqual, 1)
-							So(sch.Schedules[0].MirrorName, ShouldEqual, "job-ls")
-							So(sch.Schedules[0].NextSchedule,
-								ShouldHappenBetween,
-								time.Now().Add(-2*time.Second),
-								time.Now().Add(1*time.Minute))
+							if !jobRunning {
+								So(len(sch.Schedules), ShouldEqual, 1)
+								So(sch.Schedules[0].MirrorName, ShouldEqual, "job-ls")
+								So(sch.Schedules[0].NextSchedule,
+									ShouldHappenBetween,
+									time.Now().Add(-2*time.Second),
+									time.Now().Add(1*time.Minute))
+							}
+						} else if status, ok := data.(MirrorStatus); ok {
+							logger.Noticef("Job %s status %s", status.Name, status.Status.String())
+							jobRunning = status.Status == PreSyncing || status.Status == Syncing
+							So(status.Status, ShouldNotEqual, Failed)
+							lastStatus = status.Status
 						}
-					case <-time.After(2 * time.Second):
+					case <-time.After(1 * time.Second):
+						So(url, ShouldNotEqual, "")
+						So(jobRunning, ShouldBeFalse)
+						So(lastStatus, ShouldEqual, Success)
 						return
 					}
 				}
@@ -160,15 +209,39 @@ func TestWorker(t *testing.T) {
 			}
 
 			dummyTester := func(*Worker) {
+				url := ""
+				lastStatus := make(map[string]SyncStatus)
+				nextSch := make(map[string]time.Time)
 				for {
 					select {
 					case data := <-recvDataChan:
 						if reg, ok := data.(WorkerStatus); ok {
 							So(reg.ID, ShouldEqual, "dut")
+							url = reg.URL
+							time.Sleep(500 * time.Millisecond)
+							sendCommandToWorker(url, httpClient, CmdStart, "job-fail")
+							sendCommandToWorker(url, httpClient, CmdStart, "job-ls-1")
+							sendCommandToWorker(url, httpClient, CmdStart, "job-ls-2")
 						} else if sch, ok := data.(MirrorSchedules); ok {
-							So(len(sch.Schedules), ShouldEqual, 3)
+							//So(len(sch.Schedules), ShouldEqual, 3)
+							for _, item := range sch.Schedules {
+								nextSch[item.MirrorName] = item.NextSchedule
+							}
+						} else if status, ok := data.(MirrorStatus); ok {
+							logger.Noticef("Job %s status %s", status.Name, status.Status.String())
+							jobRunning := status.Status == PreSyncing || status.Status == Syncing
+							if !jobRunning {
+								if status.Name == "job-fail" {
+									So(status.Status, ShouldEqual, Failed)
+								} else {
+									So(status.Status, ShouldNotEqual, Failed)
+								}
+							}
+							lastStatus[status.Name] = status.Status
 						}
-					case <-time.After(2 * time.Second):
+					case <-time.After(1 * time.Second):
+						So(len(lastStatus), ShouldEqual, 3)
+						So(len(nextSch), ShouldEqual, 3)
 						return
 					}
 				}
