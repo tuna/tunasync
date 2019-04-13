@@ -24,6 +24,9 @@ type cmdProvider struct {
 
 func newCmdProvider(c cmdConfig) (*cmdProvider, error) {
 	// TODO: check config options
+	if c.retry == 0 {
+		c.retry = defaultMaxRetry
+	}
 	provider := &cmdProvider{
 		baseProvider: baseProvider{
 			name:     c.name,

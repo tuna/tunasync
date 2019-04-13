@@ -32,6 +32,9 @@ func newRsyncProvider(c rsyncConfig) (*rsyncProvider, error) {
 	if !strings.HasSuffix(c.upstreamURL, "/") {
 		return nil, errors.New("rsync upstream URL should ends with /")
 	}
+	if c.retry == 0 {
+		c.retry = defaultMaxRetry
+	}
 	provider := &rsyncProvider{
 		baseProvider: baseProvider{
 			name:     c.name,

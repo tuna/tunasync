@@ -43,6 +43,9 @@ func newTwoStageRsyncProvider(c twoStageRsyncConfig) (*twoStageRsyncProvider, er
 	if !strings.HasSuffix(c.upstreamURL, "/") {
 		return nil, errors.New("rsync upstream URL should ends with /")
 	}
+	if c.retry == 0 {
+		c.retry = defaultMaxRetry
+	}
 
 	provider := &twoStageRsyncProvider{
 		baseProvider: baseProvider{
