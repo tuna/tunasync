@@ -132,8 +132,8 @@ func TestHTTPServer(t *testing.T) {
 					Size:     "unknown",
 				}
 				resp, err := PostJSON(fmt.Sprintf("%s/workers/%s/jobs/%s", baseURL, status.Worker, status.Name), status, nil)
-				defer resp.Body.Close()
 				So(err, ShouldBeNil)
+				defer resp.Body.Close()
 				So(resp.StatusCode, ShouldEqual, http.StatusOK)
 
 				Convey("list mirror status of an existed worker", func(ctx C) {
@@ -232,8 +232,8 @@ func TestHTTPServer(t *testing.T) {
 				status.Status = Failed
 				time.Sleep(3 * time.Second)
 				resp, err = PostJSON(fmt.Sprintf("%s/workers/%s/jobs/%s", baseURL, status.Worker, status.Name), status, nil)
-				defer resp.Body.Close()
 				So(err, ShouldBeNil)
+				defer resp.Body.Close()
 				So(resp.StatusCode, ShouldEqual, http.StatusOK)
 
 				Convey("What if syncing job failed", func(ctx C) {
@@ -313,11 +313,11 @@ func TestHTTPServer(t *testing.T) {
 					// run the mock worker server
 					workerServer.Run(bindAddress)
 				}()
-				time.Sleep(50 * time.Microsecond)
+				time.Sleep(50 * time.Millisecond)
 				// verify the worker mock server is running
 				workerResp, err := http.Get(workerBaseURL + "/ping")
-				defer workerResp.Body.Close()
 				So(err, ShouldBeNil)
+				defer workerResp.Body.Close()
 				So(workerResp.StatusCode, ShouldEqual, http.StatusOK)
 
 				Convey("when client send wrong cmd", func(ctx C) {
@@ -327,8 +327,8 @@ func TestHTTPServer(t *testing.T) {
 						WorkerID: "not_exist_worker",
 					}
 					resp, err := PostJSON(baseURL+"/cmd", clientCmd, nil)
-					defer resp.Body.Close()
 					So(err, ShouldBeNil)
+					defer resp.Body.Close()
 					So(resp.StatusCode, ShouldEqual, http.StatusBadRequest)
 				})
 
@@ -340,9 +340,8 @@ func TestHTTPServer(t *testing.T) {
 					}
 
 					resp, err := PostJSON(baseURL+"/cmd", clientCmd, nil)
-					defer resp.Body.Close()
-
 					So(err, ShouldBeNil)
+					defer resp.Body.Close()
 					So(resp.StatusCode, ShouldEqual, http.StatusOK)
 					time.Sleep(50 * time.Microsecond)
 					select {
