@@ -183,27 +183,33 @@ func (m *mirrorJob) Run(managerChan chan<- jobMessage, semaphore chan empty) err
 			if syncErr == nil {
 				// syncing success
 				logger.Noticef("succeeded syncing %s", m.Name())
-				m.size = provider.DataSize()
-				managerChan <- jobMessage{tunasync.Success, m.Name(), "", (m.State() == stateReady)}
 				// post-success hooks
+				logger.Debug("post-success hooks")
 				err := runHooks(rHooks, func(h jobHook) error { return h.postSuccess() }, "post-success")
 				if err != nil {
 					return err
 				}
-				return nil
+			} else {
+				// syncing failed
+				logger.Warningf("failed syncing %s: %s", m.Name(), syncErr.Error())
+				// post-fail hooks
+				logger.Debug("post-fail hooks")
+				err := runHooks(rHooks, func(h jobHook) error { return h.postFail() }, "post-fail")
+				if err != nil {
+					return err
+				}
+			}
 
+			if syncErr == nil {
+				// syncing success
+				m.size = provider.DataSize()
+				managerChan <- jobMessage{tunasync.Success, m.Name(), "", (m.State() == stateReady)}
+				return nil
 			}
 
 			// syncing failed
-			logger.Warningf("failed syncing %s: %s", m.Name(), syncErr.Error())
 			managerChan <- jobMessage{tunasync.Failed, m.Name(), syncErr.Error(), (retry == provider.Retry()-1) && (m.State() == stateReady)}
 
-			// post-fail hooks
-			logger.Debug("post-fail hooks")
-			err = runHooks(rHooks, func(h jobHook) error { return h.postFail() }, "post-fail")
-			if err != nil {
-				return err
-			}
 			// gracefully exit
 			if stopASAP {
 				logger.Debug("No retry, exit directly")
