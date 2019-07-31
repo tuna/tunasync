@@ -17,7 +17,6 @@ import (
 
 type cgroupHook struct {
 	emptyHook
-	provider  mirrorProvider
 	basePath  string
 	baseGroup string
 	created   bool
@@ -36,7 +35,9 @@ func newCgroupHook(p mirrorProvider, basePath, baseGroup, subsystem, memLimit st
 		subsystem = "cpu"
 	}
 	return &cgroupHook{
-		provider:  p,
+		emptyHook: emptyHook{
+			provider: p,
+		},
 		basePath:  basePath,
 		baseGroup: baseGroup,
 		subsystem: subsystem,

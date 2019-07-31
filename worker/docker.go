@@ -7,10 +7,9 @@ import (
 
 type dockerHook struct {
 	emptyHook
-	provider mirrorProvider
-	image    string
-	volumes  []string
-	options  []string
+	image   string
+	volumes []string
+	options []string
 }
 
 func newDockerHook(p mirrorProvider, gCfg dockerConfig, mCfg mirrorConfig) *dockerHook {
@@ -23,10 +22,12 @@ func newDockerHook(p mirrorProvider, gCfg dockerConfig, mCfg mirrorConfig) *dock
 	options = append(options, mCfg.DockerOptions...)
 
 	return &dockerHook{
-		provider: p,
-		image:    mCfg.DockerImage,
-		volumes:  volumes,
-		options:  options,
+		emptyHook: emptyHook{
+			provider: p,
+		},
+		image:   mCfg.DockerImage,
+		volumes: volumes,
+		options: options,
 	}
 }
 
