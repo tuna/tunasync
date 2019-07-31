@@ -109,7 +109,7 @@ func TestHTTPServer(t *testing.T) {
 				So(res[_errorKey], ShouldEqual, "invalid workerID "+invalidWorker)
 			})
 
-			Convey("flush  disabled jobs", func(ctx C) {
+			Convey("flush disabled jobs", func(ctx C) {
 				req, err := http.NewRequest("DELETE", baseURL+"/jobs/disabled", nil)
 				So(err, ShouldBeNil)
 				clt := &http.Client{}
