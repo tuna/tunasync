@@ -180,6 +180,11 @@ func newMirrorProvider(mirror mirrorConfig, cfg *Config) mirrorProvider {
 		provider.AddHook(newZfsHook(provider, cfg.ZFS.Zpool))
 	}
 
+	// Add Btrfs Snapshot Hook
+	if cfg.BtrfsSnapshot.Enable {
+		provider.AddHook(newBtrfsSnapshotHook(provider, cfg.BtrfsSnapshot.SnapshotPath, mirror))
+	}
+
 	// Add Docker Hook
 	if cfg.Docker.Enable && len(mirror.DockerImage) > 0 {
 		provider.AddHook(newDockerHook(provider, cfg.Docker, mirror))
