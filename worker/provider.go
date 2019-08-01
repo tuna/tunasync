@@ -141,10 +141,10 @@ func newMirrorProvider(mirror mirrorConfig, cfg *Config) mirrorProvider {
 			retry:       mirror.Retry,
 		}
 		p, err := newRsyncProvider(rc)
-		p.isMaster = isMaster
 		if err != nil {
 			panic(err)
 		}
+		p.isMaster = isMaster
 		provider = p
 	case provTwoStageRsync:
 		rc := twoStageRsyncConfig{
