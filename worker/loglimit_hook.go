@@ -14,12 +14,13 @@ import (
 
 type logLimiter struct {
 	emptyHook
-	provider mirrorProvider
 }
 
 func newLogLimiter(provider mirrorProvider) *logLimiter {
 	return &logLimiter{
-		provider: provider,
+		emptyHook: emptyHook{
+			provider: provider,
+		},
 	}
 }
 

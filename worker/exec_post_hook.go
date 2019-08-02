@@ -18,7 +18,6 @@ const (
 
 type execPostHook struct {
 	emptyHook
-	provider mirrorProvider
 
 	// exec on success or on failure
 	execOn uint8
@@ -37,9 +36,11 @@ func newExecPostHook(provider mirrorProvider, execOn uint8, command string) (*ex
 	}
 
 	return &execPostHook{
-		provider: provider,
-		execOn:   execOn,
-		command:  cmd,
+		emptyHook: emptyHook{
+			provider: provider,
+		},
+		execOn:  execOn,
+		command: cmd,
 	}, nil
 }
 

@@ -40,14 +40,14 @@ Pre-built binary for Linux x86_64 is available at [Github releases](https://gith
 # Job Run Process
 
 
-PreSyncing           Syncing                               Success
-+-----------+     +-----------+    +-------------+     +--------------+
-|  pre-job  +--+->|  job run  +--->|  post-exec  +-+-->| post-success |
-+-----------+  ^  +-----------+    +-------------+ |   +--------------+
-               |                                   |
-               |      +-----------------+          | Failed
-               +------+    post-fail    |<---------+
-                      +-----------------+
+PreSyncing                           Syncing                               Success
++-----------+     +----------+    +-----------+    +-------------+     +--------------+
+|  pre-job  +--+->| pre-exec +--->|  job run  +--->|  post-exec  +-+-->| post-success |
++-----------+  ^  +----------+    +-----------+    +-------------+ |   +--------------+
+               |                                                   |
+               |                +-----------------+                | Failed
+               +----------------+    post-fail    |<---------------+
+                                +-----------------+
 ```
 
 

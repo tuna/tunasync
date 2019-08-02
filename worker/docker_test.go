@@ -55,8 +55,10 @@ sleep 10
 		So(err, ShouldBeNil)
 
 		d := &dockerHook{
-			provider: provider,
-			image:    "alpine",
+			emptyHook: emptyHook{
+				provider: provider,
+			},
+			image: "alpine",
 			volumes: []string{
 				fmt.Sprintf("%s:%s", cmdScript, "/bin/cmd.sh"),
 			},

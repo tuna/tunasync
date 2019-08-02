@@ -11,14 +11,15 @@ import (
 
 type zfsHook struct {
 	emptyHook
-	provider mirrorProvider
-	zpool    string
+	zpool string
 }
 
 func newZfsHook(provider mirrorProvider, zpool string) *zfsHook {
 	return &zfsHook{
-		provider: provider,
-		zpool:    zpool,
+		emptyHook: emptyHook{
+			provider: provider,
+		},
+		zpool: zpool,
 	}
 }
 
@@ -40,12 +41,12 @@ func (z *zfsHook) printHelpMessage() {
 func (z *zfsHook) preJob() error {
 	workingDir := z.provider.WorkingDir()
 	if _, err := os.Stat(workingDir); os.IsNotExist(err) {
-		logger.Errorf("Directory %s doesn't exist", workingDir);
+		logger.Errorf("Directory %s doesn't exist", workingDir)
 		z.printHelpMessage()
 		return err
 	}
 	if err := sh.Command("mountpoint", "-q", workingDir).Run(); err != nil {
-		logger.Errorf("%s is not a mount point", workingDir);
+		logger.Errorf("%s is not a mount point", workingDir)
 		z.printHelpMessage()
 		return err
 	}
