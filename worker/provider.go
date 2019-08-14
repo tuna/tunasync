@@ -119,10 +119,10 @@ func newMirrorProvider(mirror mirrorConfig, cfg *Config) mirrorProvider {
 			env:         mirror.Env,
 		}
 		p, err := newCmdProvider(pc)
-		p.isMaster = isMaster
 		if err != nil {
 			panic(err)
 		}
+		p.isMaster = isMaster
 		provider = p
 	case provRsync:
 		rc := rsyncConfig{
@@ -163,10 +163,10 @@ func newMirrorProvider(mirror mirrorConfig, cfg *Config) mirrorProvider {
 			retry:         mirror.Retry,
 		}
 		p, err := newTwoStageRsyncProvider(rc)
-		p.isMaster = isMaster
 		if err != nil {
 			panic(err)
 		}
+		p.isMaster = isMaster
 		provider = p
 	default:
 		panic(errors.New("Invalid mirror provider"))
