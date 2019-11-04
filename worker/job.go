@@ -113,7 +113,7 @@ func (m *mirrorJob) Run(managerChan chan<- jobMessage, semaphore chan empty) err
 				managerChan <- jobMessage{
 					tunasync.Failed, m.Name(),
 					fmt.Sprintf("error exec hook %s: %s", hookname, err.Error()),
-					false,
+					true,
 				}
 				return err
 			}
