@@ -33,14 +33,15 @@ func (p *providerEnum) UnmarshalText(text []byte) error {
 
 // Config represents worker config options
 type Config struct {
-	Global  globalConfig   `toml:"global"`
-	Manager managerConfig  `toml:"manager"`
-	Server  serverConfig   `toml:"server"`
-	Cgroup  cgroupConfig   `toml:"cgroup"`
-	ZFS     zfsConfig      `toml:"zfs"`
-	Docker  dockerConfig   `toml:"docker"`
-	Include includeConfig  `toml:"include"`
-	Mirrors []mirrorConfig `toml:"mirrors"`
+	Global        globalConfig        `toml:"global"`
+	Manager       managerConfig       `toml:"manager"`
+	Server        serverConfig        `toml:"server"`
+	Cgroup        cgroupConfig        `toml:"cgroup"`
+	ZFS           zfsConfig           `toml:"zfs"`
+	BtrfsSnapshot btrfsSnapshotConfig `toml:"btrfs_snapshot"`
+	Docker        dockerConfig        `toml:"docker"`
+	Include       includeConfig       `toml:"include"`
+	Mirrors       []mirrorConfig      `toml:"mirrors"`
 }
 
 type globalConfig struct {
@@ -96,6 +97,11 @@ type zfsConfig struct {
 	Zpool  string `toml:"zpool"`
 }
 
+type btrfsSnapshotConfig struct {
+	Enable       bool   `toml:"enable"`
+	SnapshotPath string `toml:"snapshot_path"`
+}
+
 type includeConfig struct {
 	IncludeMirrors string `toml:"include_mirrors"`
 }
@@ -136,6 +142,8 @@ type mirrorConfig struct {
 	DockerImage   string   `toml:"docker_image"`
 	DockerVolumes []string `toml:"docker_volumes"`
 	DockerOptions []string `toml:"docker_options"`
+
+	SnapshotPath string `toml:"snapshot_path"`
 }
 
 // LoadConfig loads configuration
