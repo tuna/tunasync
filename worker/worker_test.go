@@ -133,7 +133,7 @@ func TestWorker(t *testing.T) {
 						} else if sch, ok := data.(MirrorSchedules); ok {
 							So(len(sch.Schedules), ShouldEqual, 0)
 						}
-					case <-time.After(1 * time.Second):
+					case <-time.After(2 * time.Second):
 						So(registered, ShouldBeTrue)
 						return
 					}
@@ -178,7 +178,7 @@ func TestWorker(t *testing.T) {
 							So(status.Status, ShouldNotEqual, Failed)
 							lastStatus = status.Status
 						}
-					case <-time.After(1 * time.Second):
+					case <-time.After(2 * time.Second):
 						So(url, ShouldNotEqual, "")
 						So(jobRunning, ShouldBeFalse)
 						So(lastStatus, ShouldEqual, Success)
@@ -239,7 +239,7 @@ func TestWorker(t *testing.T) {
 							}
 							lastStatus[status.Name] = status.Status
 						}
-					case <-time.After(1 * time.Second):
+					case <-time.After(2 * time.Second):
 						So(len(lastStatus), ShouldEqual, 3)
 						So(len(nextSch), ShouldEqual, 3)
 						return
