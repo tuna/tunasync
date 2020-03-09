@@ -116,16 +116,17 @@ func TestRsyncProviderWithAuthentication(t *testing.T) {
 		tmpFile := filepath.Join(tmpDir, "log_file")
 
 		c := rsyncConfig{
-			name:        "tuna",
-			upstreamURL: "rsync://rsync.tuna.moe/tuna/",
-			rsyncCmd:    scriptFile,
-			username:    "tunasync",
-			password:    "tunasyncpassword",
-			workingDir:  tmpDir,
-			logDir:      tmpDir,
-			logFile:     tmpFile,
-			useIPv6:     true,
-			interval:    600 * time.Second,
+			name:         "tuna",
+			upstreamURL:  "rsync://rsync.tuna.moe/tuna/",
+			rsyncCmd:     scriptFile,
+			username:     "tunasync",
+			password:     "tunasyncpassword",
+			workingDir:   tmpDir,
+			extraOptions: []string{"--delete-excluded"},
+			logDir:       tmpDir,
+			logFile:      tmpFile,
+			useIPv6:      true,
+			interval:     600 * time.Second,
 		}
 
 		provider, err := newRsyncProvider(c)
@@ -157,7 +158,7 @@ exit 0
 				fmt.Sprintf(
 					"%s %s -aHvh --no-o --no-g --stats --exclude .~tmp~/ "+
 						"--delete --delete-after --delay-updates --safe-links "+
-						"--timeout=120 --contimeout=120 -6 %s %s",
+						"--timeout=120 --contimeout=120 -6 %s %s --delete-excluded",
 					provider.username, provider.password, provider.upstreamURL, provider.WorkingDir(),
 				),
 			)
@@ -319,6 +320,7 @@ func TestTwoStageRsyncProvider(t *testing.T) {
 			logFile:       tmpFile,
 			useIPv6:       true,
 			excludeFile:   tmpFile,
+			extraOptions:  []string{"--delete-excluded", "--cache"},
 			username:      "hello",
 			password:      "world",
 		}
@@ -359,14 +361,16 @@ exit 0
 				fmt.Sprintf(
 					"-aHvh --no-o --no-g --stats --exclude .~tmp~/ --safe-links "+
 						"--timeout=120 --contimeout=120 --exclude dists/ -6 "+
-						"--exclude-from %s %s %s",
+						"--exclude-from %s %s %s "+
+						"--delete-excluded --cache",
 					provider.excludeFile, provider.upstreamURL, provider.WorkingDir(),
 				),
 				targetDir,
 				fmt.Sprintf(
 					"-aHvh --no-o --no-g --stats --exclude .~tmp~/ "+
 						"--delete --delete-after --delay-updates --safe-links "+
-						"--timeout=120 --contimeout=120 -6 --exclude-from %s %s %s",
+						"--timeout=120 --contimeout=120 -6 --exclude-from %s %s %s "+
+						"--delete-excluded --cache",
 					provider.excludeFile, provider.upstreamURL, provider.WorkingDir(),
 				),
 			)
@@ -398,7 +402,8 @@ exit 0
 			expectedOutput := fmt.Sprintf(
 				"-aHvh --no-o --no-g --stats --exclude .~tmp~/ --safe-links "+
 					"--timeout=120 --contimeout=120 --exclude dists/ -6 "+
-					"--exclude-from %s %s %s\n",
+					"--exclude-from %s %s %s\n"+
+					"--delete-excluded --cache",
 				provider.excludeFile, provider.upstreamURL, provider.WorkingDir(),
 			)
 
