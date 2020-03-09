@@ -300,6 +300,41 @@ sleep 5
 
 		})
 	})
+	Convey("Command Provider with fail-on-match regexp should work", t, func(ctx C) {
+		tmpDir, err := ioutil.TempDir("", "tunasync")
+		defer os.RemoveAll(tmpDir)
+		So(err, ShouldBeNil)
+		tmpFile := filepath.Join(tmpDir, "log_file")
+
+		c := cmdConfig{
+			name:        "run-uptime",
+			upstreamURL: "http://mirrors.tuna.moe/",
+			command:     "uptime",
+			failOnMatch: "",
+			workingDir:  tmpDir,
+			logDir:      tmpDir,
+			logFile:     tmpFile,
+			interval:    600 * time.Second,
+		}
+
+		Convey("when regexp matches", func() {
+			c.failOnMatch = `[a-z]+`
+			provider, err := newCmdProvider(c)
+			So(err, ShouldBeNil)
+
+			err = provider.Run()
+			So(err, ShouldNotBeNil)
+		})
+
+		Convey("when regexp does not match", func() {
+			c.failOnMatch = `load average_`
+			provider, err := newCmdProvider(c)
+			So(err, ShouldBeNil)
+
+			err = provider.Run()
+			So(err, ShouldBeNil)
+		})
+	})
 }
 
 func TestTwoStageRsyncProvider(t *testing.T) {
