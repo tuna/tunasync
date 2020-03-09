@@ -13,6 +13,7 @@ type rsyncConfig struct {
 	name                                         string
 	rsyncCmd                                     string
 	upstreamURL, username, password, excludeFile string
+	extraOptions                                 []string
 	workingDir, logDir, logFile                  string
 	useIPv6, useIPv4                             bool
 	interval                                     time.Duration
@@ -64,6 +65,9 @@ func newRsyncProvider(c rsyncConfig) (*rsyncProvider, error) {
 
 	if c.excludeFile != "" {
 		options = append(options, "--exclude-from", c.excludeFile)
+	}
+	if c.extraOptions != nil {
+		options = append(options, c.extraOptions...)
 	}
 	provider.options = options
 
