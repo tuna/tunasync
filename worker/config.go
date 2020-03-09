@@ -129,13 +129,14 @@ type mirrorConfig struct {
 	ExecOnSuccessExtra []string `toml:"exec_on_success_extra"`
 	ExecOnFailureExtra []string `toml:"exec_on_failure_extra"`
 
-	Command       string `toml:"command"`
-	UseIPv6       bool   `toml:"use_ipv6"`
-	UseIPv4       bool   `toml:"use_ipv4"`
-	ExcludeFile   string `toml:"exclude_file"`
-	Username      string `toml:"username"`
-	Password      string `toml:"password"`
-	Stage1Profile string `toml:"stage1_profile"`
+	Command       string   `toml:"command"`
+	UseIPv6       bool     `toml:"use_ipv6"`
+	UseIPv4       bool     `toml:"use_ipv4"`
+	ExcludeFile   string   `toml:"exclude_file"`
+	Username      string   `toml:"username"`
+	Password      string   `toml:"password"`
+	RsyncOptions  []string `toml:"rsync_options"`
+	Stage1Profile string   `toml:"stage1_profile"`
 
 	MemoryLimit string `toml:"memory_limit"`
 

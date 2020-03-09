@@ -15,6 +15,7 @@ type twoStageRsyncConfig struct {
 	rsyncCmd                                     string
 	stage1Profile                                string
 	upstreamURL, username, password, excludeFile string
+	extraOptions                                 []string
 	workingDir, logDir, logFile                  string
 	useIPv6                                      bool
 	interval                                     time.Duration
@@ -115,6 +116,9 @@ func (p *twoStageRsyncProvider) Options(stage int) ([]string, error) {
 
 	if p.excludeFile != "" {
 		options = append(options, "--exclude-from", p.excludeFile)
+	}
+	if p.extraOptions != nil {
+		options = append(options, p.extraOptions...)
 	}
 
 	return options, nil
