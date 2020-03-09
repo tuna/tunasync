@@ -112,6 +112,7 @@ func newMirrorProvider(mirror mirrorConfig, cfg *Config) mirrorProvider {
 			upstreamURL: mirror.Upstream,
 			command:     mirror.Command,
 			workingDir:  mirrorDir,
+			failOnMatch: mirror.FailOnMatch,
 			logDir:      logDir,
 			logFile:     filepath.Join(logDir, "latest.log"),
 			interval:    time.Duration(mirror.Interval) * time.Minute,

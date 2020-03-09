@@ -130,6 +130,7 @@ type mirrorConfig struct {
 	ExecOnFailureExtra []string `toml:"exec_on_failure_extra"`
 
 	Command       string   `toml:"command"`
+	FailOnMatch   string   `toml:"fail_on_match"`
 	UseIPv6       bool     `toml:"use_ipv6"`
 	UseIPv4       bool     `toml:"use_ipv4"`
 	ExcludeFile   string   `toml:"exclude_file"`

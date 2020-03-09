@@ -2,6 +2,9 @@ package worker
 
 import (
 	"errors"
+	"fmt"
+	"io/ioutil"
+	"regexp"
 	"time"
 
 	"github.com/anmitsu/go-shlex"
@@ -14,12 +17,14 @@ type cmdConfig struct {
 	interval                    time.Duration
 	retry                       int
 	env                         map[string]string
+	failOnMatch                 string
 }
 
 type cmdProvider struct {
 	baseProvider
 	cmdConfig
-	command []string
+	command     []string
+	failOnMatch *regexp.Regexp
 }
 
 func newCmdProvider(c cmdConfig) (*cmdProvider, error) {
@@ -46,6 +51,14 @@ func newCmdProvider(c cmdConfig) (*cmdProvider, error) {
 		return nil, err
 	}
 	provider.command = cmd
+	if len(c.failOnMatch) > 0 {
+		var err error
+		failOnMatch, err := regexp.Compile(c.failOnMatch)
+		if err != nil {
+			return nil, errors.New("fail-on-match regexp error: " + err.Error())
+		}
+		provider.failOnMatch = failOnMatch
+	}
 
 	return provider, nil
 }
@@ -62,7 +75,22 @@ func (p *cmdProvider) Run() error {
 	if err := p.Start(); err != nil {
 		return err
 	}
-	return p.Wait()
+	if err := p.Wait(); err != nil {
+		return err
+	}
+	if p.failOnMatch != nil {
+		if logContent, err := ioutil.ReadFile(p.LogFile()); err == nil {
+			matches := p.failOnMatch.FindAllSubmatch(logContent, -1)
+			if len(matches) != 0 {
+				logger.Debug("Fail-on-match: %r", matches)
+				return errors.New(
+					fmt.Sprintf("Fail-on-match regexp found %d matches", len(matches)))
+			}
+		} else {
+			return err
+		}
+	}
+	return nil
 }
 
 func (p *cmdProvider) Start() error {
