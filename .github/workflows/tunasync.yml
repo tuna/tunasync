@@ -38,10 +38,11 @@ jobs:
       run: |
         sudo apt update
         sudo apt install -y cgroup-bin docker.io
+        sudo systemctl start docker
+        sudo docker pull alpine
         lssubsys -am
         sudo cgcreate -a $USER -t $USER -g cpu:tunasync
         sudo cgcreate -a $USER -t $USER -g memory:tunasync
-        sudo docker pull alpine
 
     - name: Set up Go 1.13
       uses: actions/setup-go@v1
