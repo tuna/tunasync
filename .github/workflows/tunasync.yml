@@ -27,3 +27,41 @@ jobs:
       run: |
         make tunasync
         make tunasynctl
+
+
+  test:
+    name: Test
+    runs-on: ubuntu-latest
+    steps:
+
+    - name: Setup test dependencies
+      run: |
+        sudo apt-get install cgroup-bin docker.io
+        lssubsys -am
+        sudo cgcreate -a $USER -t $USER -g cpu:tunasync
+        sudo cgcreate -a $USER -t $USER -g memory:tunasync
+        sudo docker pull alpine
+
+    - name: Set up Go 1.13
+      uses: actions/setup-go@v1
+      with:
+        go-version: 1.13
+      id: go
+
+    - name: Check out code into the Go module directory
+      uses: actions/checkout@v2
+
+    - name: Run Unit tests.
+      run: make test
+
+    - name: Convert coverage to lcov
+      uses: jandelgado/gcov2lcov-action@v1.0.0
+      with:
+          infile: profile.cov
+          outfile: coverage.lcov
+
+    - name: Coveralls
+      uses: coverallsapp/github-action@v1.0.1
+      with:
+          github-token: ${{ secrets.github_token }}
+          path-to-lcov: coverage.lcov

@@ -19,3 +19,6 @@ tunasynctl: build
 
 travis-package: tunasync tunasynctl
 	tar zcf build/tunasync-linux-bin.tar.gz -C build tunasync tunasynctl
+
+test:
+	go test -v -covermode=count -coverprofile=profile.cov ./...
