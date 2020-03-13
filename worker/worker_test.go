@@ -93,6 +93,8 @@ func TestWorker(t *testing.T) {
 		err := httpServer.ListenAndServe()
 		So(err, ShouldBeNil)
 	}()
+	// Wait for http server starting
+	time.Sleep(500 * time.Millisecond)
 
 	Convey("Worker should work", t, func(ctx C) {
 
