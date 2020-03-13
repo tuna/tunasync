@@ -19,6 +19,9 @@ func getDockerByName(name string) (string, error) {
 		"--filter", "name="+name,
 		"--format", "{{.Names}}",
 	).Output()
+	if err == nil {
+		logger.Debugf("docker ps: '%s'", string(out))
+	}
 	return string(out), err
 }
 
@@ -74,7 +77,8 @@ sleep 10
 			ctx.So(err, ShouldNotBeNil)
 		}()
 
-		time.Sleep(1 * time.Second)
+		// Wait for docker running
+		time.Sleep(5 * time.Second)
 
 		// assert container running
 		names, err := getDockerByName(d.Name())
