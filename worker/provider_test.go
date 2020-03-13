@@ -174,6 +174,68 @@ exit 0
 	})
 }
 
+func TestRsyncProviderWithOverriddenOptions(t *testing.T) {
+	Convey("Rsync Provider with overridden options should work", t, func() {
+		tmpDir, err := ioutil.TempDir("", "tunasync")
+		defer os.RemoveAll(tmpDir)
+		So(err, ShouldBeNil)
+		scriptFile := filepath.Join(tmpDir, "myrsync")
+		tmpFile := filepath.Join(tmpDir, "log_file")
+
+		c := rsyncConfig{
+			name:              "tuna",
+			upstreamURL:       "rsync://rsync.tuna.moe/tuna/",
+			rsyncCmd:          scriptFile,
+			workingDir:        tmpDir,
+			overriddenOptions: []string{"-aHvh", "--no-o", "--no-g", "--stats"},
+			extraOptions:      []string{"--delete-excluded"},
+			logDir:            tmpDir,
+			logFile:           tmpFile,
+			useIPv6:           true,
+			interval:          600 * time.Second,
+		}
+
+		provider, err := newRsyncProvider(c)
+		So(err, ShouldBeNil)
+
+		So(provider.Name(), ShouldEqual, c.name)
+		So(provider.WorkingDir(), ShouldEqual, c.workingDir)
+		So(provider.LogDir(), ShouldEqual, c.logDir)
+		So(provider.LogFile(), ShouldEqual, c.logFile)
+		So(provider.Interval(), ShouldEqual, c.interval)
+
+		Convey("Let's try a run", func() {
+			scriptContent := `#!/bin/bash
+echo "syncing to $(pwd)"
+echo $@
+sleep 1
+echo "Done"
+exit 0
+			`
+			err = ioutil.WriteFile(scriptFile, []byte(scriptContent), 0755)
+			So(err, ShouldBeNil)
+
+			targetDir, _ := filepath.EvalSymlinks(provider.WorkingDir())
+			expectedOutput := fmt.Sprintf(
+				"syncing to %s\n"+
+					"-aHvh --no-o --no-g --stats -6 --delete-excluded %s %s\n"+
+					"Done\n",
+				targetDir,
+				provider.upstreamURL,
+				provider.WorkingDir(),
+			)
+
+			err = provider.Run()
+			So(err, ShouldBeNil)
+			loggedContent, err := ioutil.ReadFile(provider.LogFile())
+			So(err, ShouldBeNil)
+			So(string(loggedContent), ShouldEqual, expectedOutput)
+			// fmt.Println(string(loggedContent))
+		})
+
+	})
+}
+
 func TestCmdProvider(t *testing.T) {
 	Convey("Command Provider should work", t, func(ctx C) {
 		tmpDir, err := ioutil.TempDir("", "tunasync")
