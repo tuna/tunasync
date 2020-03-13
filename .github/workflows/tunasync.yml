@@ -36,7 +36,8 @@ jobs:
 
     - name: Setup test dependencies
       run: |
-        sudo apt-get install cgroup-bin docker.io
+        sudo apt update
+        sudo apt install -y cgroup-bin docker.io
         lssubsys -am
         sudo cgcreate -a $USER -t $USER -g cpu:tunasync
         sudo cgcreate -a $USER -t $USER -g memory:tunasync
