@@ -1,17 +1,10 @@
 package worker
 
 import (
-	"fmt"
-	"io/ioutil"
-	"os"
-	"path/filepath"
-	"testing"
-	"time"
-
-	"github.com/codeskyblue/go-sh"
 	. "github.com/smartystreets/goconvey/convey"
 )
 
+/*
 func getDockerByName(name string) (string, error) {
 	// docker ps -f 'name=$name' --format '{{.Names}}'
 	out, err := sh.Command(
@@ -101,3 +94,4 @@ sleep 10
 		d.postExec()
 	})
 }
+*/
