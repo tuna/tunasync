@@ -137,6 +137,7 @@ type mirrorConfig struct {
 	Username      string   `toml:"username"`
 	Password      string   `toml:"password"`
 	RsyncOptions  []string `toml:"rsync_options"`
+	RsyncOverride []string `toml:"rsync_override"`
 	Stage1Profile string   `toml:"stage1_profile"`
 
 	MemoryLimit string `toml:"memory_limit"`

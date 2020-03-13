@@ -127,20 +127,21 @@ func newMirrorProvider(mirror mirrorConfig, cfg *Config) mirrorProvider {
 		provider = p
 	case provRsync:
 		rc := rsyncConfig{
-			name:         mirror.Name,
-			upstreamURL:  mirror.Upstream,
-			rsyncCmd:     mirror.Command,
-			username:     mirror.Username,
-			password:     mirror.Password,
-			excludeFile:  mirror.ExcludeFile,
-			extraOptions: mirror.RsyncOptions,
-			workingDir:   mirrorDir,
-			logDir:       logDir,
-			logFile:      filepath.Join(logDir, "latest.log"),
-			useIPv6:      mirror.UseIPv6,
-			useIPv4:      mirror.UseIPv4,
-			interval:     time.Duration(mirror.Interval) * time.Minute,
-			retry:        mirror.Retry,
+			name:              mirror.Name,
+			upstreamURL:       mirror.Upstream,
+			rsyncCmd:          mirror.Command,
+			username:          mirror.Username,
+			password:          mirror.Password,
+			excludeFile:       mirror.ExcludeFile,
+			extraOptions:      mirror.RsyncOptions,
+			overriddenOptions: mirror.RsyncOverride,
+			workingDir:        mirrorDir,
+			logDir:            logDir,
+			logFile:           filepath.Join(logDir, "latest.log"),
+			useIPv6:           mirror.UseIPv6,
+			useIPv4:           mirror.UseIPv4,
+			interval:          time.Duration(mirror.Interval) * time.Minute,
+			retry:             mirror.Retry,
 		}
 		p, err := newRsyncProvider(rc)
 		if err != nil {

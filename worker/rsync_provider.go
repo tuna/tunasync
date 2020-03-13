@@ -14,6 +14,7 @@ type rsyncConfig struct {
 	rsyncCmd                                     string
 	upstreamURL, username, password, excludeFile string
 	extraOptions                                 []string
+	overriddenOptions                            []string
 	workingDir, logDir, logFile                  string
 	useIPv6, useIPv4                             bool
 	interval                                     time.Duration
@@ -55,6 +56,9 @@ func newRsyncProvider(c rsyncConfig) (*rsyncProvider, error) {
 		"--exclude", ".~tmp~/",
 		"--delete", "--delete-after", "--delay-updates",
 		"--safe-links", "--timeout=120", "--contimeout=120",
+	}
+	if overriddenOptions != nil {
+		options = overriddenOptions
 	}
 
 	if c.useIPv6 {
