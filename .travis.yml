@@ -1,8 +1,6 @@
-sudo: required
-
 language: go
 go:
-    - 1.11
+    - 1.13
 
 before_install:
     - sudo apt-get install cgroup-bin
@@ -36,7 +34,6 @@ deploy:
         - "build/tunasync-linux-bin.tar.gz"
     api_key:
         secure: ZOYL/CALrVJsZzbZqUMSI89Gw4zsBJH1StD/2yTyG45GfKgvtK4hG0S5cQM/L0wcikjEkgxSMsmr4ycq+OwbN++gc0umfoAQ/VSjzetiobAlT1E854aRKRjT82WxYdnPW2fsFjuEJTcyZmcbgJGTMi86MDt7w8tEjLomhd1+rUo=
-    skip_cleanup: true
     overwrite: true
     on:
         tags: true
