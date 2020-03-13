@@ -57,8 +57,8 @@ func newRsyncProvider(c rsyncConfig) (*rsyncProvider, error) {
 		"--delete", "--delete-after", "--delay-updates",
 		"--safe-links", "--timeout=120", "--contimeout=120",
 	}
-	if overriddenOptions != nil {
-		options = overriddenOptions
+	if c.overriddenOptions != nil {
+		options = c.overriddenOptions
 	}
 
 	if c.useIPv6 {
