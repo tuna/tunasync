@@ -1,8 +1,8 @@
 tunasync
 ========
 
-[![Build Status](https://travis-ci.org/tuna/tunasync.svg?branch=dev)](https://travis-ci.org/tuna/tunasync)
-[![Coverage Status](https://coveralls.io/repos/github/tuna/tunasync/badge.svg?branch=dev)](https://coveralls.io/github/tuna/tunasync?branch=dev)
+![Build Status](https://github.com/tuna/tunasync/workflows/tunasync/badge.svg)
+[![Coverage Status](https://coveralls.io/repos/github/tuna/tunasync/badge.svg?branch=master)](https://coveralls.io/github/tuna/tunasync?branch=master)
 [![Commitizen friendly](https://img.shields.io/badge/commitizen-friendly-brightgreen.svg)](http://commitizen.github.io/cz-cli/)
 ![GPLv3](https://img.shields.io/badge/license-GPLv3-blue.svg)
 
@@ -53,14 +53,10 @@ PreSyncing                           Syncing                               Succe
 
 ## Building
 
-Setup GOPATH like [this](https://golang.org/cmd/go/#hdr-GOPATH_environment_variable).
-
-Then:
+Go version: 1.13
 
 ```
-go get -d github.com/tuna/tunasync/cmd/tunasync
-cd $GOPATH/src/github.com/tuna/tunasync
-make
+make all
 ```
 
-If you have multiple `GOPATH`s, replace the `$GOPATH` with your first one.
+Binaries in the `build/`.
