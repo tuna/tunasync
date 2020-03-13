@@ -11,7 +11,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/pkg/profile"
 	"gopkg.in/op/go-logging.v1"
-	"gopkg.in/urfave/cli.v1"
+	"github.com/urfave/cli"
 
 	tunasync "github.com/tuna/tunasync/internal"
 	"github.com/tuna/tunasync/manager"

@@ -9,7 +9,7 @@ import (
 
 	"github.com/BurntSushi/toml"
 	. "github.com/smartystreets/goconvey/convey"
-	"gopkg.in/urfave/cli.v1"
+	"github.com/urfave/cli"
 )
 
 func TestConfig(t *testing.T) {

@@ -11,8 +11,8 @@ import (
 	"time"
 
 	"github.com/BurntSushi/toml"
+	"github.com/urfave/cli"
 	"gopkg.in/op/go-logging.v1"
-	"gopkg.in/urfave/cli.v1"
 
 	tunasync "github.com/tuna/tunasync/internal"
 )
