@@ -106,6 +106,9 @@ func (p *twoStageRsyncProvider) Options(stage int) ([]string, error) {
 
 	} else if stage == 2 {
 		options = append(options, p.stage2Options...)
+		if p.extraOptions != nil {
+			options = append(options, p.extraOptions...)
+		}
 	} else {
 		return []string{}, fmt.Errorf("Invalid stage: %d", stage)
 	}
@@ -116,9 +119,6 @@ func (p *twoStageRsyncProvider) Options(stage int) ([]string, error) {
 
 	if p.excludeFile != "" {
 		options = append(options, "--exclude-from", p.excludeFile)
-	}
-	if p.extraOptions != nil {
-		options = append(options, p.extraOptions...)
 	}
 
 	return options, nil

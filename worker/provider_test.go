@@ -458,7 +458,7 @@ exit 0
 				fmt.Sprintf(
 					"-aHvh --no-o --no-g --stats --exclude .~tmp~/ --safe-links "+
 						"--timeout=120 --contimeout=120 --exclude dists/ -6 "+
-						"--exclude-from %s --delete-excluded --cache %s %s",
+						"--exclude-from %s %s %s",
 					provider.excludeFile, provider.upstreamURL, provider.WorkingDir(),
 				),
 				targetDir,
@@ -497,7 +497,7 @@ exit 0
 			expectedOutput := fmt.Sprintf(
 				"-aHvh --no-o --no-g --stats --exclude .~tmp~/ --safe-links "+
 					"--timeout=120 --contimeout=120 --exclude dists/ -6 "+
-					"--exclude-from %s --delete-excluded --cache %s %s\n",
+					"--exclude-from %s %s %s\n",
 				provider.excludeFile, provider.upstreamURL, provider.WorkingDir(),
 			)
 
