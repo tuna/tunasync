@@ -465,7 +465,7 @@ exit 0
 				fmt.Sprintf(
 					"-aHvh --no-o --no-g --stats --exclude .~tmp~/ "+
 						"--delete --delete-after --delay-updates --safe-links "+
-						"--timeout=120 --contimeout=120 -6 --exclude-from %s --delete-excluded --cache %s %s",
+						"--timeout=120 --contimeout=120 --delete-excluded --cache -6 --exclude-from %s %s %s",
 					provider.excludeFile, provider.upstreamURL, provider.WorkingDir(),
 				),
 			)
