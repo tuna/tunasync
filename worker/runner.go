@@ -104,7 +104,7 @@ func newCmdJob(provider mirrorProvider, cmdAndArgs []string, workingDir string, 
 }
 
 func (c *cmdJob) Start() error {
-	// logger.Debugf("Command start: %v", c.cmd.Args)
+	logger.Debugf("Command start: %v", c.cmd.Args)
 	c.finished = make(chan empty, 1)
 	return c.cmd.Start()
 }

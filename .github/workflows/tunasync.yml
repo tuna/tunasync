@@ -36,10 +36,9 @@ jobs:
 
     - name: Setup test dependencies
       run: |
-        sudo apt update
-        sudo apt install -y cgroup-bin
-        /usr/bin/docker pull alpine
-        /usr/bin/docker images
+        sudo apt-get update
+        sudo apt-get install -y cgroup-bin
+        docker pull alpine:3.8
         lssubsys -am
         sudo cgcreate -a $USER -t $USER -g cpu:tunasync
         sudo cgcreate -a $USER -t $USER -g memory:tunasync
