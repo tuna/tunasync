@@ -16,6 +16,7 @@ type twoStageRsyncConfig struct {
 	stage1Profile                                string
 	upstreamURL, username, password, excludeFile string
 	extraOptions                                 []string
+	rsyncEnv                                     map[string]string
 	workingDir, logDir, logFile                  string
 	useIPv6                                      bool
 	interval                                     time.Duration
@@ -69,6 +70,12 @@ func newTwoStageRsyncProvider(c twoStageRsyncConfig) (*twoStageRsyncProvider, er
 		},
 	}
 
+	if c.username != "" {
+		c.rsyncEnv["USER"] = c.username
+	}
+	if c.password != "" {
+		c.rsyncEnv["RSYNC_PASSWORD"] = c.password
+	}
 	if c.rsyncCmd == "" {
 		provider.rsyncCmd = "rsync"
 	}
@@ -132,14 +139,6 @@ func (p *twoStageRsyncProvider) Run() error {
 		return errors.New("provider is currently running")
 	}
 
-	env := map[string]string{}
-	if p.username != "" {
-		env["USER"] = p.username
-	}
-	if p.password != "" {
-		env["RSYNC_PASSWORD"] = p.password
-	}
-
 	p.dataSize = ""
 	stages := []int{1, 2}
 	for _, stage := range stages {
@@ -151,7 +150,7 @@ func (p *twoStageRsyncProvider) Run() error {
 		command = append(command, options...)
 		command = append(command, p.upstreamURL, p.WorkingDir())
 
-		p.cmd = newCmdJob(p, command, p.WorkingDir(), env)
+		p.cmd = newCmdJob(p, command, p.WorkingDir(), p.rsyncEnv)
 		if err := p.prepareLogFile(stage > 1); err != nil {
 			return err
 		}

@@ -15,6 +15,7 @@ type rsyncConfig struct {
 	upstreamURL, username, password, excludeFile string
 	extraOptions                                 []string
 	overriddenOptions                            []string
+	rsyncEnv                                     map[string]string
 	workingDir, logDir, logFile                  string
 	useIPv6, useIPv4                             bool
 	interval                                     time.Duration
@@ -49,6 +50,12 @@ func newRsyncProvider(c rsyncConfig) (*rsyncProvider, error) {
 
 	if c.rsyncCmd == "" {
 		provider.rsyncCmd = "rsync"
+	}
+	if c.username != "" {
+		c.rsyncEnv["USER"] = c.username
+	}
+	if c.password != "" {
+		c.rsyncEnv["RSYNC_PASSWORD"] = c.password
 	}
 
 	options := []string{
@@ -116,18 +123,11 @@ func (p *rsyncProvider) Start() error {
 		return errors.New("provider is currently running")
 	}
 
-	env := map[string]string{}
-	if p.username != "" {
-		env["USER"] = p.username
-	}
-	if p.password != "" {
-		env["RSYNC_PASSWORD"] = p.password
-	}
 	command := []string{p.rsyncCmd}
 	command = append(command, p.options...)
 	command = append(command, p.upstreamURL, p.WorkingDir())
 
-	p.cmd = newCmdJob(p, command, p.WorkingDir(), env)
+	p.cmd = newCmdJob(p, command, p.WorkingDir(), p.rsyncEnv)
 	if err := p.prepareLogFile(false); err != nil {
 		return err
 	}
