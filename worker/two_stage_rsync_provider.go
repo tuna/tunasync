@@ -71,13 +71,13 @@ func newTwoStageRsyncProvider(c twoStageRsyncConfig) (*twoStageRsyncProvider, er
 	}
 
 	if c.rsyncEnv == nil {
-		c.rsyncEnv = map[string]string{}
+		provider.rsyncEnv = map[string]string{}
 	}
 	if c.username != "" {
-		c.rsyncEnv["USER"] = c.username
+		provider.rsyncEnv["USER"] = c.username
 	}
 	if c.password != "" {
-		c.rsyncEnv["RSYNC_PASSWORD"] = c.password
+		provider.rsyncEnv["RSYNC_PASSWORD"] = c.password
 	}
 	if c.rsyncCmd == "" {
 		provider.rsyncCmd = "rsync"
