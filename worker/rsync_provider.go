@@ -65,7 +65,7 @@ func newRsyncProvider(c rsyncConfig) (*rsyncProvider, error) {
 		"-aHvh", "--no-o", "--no-g", "--stats",
 		"--exclude", ".~tmp~/",
 		"--delete", "--delete-after", "--delay-updates",
-		"--safe-links", "--timeout=120", "--contimeout=120",
+		"--safe-links", "--timeout=120",
 	}
 	if c.overriddenOptions != nil {
 		options = c.overriddenOptions

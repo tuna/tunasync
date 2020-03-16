@@ -90,7 +90,7 @@ exit 0
 				fmt.Sprintf(
 					"-aHvh --no-o --no-g --stats --exclude .~tmp~/ "+
 						"--delete --delete-after --delay-updates --safe-links "+
-						"--timeout=120 --contimeout=120 -6 %s %s",
+						"--timeout=120 -6 %s %s",
 					provider.upstreamURL, provider.WorkingDir(),
 				),
 			)
@@ -160,7 +160,7 @@ exit 0
 				fmt.Sprintf(
 					"%s %s %s -aHvh --no-o --no-g --stats --exclude .~tmp~/ "+
 						"--delete --delete-after --delay-updates --safe-links "+
-						"--timeout=120 --contimeout=120 -4 --delete-excluded %s %s",
+						"--timeout=120 -4 --delete-excluded %s %s",
 					provider.username, provider.password, proxyAddr,
 					provider.upstreamURL, provider.WorkingDir(),
 				),
@@ -460,7 +460,7 @@ exit 0
 				targetDir,
 				fmt.Sprintf(
 					"-aHvh --no-o --no-g --stats --exclude .~tmp~/ --safe-links "+
-						"--timeout=120 --contimeout=120 --exclude dists/ -6 "+
+						"--timeout=120 --exclude dists/ -6 "+
 						"--exclude-from %s %s %s",
 					provider.excludeFile, provider.upstreamURL, provider.WorkingDir(),
 				),
@@ -468,7 +468,7 @@ exit 0
 				fmt.Sprintf(
 					"-aHvh --no-o --no-g --stats --exclude .~tmp~/ "+
 						"--delete --delete-after --delay-updates --safe-links "+
-						"--timeout=120 --contimeout=120 --delete-excluded --cache -6 --exclude-from %s %s %s",
+						"--timeout=120 --delete-excluded --cache -6 --exclude-from %s %s %s",
 					provider.excludeFile, provider.upstreamURL, provider.WorkingDir(),
 				),
 			)
@@ -499,7 +499,7 @@ exit 0
 
 			expectedOutput := fmt.Sprintf(
 				"-aHvh --no-o --no-g --stats --exclude .~tmp~/ --safe-links "+
-					"--timeout=120 --contimeout=120 --exclude dists/ -6 "+
+					"--timeout=120 --exclude dists/ -6 "+
 					"--exclude-from %s %s %s\n",
 				provider.excludeFile, provider.upstreamURL, provider.WorkingDir(),
 			)

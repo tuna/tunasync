@@ -60,13 +60,13 @@ func newTwoStageRsyncProvider(c twoStageRsyncConfig) (*twoStageRsyncProvider, er
 		stage1Options: []string{
 			"-aHvh", "--no-o", "--no-g", "--stats",
 			"--exclude", ".~tmp~/",
-			"--safe-links", "--timeout=120", "--contimeout=120",
+			"--safe-links", "--timeout=120",
 		},
 		stage2Options: []string{
 			"-aHvh", "--no-o", "--no-g", "--stats",
 			"--exclude", ".~tmp~/",
 			"--delete", "--delete-after", "--delay-updates",
-			"--safe-links", "--timeout=120", "--contimeout=120",
+			"--safe-links", "--timeout=120",
 		},
 	}
 
