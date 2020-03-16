@@ -114,6 +114,7 @@ func TestRsyncProviderWithAuthentication(t *testing.T) {
 		So(err, ShouldBeNil)
 		scriptFile := filepath.Join(tmpDir, "myrsync")
 		tmpFile := filepath.Join(tmpDir, "log_file")
+		proxyAddr := "127.0.0.1:1233"
 
 		c := rsyncConfig{
 			name:         "tuna",
@@ -123,6 +124,7 @@ func TestRsyncProviderWithAuthentication(t *testing.T) {
 			password:     "tunasyncpassword",
 			workingDir:   tmpDir,
 			extraOptions: []string{"--delete-excluded"},
+			rsyncEnv:     map[string]string{"RSYNC_PROXY": proxyAddr},
 			logDir:       tmpDir,
 			logFile:      tmpFile,
 			useIPv4:      true,
@@ -141,7 +143,7 @@ func TestRsyncProviderWithAuthentication(t *testing.T) {
 		Convey("Let's try a run", func() {
 			scriptContent := `#!/bin/bash
 echo "syncing to $(pwd)"
-echo $USER $RSYNC_PASSWORD $@
+echo $USER $RSYNC_PASSWORD $RSYNC_PROXY $@
 sleep 1
 echo "Done"
 exit 0
@@ -156,10 +158,11 @@ exit 0
 					"Done\n",
 				targetDir,
 				fmt.Sprintf(
-					"%s %s -aHvh --no-o --no-g --stats --exclude .~tmp~/ "+
+					"%s %s %s -aHvh --no-o --no-g --stats --exclude .~tmp~/ "+
 						"--delete --delete-after --delay-updates --safe-links "+
 						"--timeout=120 --contimeout=120 -4 --delete-excluded %s %s",
-					provider.username, provider.password, provider.upstreamURL, provider.WorkingDir(),
+					provider.username, provider.password, proxyAddr,
+					provider.upstreamURL, provider.WorkingDir(),
 				),
 			)
 
