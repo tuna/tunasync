@@ -70,6 +70,9 @@ func newTwoStageRsyncProvider(c twoStageRsyncConfig) (*twoStageRsyncProvider, er
 		},
 	}
 
+	if c.rsyncEnv == nil {
+		c.rsyncEnv = map[string]string{}
+	}
 	if c.username != "" {
 		c.rsyncEnv["USER"] = c.username
 	}

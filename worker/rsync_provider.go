@@ -51,6 +51,9 @@ func newRsyncProvider(c rsyncConfig) (*rsyncProvider, error) {
 	if c.rsyncCmd == "" {
 		provider.rsyncCmd = "rsync"
 	}
+	if c.rsyncEnv == nil {
+		c.rsyncEnv = map[string]string{}
+	}
 	if c.username != "" {
 		c.rsyncEnv["USER"] = c.username
 	}
