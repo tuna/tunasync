@@ -28,6 +28,11 @@ jobs:
         make tunasync
         make tunasynctl
 
+    - name: Keep artifacts
+      uses: actions/upload-artifact@v1
+      with:
+        name: tunasync-bin
+        path: build/
 
   test:
     name: Test
