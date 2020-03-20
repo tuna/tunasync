@@ -3,7 +3,6 @@ package worker
 import (
 	"errors"
 	"fmt"
-	"io/ioutil"
 	"strings"
 	"time"
 
@@ -171,8 +170,6 @@ func (p *twoStageRsyncProvider) Run() error {
 			return err
 		}
 	}
-	if logContent, err := ioutil.ReadFile(p.LogFile()); err == nil {
-		p.dataSize = internal.ExtractSizeFromRsyncLog(logContent)
-	}
+	p.dataSize = internal.ExtractSizeFromRsyncLog(p.LogFile())
 	return nil
 }

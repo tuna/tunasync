@@ -113,6 +113,7 @@ func newMirrorProvider(mirror mirrorConfig, cfg *Config) mirrorProvider {
 			command:     mirror.Command,
 			workingDir:  mirrorDir,
 			failOnMatch: mirror.FailOnMatch,
+			sizePattern: mirror.SizePattern,
 			logDir:      logDir,
 			logFile:     filepath.Join(logDir, "latest.log"),
 			interval:    time.Duration(mirror.Interval) * time.Minute,

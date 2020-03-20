@@ -3,11 +3,11 @@ package worker
 import (
 	"errors"
 	"fmt"
-	"io/ioutil"
 	"regexp"
 	"time"
 
 	"github.com/anmitsu/go-shlex"
+	"github.com/tuna/tunasync/internal"
 )
 
 type cmdConfig struct {
@@ -18,13 +18,16 @@ type cmdConfig struct {
 	retry                       int
 	env                         map[string]string
 	failOnMatch                 string
+	sizePattern                 string
 }
 
 type cmdProvider struct {
 	baseProvider
 	cmdConfig
 	command     []string
+	dataSize    string
 	failOnMatch *regexp.Regexp
+	sizePattern *regexp.Regexp
 }
 
 func newCmdProvider(c cmdConfig) (*cmdProvider, error) {
@@ -59,6 +62,14 @@ func newCmdProvider(c cmdConfig) (*cmdProvider, error) {
 		}
 		provider.failOnMatch = failOnMatch
 	}
+	if len(c.sizePattern) > 0 {
+		var err error
+		sizePattern, err := regexp.Compile(c.sizePattern)
+		if err != nil {
+			return nil, errors.New("size-pattern regexp error: " + err.Error())
+		}
+		provider.sizePattern = sizePattern
+	}
 
 	return provider, nil
 }
@@ -71,7 +82,12 @@ func (p *cmdProvider) Upstream() string {
 	return p.upstreamURL
 }
 
+func (p *cmdProvider) DataSize() string {
+	return p.dataSize
+}
+
 func (p *cmdProvider) Run() error {
+	p.dataSize = ""
 	if err := p.Start(); err != nil {
 		return err
 	}
@@ -79,16 +95,18 @@ func (p *cmdProvider) Run() error {
 		return err
 	}
 	if p.failOnMatch != nil {
-		if logContent, err := ioutil.ReadFile(p.LogFile()); err == nil {
-			matches := p.failOnMatch.FindAllSubmatch(logContent, -1)
-			if len(matches) != 0 {
-				logger.Debug("Fail-on-match: %r", matches)
-				return errors.New(
-					fmt.Sprintf("Fail-on-match regexp found %d matches", len(matches)))
-			}
-		} else {
+		matches, err := internal.FindAllSubmatchInFile(p.LogFile(), p.failOnMatch)
+		fmt.Printf("FindAllSubmatchInFile: %q\n", matches)
+		if err != nil {
 			return err
 		}
+		if len(matches) != 0 {
+			logger.Debug("Fail-on-match: %r", matches)
+			return fmt.Errorf("Fail-on-match regexp found %d matches", len(matches))
+		}
+	}
+	if p.sizePattern != nil {
+		p.dataSize = internal.ExtractSizeFromLog(p.LogFile(), p.sizePattern)
 	}
 	return nil
 }

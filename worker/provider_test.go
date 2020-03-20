@@ -5,6 +5,7 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	"strconv"
 	"testing"
 	"time"
 
@@ -365,7 +366,7 @@ sleep 5
 
 		})
 	})
-	Convey("Command Provider with fail-on-match regexp should work", t, func(ctx C) {
+	Convey("Command Provider with RegExprs should work", t, func(ctx C) {
 		tmpDir, err := ioutil.TempDir("", "tunasync")
 		defer os.RemoveAll(tmpDir)
 		So(err, ShouldBeNil)
@@ -376,14 +377,35 @@ sleep 5
 			upstreamURL: "http://mirrors.tuna.moe/",
 			command:     "uptime",
 			failOnMatch: "",
+			sizePattern: "",
 			workingDir:  tmpDir,
 			logDir:      tmpDir,
 			logFile:     tmpFile,
 			interval:    600 * time.Second,
 		}
 
-		Convey("when regexp matches", func() {
+		Convey("when fail-on-match regexp matches", func() {
 			c.failOnMatch = `[a-z]+`
+			provider, err := newCmdProvider(c)
+			So(err, ShouldBeNil)
+
+			err = provider.Run()
+			So(err, ShouldNotBeNil)
+			So(provider.DataSize(), ShouldBeEmpty)
+		})
+
+		Convey("when fail-on-match regexp does not match", func() {
+			c.failOnMatch = `load average_`
+			provider, err := newCmdProvider(c)
+			So(err, ShouldBeNil)
+
+			err = provider.Run()
+			So(err, ShouldBeNil)
+		})
+
+		Convey("when fail-on-match regexp meets /dev/null", func() {
+			c.failOnMatch = `load average_`
+			c.logFile = "/dev/null"
 			provider, err := newCmdProvider(c)
 			So(err, ShouldBeNil)
 
@@ -391,13 +413,37 @@ sleep 5
 			So(err, ShouldNotBeNil)
 		})
 
-		Convey("when regexp does not match", func() {
-			c.failOnMatch = `load average_`
+		Convey("when size-pattern regexp matches", func() {
+			c.sizePattern = `load average: ([\d\.]+)`
 			provider, err := newCmdProvider(c)
 			So(err, ShouldBeNil)
 
 			err = provider.Run()
 			So(err, ShouldBeNil)
+			So(provider.DataSize(), ShouldNotBeEmpty)
+			_, err = strconv.ParseFloat(provider.DataSize(), 32)
+			So(err, ShouldBeNil)
+		})
+
+		Convey("when size-pattern regexp does not match", func() {
+			c.sizePattern = `load ave: ([\d\.]+)`
+			provider, err := newCmdProvider(c)
+			So(err, ShouldBeNil)
+
+			err = provider.Run()
+			So(err, ShouldBeNil)
+			So(provider.DataSize(), ShouldBeEmpty)
+		})
+
+		Convey("when size-pattern regexp meets /dev/null", func() {
+			c.sizePattern = `load ave: ([\d\.]+)`
+			c.logFile = "/dev/null"
+			provider, err := newCmdProvider(c)
+			So(err, ShouldBeNil)
+
+			err = provider.Run()
+			So(err, ShouldNotBeNil)
+			So(provider.DataSize(), ShouldBeEmpty)
 		})
 	})
 }

@@ -2,7 +2,6 @@ package worker
 
 import (
 	"errors"
-	"io/ioutil"
 	"strings"
 	"time"
 
@@ -112,9 +111,7 @@ func (p *rsyncProvider) Run() error {
 	if err := p.Wait(); err != nil {
 		return err
 	}
-	if logContent, err := ioutil.ReadFile(p.LogFile()); err == nil {
-		p.dataSize = internal.ExtractSizeFromRsyncLog(logContent)
-	}
+	p.dataSize = internal.ExtractSizeFromRsyncLog(p.LogFile())
 	return nil
 }
 

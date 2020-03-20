@@ -131,6 +131,7 @@ type mirrorConfig struct {
 
 	Command       string   `toml:"command"`
 	FailOnMatch   string   `toml:"fail_on_match"`
+	SizePattern   string   `toml:"size_pattern"`
 	UseIPv6       bool     `toml:"use_ipv6"`
 	UseIPv4       bool     `toml:"use_ipv4"`
 	ExcludeFile   string   `toml:"exclude_file"`
