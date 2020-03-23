@@ -24,9 +24,12 @@ func InitLogger(verbose, debug, withSystemd bool) {
 
 	if debug {
 		logging.SetLevel(logging.DEBUG, "tunasync")
+		logging.SetLevel(logging.DEBUG, "tunasynctl-cmd")
 	} else if verbose {
 		logging.SetLevel(logging.INFO, "tunasync")
+		logging.SetLevel(logging.INFO, "tunasynctl-cmd")
 	} else {
 		logging.SetLevel(logging.NOTICE, "tunasync")
+		logging.SetLevel(logging.NOTICE, "tunasynctl-cmd")
 	}
 }
