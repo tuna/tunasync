@@ -96,7 +96,7 @@ func (p *cmdProvider) Run() error {
 	}
 	if p.failOnMatch != nil {
 		matches, err := internal.FindAllSubmatchInFile(p.LogFile(), p.failOnMatch)
-		fmt.Printf("FindAllSubmatchInFile: %q\n", matches)
+		logger.Infof("FindAllSubmatchInFile: %q\n", matches)
 		if err != nil {
 			return err
 		}
