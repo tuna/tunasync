@@ -135,7 +135,7 @@ func listWorkers(c *cli.Context) error {
 				err.Error()),
 			1)
 	}
-	fmt.Print(string(b))
+	fmt.Println(string(b))
 	return nil
 }
 
@@ -185,7 +185,7 @@ func listJobs(c *cli.Context) error {
 			fmt.Sprintf("Error printing out informations: %s", err.Error()),
 			1)
 	}
-	fmt.Print(string(b))
+	fmt.Println(string(b))
 	return nil
 }
 
