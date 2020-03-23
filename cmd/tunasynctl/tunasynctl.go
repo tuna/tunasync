@@ -55,6 +55,7 @@ type config struct {
 
 func loadConfig(cfgFile string, cfg *config) error {
 	if cfgFile != "" {
+		logger.Infof("Loading config: %s", cfgFile)
 		if _, err := toml.DecodeFile(cfgFile, cfg); err != nil {
 			logger.Errorf(err.Error())
 			return err
@@ -78,7 +79,6 @@ func initialize(c *cli.Context) error {
 	if _, err := os.Stat(systemCfgFile); err == nil {
 		loadConfig(systemCfgFile, cfg)
 	}
-	fmt.Println(os.ExpandEnv(userCfgFile))
 	if _, err := os.Stat(os.ExpandEnv(userCfgFile)); err == nil {
 		loadConfig(os.ExpandEnv(userCfgFile), cfg)
 	}
@@ -135,7 +135,7 @@ func listWorkers(c *cli.Context) error {
 				err.Error()),
 			1)
 	}
-	fmt.Print(string(b))
+	fmt.Println(string(b))
 	return nil
 }
 
@@ -185,7 +185,7 @@ func listJobs(c *cli.Context) error {
 			fmt.Sprintf("Error printing out informations: %s", err.Error()),
 			1)
 	}
-	fmt.Printf(string(b))
+	fmt.Println(string(b))
 	return nil
 }
 
