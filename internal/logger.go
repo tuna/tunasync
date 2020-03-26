@@ -20,7 +20,7 @@ func InitLogger(verbose, debug, withSystemd bool) {
 	}
 	format := logging.MustStringFormatter(fmtString)
 	logging.SetFormatter(format)
-	logging.SetBackend(logging.NewLogBackend(os.Stdout, "", 0))
+	logging.SetBackend(logging.NewLogBackend(os.Stderr, "", 0))
 
 	if debug {
 		logging.SetLevel(logging.DEBUG, "tunasync")
