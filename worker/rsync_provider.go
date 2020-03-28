@@ -105,6 +105,7 @@ func (p *rsyncProvider) DataSize() string {
 
 func (p *rsyncProvider) Run() error {
 	p.dataSize = ""
+	defer p.closeLogFile()
 	if err := p.Start(); err != nil {
 		return err
 	}

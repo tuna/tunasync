@@ -156,6 +156,7 @@ func (p *twoStageRsyncProvider) Run() error {
 		if err := p.prepareLogFile(stage > 1); err != nil {
 			return err
 		}
+		defer p.closeLogFile()
 
 		if err = p.cmd.Start(); err != nil {
 			return err
