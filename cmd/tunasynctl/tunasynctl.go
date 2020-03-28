@@ -32,7 +32,7 @@ const (
 	userCfgFile   = "$HOME/.config/tunasync/ctl.conf" // user-specific conf
 )
 
-var logger = logging.MustGetLogger("tunasynctl-cmd")
+var logger = logging.MustGetLogger("tunasynctl")
 
 var baseURL string
 var client *http.Client
@@ -67,7 +67,7 @@ func loadConfig(cfgFile string, cfg *config) error {
 
 func initialize(c *cli.Context) error {
 	// init logger
-	tunasync.InitLogger(c.Bool("verbose"), c.Bool("verbose"), false)
+	tunasync.InitLogger(c.Bool("verbose"), c.Bool("debug"), false)
 
 	cfg := new(config)
 
@@ -79,6 +79,7 @@ func initialize(c *cli.Context) error {
 	if _, err := os.Stat(systemCfgFile); err == nil {
 		loadConfig(systemCfgFile, cfg)
 	}
+	logger.Debug("user config file: %s", os.ExpandEnv(userCfgFile))
 	if _, err := os.Stat(os.ExpandEnv(userCfgFile)); err == nil {
 		loadConfig(os.ExpandEnv(userCfgFile), cfg)
 	}
@@ -461,6 +462,10 @@ func main() {
 		cli.BoolFlag{
 			Name:  "verbose, v",
 			Usage: "Enable verbosely logging",
+		},
+		cli.BoolFlag{
+			Name:  "debug",
+			Usage: "Enable debugging logging",
 		},
 	}
 	cmdFlags := []cli.Flag{
