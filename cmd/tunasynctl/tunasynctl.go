@@ -175,7 +175,14 @@ func listJobs(c *cli.Context) error {
 			}(workerID)
 		}
 		for range args {
-			jobs = append(jobs, <-ans...)
+			job := <-ans
+			if job == nil {
+				return cli.NewExitError(
+					fmt.Sprintf("Failed to correctly get information "+
+						"of jobs from at least one manager"),
+					1)
+			}
+			jobs = append(jobs, job...)
 		}
 		genericJobs = jobs
 	}
@@ -183,7 +190,7 @@ func listJobs(c *cli.Context) error {
 	b, err := json.MarshalIndent(genericJobs, "", "  ")
 	if err != nil {
 		return cli.NewExitError(
-			fmt.Sprintf("Error printing out informations: %s", err.Error()),
+			fmt.Sprintf("Error printing out information: %s", err.Error()),
 			1)
 	}
 	fmt.Println(string(b))
@@ -237,7 +244,7 @@ func updateMirrorSize(c *cli.Context) error {
 		)
 	}
 
-	logger.Infof("Successfully updated mirror size to %s", mirrorSize)
+	fmt.Printf("Successfully updated mirror size to %s\n", mirrorSize)
 	return nil
 }
 
@@ -280,9 +287,9 @@ func removeWorker(c *cli.Context) error {
 	res := map[string]string{}
 	err = json.NewDecoder(resp.Body).Decode(&res)
 	if res["message"] == "deleted" {
-		logger.Info("Successfully removed the worker")
+		fmt.Println("Successfully removed the worker")
 	} else {
-		logger.Info("Failed to remove the worker")
+		return cli.NewExitError("Failed to remove the worker", 1)
 	}
 	return nil
 }
@@ -315,7 +322,7 @@ func flushDisabledJobs(c *cli.Context) error {
 			1)
 	}
 
-	logger.Info("Successfully flushed disabled jobs")
+	fmt.Println("Successfully flushed disabled jobs")
 	return nil
 }
 
@@ -368,7 +375,7 @@ func cmdJob(cmd tunasync.CmdVerb) cli.ActionFunc {
 				" command: HTTP status code is not 200: %s", body),
 				1)
 		}
-		logger.Info("Succesfully send command")
+		fmt.Println("Successfully send the command")
 
 		return nil
 	}
@@ -406,7 +413,7 @@ func cmdWorker(cmd tunasync.CmdVerb) cli.ActionFunc {
 				" command: HTTP status code is not 200: %s", body),
 				1)
 		}
-		logger.Info("Succesfully send command")
+		fmt.Println("Successfully send the command")
 
 		return nil
 	}
