@@ -6,11 +6,36 @@ import (
 	"crypto/x509"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io/ioutil"
 	"net/http"
+	"os/exec"
 	"regexp"
 	"time"
 )
+
+var rsyncExitValues = map[int]string{
+	0:  "Success",
+	1:  "Syntax or usage error",
+	2:  "Protocol incompatibility",
+	3:  "Errors selecting input/output files, dirs",
+	4:  "Requested action not supported: an attempt was made to manipulate 64-bit files on a platform that cannot support them; or an option was specified that is supported by the client and not by the server.",
+	5:  "Error starting client-server protocol",
+	6:  "Daemon unable to append to log-file",
+	10: "Error in socket I/O",
+	11: "Error in file I/O",
+	12: "Error in rsync protocol data stream",
+	13: "Errors with program diagnostics",
+	14: "Error in IPC code",
+	20: "Received SIGUSR1 or SIGINT",
+	21: "Some error returned by waitpid()",
+	22: "Error allocating core memory buffers",
+	23: "Partial transfer due to error",
+	24: "Partial transfer due to vanished source files",
+	25: "The --max-delete limit stopped deletions",
+	30: "Timeout in data send/receive",
+	35: "Timeout waiting for daemon connection",
+}
 
 // GetTLSConfig generate tls.Config from CAFile
 func GetTLSConfig(CAFile string) (*tls.Config, error) {
@@ -114,4 +139,17 @@ func ExtractSizeFromRsyncLog(logFile string) string {
 	// (?m) flag enables multi-line mode
 	re := regexp.MustCompile(`(?m)^Total file size: ([0-9\.]+[KMGTP]?) bytes`)
 	return ExtractSizeFromLog(logFile, re)
+}
+
+// TranslateRsyncErrorCode translates the exit code of rsync to a message
+func TranslateRsyncErrorCode(cmdErr error) (exitCode int, msg string) {
+
+	if exiterr, ok := cmdErr.(*exec.ExitError); ok {
+		exitCode = exiterr.ExitCode()
+		strerr, valid := rsyncExitValues[exitCode]
+		if valid {
+			msg = fmt.Sprintf("rsync error: %s", strerr)
+		}
+	}
+	return
 }

@@ -168,6 +168,13 @@ func (p *twoStageRsyncProvider) Run() error {
 		err = p.Wait()
 		p.Lock()
 		if err != nil {
+			code, msg := internal.TranslateRsyncErrorCode(err)
+			if code != 0 {
+				logger.Debug("Rsync exitcode %d (%s)", code, msg)
+				if p.logFileFd != nil {
+					p.logFileFd.WriteString(msg + "\n")
+				}
+			}
 			return err
 		}
 	}
