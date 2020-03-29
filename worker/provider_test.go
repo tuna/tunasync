@@ -344,7 +344,7 @@ echo $AOSP_REPO_BIN
 
 		Convey("If a long job is killed", func(ctx C) {
 			scriptContent := `#!/bin/bash
-sleep 5
+sleep 10
 			`
 			err = ioutil.WriteFile(scriptFile, []byte(scriptContent), 0755)
 			So(err, ShouldBeNil)
@@ -556,7 +556,7 @@ exit 0
 		Convey("Try terminating", func(ctx C) {
 			scriptContent := `#!/bin/bash
 echo $@
-sleep 4
+sleep 10
 exit 0
 			`
 			err = ioutil.WriteFile(scriptFile, []byte(scriptContent), 0755)
@@ -580,7 +580,7 @@ exit 0
 
 			loggedContent, err := ioutil.ReadFile(provider.LogFile())
 			So(err, ShouldBeNil)
-			So(string(loggedContent), ShouldEqual, expectedOutput)
+			So(string(loggedContent), ShouldStartWith, expectedOutput)
 			// fmt.Println(string(loggedContent))
 		})
 	})
