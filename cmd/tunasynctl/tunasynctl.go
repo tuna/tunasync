@@ -41,7 +41,7 @@ func initializeWrapper(handler cli.ActionFunc) cli.ActionFunc {
 	return func(c *cli.Context) error {
 		err := initialize(c)
 		if err != nil {
-			return cli.NewExitError("", 1)
+			return cli.NewExitError(err.Error(), 1)
 		}
 		return handler(c)
 	}
@@ -57,7 +57,7 @@ func loadConfig(cfgFile string, cfg *config) error {
 	if cfgFile != "" {
 		logger.Infof("Loading config: %s", cfgFile)
 		if _, err := toml.DecodeFile(cfgFile, cfg); err != nil {
-			logger.Errorf(err.Error())
+			// logger.Errorf(err.Error())
 			return err
 		}
 	}
@@ -77,14 +77,23 @@ func initialize(c *cli.Context) error {
 
 	// find config file and load config
 	if _, err := os.Stat(systemCfgFile); err == nil {
-		loadConfig(systemCfgFile, cfg)
+		err = loadConfig(systemCfgFile, cfg)
+		if err != nil {
+			return err
+		}
 	}
 	logger.Debug("user config file: %s", os.ExpandEnv(userCfgFile))
 	if _, err := os.Stat(os.ExpandEnv(userCfgFile)); err == nil {
-		loadConfig(os.ExpandEnv(userCfgFile), cfg)
+		err = loadConfig(os.ExpandEnv(userCfgFile), cfg)
+		if err != nil {
+			return err
+		}
 	}
 	if c.String("config") != "" {
-		loadConfig(c.String("config"), cfg)
+		err := loadConfig(c.String("config"), cfg)
+		if err != nil {
+			return err
+		}
 	}
 
 	// override config using the command-line arguments
@@ -113,7 +122,7 @@ func initialize(c *cli.Context) error {
 	client, err = tunasync.CreateHTTPClient(cfg.CACert)
 	if err != nil {
 		err = fmt.Errorf("Error initializing HTTP client: %s", err.Error())
-		logger.Error(err.Error())
+		// logger.Error(err.Error())
 		return err
 
 	}
@@ -168,7 +177,7 @@ func listJobs(c *cli.Context) error {
 				_, err := tunasync.GetJSON(fmt.Sprintf("%s/workers/%s/jobs",
 					baseURL, workerID), &workerJobs, client)
 				if err != nil {
-					logger.Errorf("Filed to correctly get jobs"+
+					logger.Infof("Failed to correctly get jobs"+
 						" for worker %s: %s", workerID, err.Error())
 				}
 				ans <- workerJobs
