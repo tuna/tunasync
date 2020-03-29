@@ -106,6 +106,34 @@ exit 0
 		})
 
 	})
+	Convey("If the rsync program fails", t, func() {
+		tmpDir, err := ioutil.TempDir("", "tunasync")
+		defer os.RemoveAll(tmpDir)
+		So(err, ShouldBeNil)
+		tmpFile := filepath.Join(tmpDir, "log_file")
+
+		Convey("in the rsyncProvider", func() {
+
+			c := rsyncConfig{
+				name:         "tuna",
+				upstreamURL:  "rsync://rsync.tuna.moe/tuna/",
+				workingDir:   tmpDir,
+				logDir:       tmpDir,
+				logFile:      tmpFile,
+				extraOptions: []string{"--somethine-invalid"},
+				interval:     600 * time.Second,
+			}
+
+			provider, err := newRsyncProvider(c)
+			So(err, ShouldBeNil)
+
+			err = provider.Run()
+			So(err, ShouldNotBeNil)
+			loggedContent, err := ioutil.ReadFile(provider.LogFile())
+			So(err, ShouldBeNil)
+			So(string(loggedContent), ShouldContainSubstring, "Syntax or usage error")
+		})
+	})
 }
 
 func TestRsyncProviderWithAuthentication(t *testing.T) {
@@ -554,6 +582,36 @@ exit 0
 			So(err, ShouldBeNil)
 			So(string(loggedContent), ShouldEqual, expectedOutput)
 			// fmt.Println(string(loggedContent))
+		})
+	})
+
+	Convey("If the rsync program fails", t, func(ctx C) {
+		tmpDir, err := ioutil.TempDir("", "tunasync")
+		defer os.RemoveAll(tmpDir)
+		So(err, ShouldBeNil)
+		tmpFile := filepath.Join(tmpDir, "log_file")
+
+		Convey("in the twoStageRsyncProvider", func() {
+
+			c := twoStageRsyncConfig{
+				name:          "tuna-two-stage-rsync",
+				upstreamURL:   "rsync://0.0.0.1/",
+				stage1Profile: "debian",
+				workingDir:    tmpDir,
+				logDir:        tmpDir,
+				logFile:       tmpFile,
+				excludeFile:   tmpFile,
+			}
+
+			provider, err := newTwoStageRsyncProvider(c)
+			So(err, ShouldBeNil)
+
+			err = provider.Run()
+			So(err, ShouldNotBeNil)
+			loggedContent, err := ioutil.ReadFile(provider.LogFile())
+			So(err, ShouldBeNil)
+			So(string(loggedContent), ShouldContainSubstring, "Error in socket I/O")
+
 		})
 	})
 }

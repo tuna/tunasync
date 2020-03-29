@@ -32,7 +32,7 @@ const (
 	userCfgFile   = "$HOME/.config/tunasync/ctl.conf" // user-specific conf
 )
 
-var logger = logging.MustGetLogger("tunasynctl-cmd")
+var logger = logging.MustGetLogger("tunasynctl")
 
 var baseURL string
 var client *http.Client
@@ -67,7 +67,7 @@ func loadConfig(cfgFile string, cfg *config) error {
 
 func initialize(c *cli.Context) error {
 	// init logger
-	tunasync.InitLogger(c.Bool("verbose"), c.Bool("verbose"), false)
+	tunasync.InitLogger(c.Bool("verbose"), c.Bool("debug"), false)
 
 	cfg := new(config)
 
@@ -79,6 +79,7 @@ func initialize(c *cli.Context) error {
 	if _, err := os.Stat(systemCfgFile); err == nil {
 		loadConfig(systemCfgFile, cfg)
 	}
+	logger.Debug("user config file: %s", os.ExpandEnv(userCfgFile))
 	if _, err := os.Stat(os.ExpandEnv(userCfgFile)); err == nil {
 		loadConfig(os.ExpandEnv(userCfgFile), cfg)
 	}
@@ -174,7 +175,14 @@ func listJobs(c *cli.Context) error {
 			}(workerID)
 		}
 		for range args {
-			jobs = append(jobs, <-ans...)
+			job := <-ans
+			if job == nil {
+				return cli.NewExitError(
+					fmt.Sprintf("Failed to correctly get information "+
+						"of jobs from at least one manager"),
+					1)
+			}
+			jobs = append(jobs, job...)
 		}
 		genericJobs = jobs
 	}
@@ -182,7 +190,7 @@ func listJobs(c *cli.Context) error {
 	b, err := json.MarshalIndent(genericJobs, "", "  ")
 	if err != nil {
 		return cli.NewExitError(
-			fmt.Sprintf("Error printing out informations: %s", err.Error()),
+			fmt.Sprintf("Error printing out information: %s", err.Error()),
 			1)
 	}
 	fmt.Println(string(b))
@@ -236,7 +244,7 @@ func updateMirrorSize(c *cli.Context) error {
 		)
 	}
 
-	logger.Infof("Successfully updated mirror size to %s", mirrorSize)
+	fmt.Printf("Successfully updated mirror size to %s\n", mirrorSize)
 	return nil
 }
 
@@ -279,9 +287,9 @@ func removeWorker(c *cli.Context) error {
 	res := map[string]string{}
 	err = json.NewDecoder(resp.Body).Decode(&res)
 	if res["message"] == "deleted" {
-		logger.Info("Successfully removed the worker")
+		fmt.Println("Successfully removed the worker")
 	} else {
-		logger.Info("Failed to remove the worker")
+		return cli.NewExitError("Failed to remove the worker", 1)
 	}
 	return nil
 }
@@ -314,7 +322,7 @@ func flushDisabledJobs(c *cli.Context) error {
 			1)
 	}
 
-	logger.Info("Successfully flushed disabled jobs")
+	fmt.Println("Successfully flushed disabled jobs")
 	return nil
 }
 
@@ -367,7 +375,7 @@ func cmdJob(cmd tunasync.CmdVerb) cli.ActionFunc {
 				" command: HTTP status code is not 200: %s", body),
 				1)
 		}
-		logger.Info("Succesfully send command")
+		fmt.Println("Successfully send the command")
 
 		return nil
 	}
@@ -405,7 +413,7 @@ func cmdWorker(cmd tunasync.CmdVerb) cli.ActionFunc {
 				" command: HTTP status code is not 200: %s", body),
 				1)
 		}
-		logger.Info("Succesfully send command")
+		fmt.Println("Successfully send the command")
 
 		return nil
 	}
@@ -461,6 +469,10 @@ func main() {
 		cli.BoolFlag{
 			Name:  "verbose, v",
 			Usage: "Enable verbosely logging",
+		},
+		cli.BoolFlag{
+			Name:  "debug",
+			Usage: "Enable debugging logging",
 		},
 	}
 	cmdFlags := []cli.Flag{

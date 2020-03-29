@@ -19,6 +19,7 @@ type baseProvider struct {
 	isMaster bool
 
 	cmd       *cmdJob
+	logFileFd *os.File
 	isRunning atomic.Value
 
 	cgroup *cgroupHook
@@ -128,8 +129,17 @@ func (p *baseProvider) prepareLogFile(append bool) error {
 		logger.Errorf("Error opening logfile %s: %s", p.LogFile(), err.Error())
 		return err
 	}
+	p.logFileFd = logFile
 	p.cmd.SetLogFile(logFile)
 	return nil
+}
+
+func (p *baseProvider) closeLogFile() (err error) {
+	if p.logFileFd != nil {
+		err = p.logFileFd.Close()
+		p.logFileFd = nil
+	}
+	return
 }
 
 func (p *baseProvider) Run() error {

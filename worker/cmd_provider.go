@@ -88,6 +88,7 @@ func (p *cmdProvider) DataSize() string {
 
 func (p *cmdProvider) Run() error {
 	p.dataSize = ""
+	defer p.closeLogFile()
 	if err := p.Start(); err != nil {
 		return err
 	}

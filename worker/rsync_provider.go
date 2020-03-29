@@ -105,10 +105,18 @@ func (p *rsyncProvider) DataSize() string {
 
 func (p *rsyncProvider) Run() error {
 	p.dataSize = ""
+	defer p.closeLogFile()
 	if err := p.Start(); err != nil {
 		return err
 	}
 	if err := p.Wait(); err != nil {
+		code, msg := internal.TranslateRsyncErrorCode(err)
+		if code != 0 {
+			logger.Debug("Rsync exitcode %d (%s)", code, msg)
+			if p.logFileFd != nil {
+				p.logFileFd.WriteString(msg + "\n")
+			}
+		}
 		return err
 	}
 	p.dataSize = internal.ExtractSizeFromRsyncLog(p.LogFile())

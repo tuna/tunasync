@@ -156,6 +156,7 @@ func (p *twoStageRsyncProvider) Run() error {
 		if err := p.prepareLogFile(stage > 1); err != nil {
 			return err
 		}
+		defer p.closeLogFile()
 
 		if err = p.cmd.Start(); err != nil {
 			return err
@@ -167,6 +168,13 @@ func (p *twoStageRsyncProvider) Run() error {
 		err = p.Wait()
 		p.Lock()
 		if err != nil {
+			code, msg := internal.TranslateRsyncErrorCode(err)
+			if code != 0 {
+				logger.Debug("Rsync exitcode %d (%s)", code, msg)
+				if p.logFileFd != nil {
+					p.logFileFd.WriteString(msg + "\n")
+				}
+			}
 			return err
 		}
 	}
