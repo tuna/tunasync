@@ -9,6 +9,7 @@ require (
 	github.com/codeskyblue/go-sh v0.0.0-20190412065543-76bd3d59ff27
 	github.com/dennwc/btrfs v0.0.0-20190517175702-d917b30ff035
 	github.com/gin-gonic/gin v1.5.0
+	github.com/imdario/mergo v0.3.9
 	github.com/mattn/goveralls v0.0.5 // indirect
 	github.com/pkg/profile v1.4.0
 	github.com/ryszard/goskiplist v0.0.0-20150312221310-2dfbae5fcf46

@@ -83,9 +83,9 @@ exec_on_failure = [
 			tmpDir,
 		)
 
-		cfgBlob = cfgBlob + incSection
+		curCfgBlob := cfgBlob + incSection
 
-		err = ioutil.WriteFile(tmpfile.Name(), []byte(cfgBlob), 0644)
+		err = ioutil.WriteFile(tmpfile.Name(), []byte(curCfgBlob), 0644)
 		So(err, ShouldEqual, nil)
 		defer tmpfile.Close()
 
@@ -157,6 +157,102 @@ use_ipv6 = true
 		So(len(cfg.Mirrors), ShouldEqual, 6)
 	})
 
+	Convey("Everything should work on nested config file", t, func() {
+		tmpfile, err := ioutil.TempFile("", "tunasync")
+		So(err, ShouldEqual, nil)
+		defer os.Remove(tmpfile.Name())
+
+		tmpDir, err := ioutil.TempDir("", "tunasync")
+		So(err, ShouldBeNil)
+		defer os.RemoveAll(tmpDir)
+
+		incSection := fmt.Sprintf(
+			"\n[include]\n"+
+				"include_mirrors = \"%s/*.conf\"",
+			tmpDir,
+		)
+
+		curCfgBlob := cfgBlob + incSection
+
+		err = ioutil.WriteFile(tmpfile.Name(), []byte(curCfgBlob), 0644)
+		So(err, ShouldEqual, nil)
+		defer tmpfile.Close()
+
+		incBlob1 := `
+[[mirrors]]
+name = "ipv6s"
+use_ipv6 = true
+	[[mirrors.mirrors]]
+	name = "debians"
+	mirror_subdir = "debian"
+	provider = "two-stage-rsync"
+	stage1_profile = "debian"
+
+		[[mirrors.mirrors.mirrors]]
+		name = "debian-security"
+		upstream = "rsync://test.host/debian-security/"
+		[[mirrors.mirrors.mirrors]]
+		name = "ubuntu"
+		stage1_profile = "ubuntu"
+		upstream = "rsync://test.host2/ubuntu/"
+	[[mirrors.mirrors]]
+	name = "debian-cd"
+	provider = "rsync"
+	upstream = "rsync://test.host3/debian-cd/"
+		`
+		err = ioutil.WriteFile(filepath.Join(tmpDir, "nest.conf"), []byte(incBlob1), 0644)
+		So(err, ShouldEqual, nil)
+
+		cfg, err := LoadConfig(tmpfile.Name())
+		So(err, ShouldBeNil)
+		So(cfg.Global.Name, ShouldEqual, "test_worker")
+		So(cfg.Global.Interval, ShouldEqual, 240)
+		So(cfg.Global.Retry, ShouldEqual, 3)
+		So(cfg.Global.MirrorDir, ShouldEqual, "/data/mirrors")
+
+		So(cfg.Manager.APIBase, ShouldEqual, "https://127.0.0.1:5000")
+		So(cfg.Server.Hostname, ShouldEqual, "worker1.example.com")
+
+		m := cfg.Mirrors[0]
+		So(m.Name, ShouldEqual, "AOSP")
+		So(m.MirrorDir, ShouldEqual, "/data/git/AOSP")
+		So(m.Provider, ShouldEqual, provCommand)
+		So(m.Interval, ShouldEqual, 720)
+		So(m.Retry, ShouldEqual, 2)
+		So(m.Env["REPO"], ShouldEqual, "/usr/local/bin/aosp-repo")
+
+		m = cfg.Mirrors[1]
+		So(m.Name, ShouldEqual, "debian")
+		So(m.MirrorDir, ShouldEqual, "")
+		So(m.Provider, ShouldEqual, provTwoStageRsync)
+
+		m = cfg.Mirrors[2]
+		So(m.Name, ShouldEqual, "fedora")
+		So(m.MirrorDir, ShouldEqual, "")
+		So(m.Provider, ShouldEqual, provRsync)
+		So(m.ExcludeFile, ShouldEqual, "/etc/tunasync.d/fedora-exclude.txt")
+
+		m = cfg.Mirrors[3]
+		So(m.Name, ShouldEqual, "debian-security")
+		So(m.MirrorDir, ShouldEqual, "")
+		So(m.Provider, ShouldEqual, provTwoStageRsync)
+		So(m.UseIPv6, ShouldEqual, true)
+		So(m.Stage1Profile, ShouldEqual, "debian")
+
+		m = cfg.Mirrors[4]
+		So(m.Name, ShouldEqual, "ubuntu")
+		So(m.MirrorDir, ShouldEqual, "")
+		So(m.Provider, ShouldEqual, provTwoStageRsync)
+		So(m.UseIPv6, ShouldEqual, true)
+		So(m.Stage1Profile, ShouldEqual, "ubuntu")
+
+		m = cfg.Mirrors[5]
+		So(m.Name, ShouldEqual, "debian-cd")
+		So(m.UseIPv6, ShouldEqual, true)
+		So(m.Provider, ShouldEqual, provRsync)
+
+		So(len(cfg.Mirrors), ShouldEqual, 6)
+	})
 	Convey("Providers can be inited from a valid config file", t, func() {
 		tmpfile, err := ioutil.TempFile("", "tunasync")
 		So(err, ShouldEqual, nil)
@@ -206,5 +302,91 @@ use_ipv6 = true
 		So(rp.WorkingDir(), ShouldEqual, "/data/mirrors/fedora")
 		So(rp.excludeFile, ShouldEqual, "/etc/tunasync.d/fedora-exclude.txt")
 
+	})
+
+	Convey("MirrorSubdir should work", t, func() {
+		tmpfile, err := ioutil.TempFile("", "tunasync")
+		So(err, ShouldEqual, nil)
+		defer os.Remove(tmpfile.Name())
+
+		cfgBlob1 := `
+[global]
+name = "test_worker"
+log_dir = "/var/log/tunasync/{{.Name}}"
+mirror_dir = "/data/mirrors"
+concurrent = 10
+interval = 240
+retry = 3
+
+[manager]
+api_base = "https://127.0.0.1:5000"
+token = "some_token"
+
+[server]
+hostname = "worker1.example.com"
+listen_addr = "127.0.0.1"
+listen_port = 6000
+ssl_cert = "/etc/tunasync.d/worker1.cert"
+ssl_key = "/etc/tunasync.d/worker1.key"
+
+[[mirrors]]
+name = "ipv6s"
+use_ipv6 = true
+	[[mirrors.mirrors]]
+	name = "debians"
+	mirror_subdir = "debian"
+	provider = "two-stage-rsync"
+	stage1_profile = "debian"
+
+		[[mirrors.mirrors.mirrors]]
+		name = "debian-security"
+		upstream = "rsync://test.host/debian-security/"
+		[[mirrors.mirrors.mirrors]]
+		name = "ubuntu"
+		stage1_profile = "ubuntu"
+		upstream = "rsync://test.host2/ubuntu/"
+	[[mirrors.mirrors]]
+	name = "debian-cd"
+	provider = "rsync"
+	upstream = "rsync://test.host3/debian-cd/"
+		`
+		err = ioutil.WriteFile(tmpfile.Name(), []byte(cfgBlob1), 0644)
+		So(err, ShouldEqual, nil)
+		defer tmpfile.Close()
+
+		cfg, err := LoadConfig(tmpfile.Name())
+		So(err, ShouldBeNil)
+
+		providers := map[string]mirrorProvider{}
+		for _, m := range cfg.Mirrors {
+			p := newMirrorProvider(m, cfg)
+			providers[p.Name()] = p
+		}
+
+		p := providers["debian-security"]
+		So(p.Name(), ShouldEqual, "debian-security")
+		So(p.LogDir(), ShouldEqual, "/var/log/tunasync/debian-security")
+		So(p.LogFile(), ShouldEqual, "/var/log/tunasync/debian-security/latest.log")
+		r2p, ok := p.(*twoStageRsyncProvider)
+		So(ok, ShouldBeTrue)
+		So(r2p.stage1Profile, ShouldEqual, "debian")
+		So(r2p.WorkingDir(), ShouldEqual, "/data/mirrors/debian/debian-security")
+
+		p = providers["ubuntu"]
+		So(p.Name(), ShouldEqual, "ubuntu")
+		So(p.LogDir(), ShouldEqual, "/var/log/tunasync/ubuntu")
+		So(p.LogFile(), ShouldEqual, "/var/log/tunasync/ubuntu/latest.log")
+		r2p, ok = p.(*twoStageRsyncProvider)
+		So(ok, ShouldBeTrue)
+		So(r2p.stage1Profile, ShouldEqual, "ubuntu")
+		So(r2p.WorkingDir(), ShouldEqual, "/data/mirrors/debian/ubuntu")
+
+		p = providers["debian-cd"]
+		So(p.Name(), ShouldEqual, "debian-cd")
+		So(p.LogDir(), ShouldEqual, "/var/log/tunasync/debian-cd")
+		So(p.LogFile(), ShouldEqual, "/var/log/tunasync/debian-cd/latest.log")
+		rp, ok := p.(*rsyncProvider)
+		So(ok, ShouldBeTrue)
+		So(rp.WorkingDir(), ShouldEqual, "/data/mirrors/debian-cd")
 	})
 }

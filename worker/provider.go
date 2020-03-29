@@ -82,7 +82,7 @@ func newMirrorProvider(mirror mirrorConfig, cfg *Config) mirrorProvider {
 	}
 	if mirrorDir == "" {
 		mirrorDir = filepath.Join(
-			cfg.Global.MirrorDir, mirror.Name,
+			cfg.Global.MirrorDir, mirror.MirrorSubDir, mirror.Name,
 		)
 	}
 	if mirror.Interval == 0 {

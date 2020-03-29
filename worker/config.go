@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 
 	"github.com/BurntSushi/toml"
+	"github.com/imdario/mergo"
 )
 
 type providerEnum uint8
@@ -41,7 +42,8 @@ type Config struct {
 	BtrfsSnapshot btrfsSnapshotConfig `toml:"btrfs_snapshot"`
 	Docker        dockerConfig        `toml:"docker"`
 	Include       includeConfig       `toml:"include"`
-	Mirrors       []mirrorConfig      `toml:"mirrors"`
+	MirrorsConf   []mirrorConfig      `toml:"mirrors"`
+	Mirrors       []mirrorConfig
 }
 
 type globalConfig struct {
@@ -111,15 +113,16 @@ type includedMirrorConfig struct {
 }
 
 type mirrorConfig struct {
-	Name      string            `toml:"name"`
-	Provider  providerEnum      `toml:"provider"`
-	Upstream  string            `toml:"upstream"`
-	Interval  int               `toml:"interval"`
-	Retry     int               `toml:"retry"`
-	MirrorDir string            `toml:"mirror_dir"`
-	LogDir    string            `toml:"log_dir"`
-	Env       map[string]string `toml:"env"`
-	Role      string            `toml:"role"`
+	Name         string            `toml:"name"`
+	Provider     providerEnum      `toml:"provider"`
+	Upstream     string            `toml:"upstream"`
+	Interval     int               `toml:"interval"`
+	Retry        int               `toml:"retry"`
+	MirrorDir    string            `toml:"mirror_dir"`
+	MirrorSubDir string            `toml:"mirror_subdir"`
+	LogDir       string            `toml:"log_dir"`
+	Env          map[string]string `toml:"env"`
+	Role         string            `toml:"role"`
 
 	// These two options over-write the global options
 	ExecOnSuccess []string `toml:"exec_on_success"`
@@ -148,6 +151,8 @@ type mirrorConfig struct {
 	DockerOptions []string `toml:"docker_options"`
 
 	SnapshotPath string `toml:"snapshot_path"`
+
+	ChildMirrors []mirrorConfig `toml:"mirrors"`
 }
 
 // LoadConfig loads configuration
@@ -174,9 +179,36 @@ func LoadConfig(cfgFile string) (*Config, error) {
 				logger.Errorf(err.Error())
 				return nil, err
 			}
-			cfg.Mirrors = append(cfg.Mirrors, incMirCfg.Mirrors...)
+			cfg.MirrorsConf = append(cfg.MirrorsConf, incMirCfg.Mirrors...)
+		}
+	}
+
+	for _, m := range cfg.MirrorsConf {
+		if err := recursiveMirrors(cfg, nil, m); err != nil {
+			return nil, err
 		}
 	}
 
 	return cfg, nil
+}
+
+func recursiveMirrors(cfg *Config, parent *mirrorConfig, mirror mirrorConfig) error {
+	var curMir mirrorConfig
+	if parent != nil {
+		curMir = *parent
+	}
+	curMir.ChildMirrors = nil
+	if err := mergo.Merge(&curMir, mirror, mergo.WithOverride); err != nil {
+		return err
+	}
+	if mirror.ChildMirrors == nil {
+		cfg.Mirrors = append(cfg.Mirrors, curMir)
+	} else {
+		for _, m := range mirror.ChildMirrors {
+			if err := recursiveMirrors(cfg, &curMir, m); err != nil {
+				return err
+			}
+		}
+	}
+	return nil
 }
