@@ -8,16 +8,17 @@ import (
 // A MirrorStatus represents a msg when
 // a worker has done syncing
 type MirrorStatus struct {
-	Name       string     `json:"name"`
-	Worker     string     `json:"worker"`
-	IsMaster   bool       `json:"is_master"`
-	Status     SyncStatus `json:"status"`
-	LastUpdate time.Time  `json:"last_update"`
-	LastEnded  time.Time  `json:"last_ended"`
-	Scheduled  time.Time  `json:"next_schedule"`
-	Upstream   string     `json:"upstream"`
-	Size       string     `json:"size"`
-	ErrorMsg   string     `json:"error_msg"`
+	Name        string     `json:"name"`
+	Worker      string     `json:"worker"`
+	IsMaster    bool       `json:"is_master"`
+	Status      SyncStatus `json:"status"`
+	LastUpdate  time.Time  `json:"last_update"`
+	LastStarted time.Time  `json:"last_started"`
+	LastEnded   time.Time  `json:"last_ended"`
+	Scheduled   time.Time  `json:"next_schedule"`
+	Upstream    string     `json:"upstream"`
+	Size        string     `json:"size"`
+	ErrorMsg    string     `json:"error_msg"`
 }
 
 // A WorkerStatus is the information struct that describe

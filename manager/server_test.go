@@ -151,6 +151,7 @@ func TestHTTPServer(t *testing.T) {
 					So(m.Size, ShouldEqual, status.Size)
 					So(m.IsMaster, ShouldEqual, status.IsMaster)
 					So(time.Now().Sub(m.LastUpdate), ShouldBeLessThan, 1*time.Second)
+					So(time.Now().Sub(m.LastStarted), ShouldBeLessThan, 2*time.Minute)
 					So(time.Now().Sub(m.LastEnded), ShouldBeLessThan, 1*time.Second)
 
 				})
@@ -168,6 +169,7 @@ func TestHTTPServer(t *testing.T) {
 					So(m.Size, ShouldEqual, status.Size)
 					So(m.IsMaster, ShouldEqual, status.IsMaster)
 					So(time.Now().Sub(m.LastUpdate.Time), ShouldBeLessThan, 1*time.Second)
+					So(time.Now().Sub(m.LastStarted.Time), ShouldBeLessThan, 2*time.Minute)
 					So(time.Now().Sub(m.LastEnded.Time), ShouldBeLessThan, 1*time.Second)
 
 				})
@@ -198,6 +200,7 @@ func TestHTTPServer(t *testing.T) {
 						So(m.Size, ShouldEqual, "5GB")
 						So(m.IsMaster, ShouldEqual, status.IsMaster)
 						So(time.Now().Sub(m.LastUpdate), ShouldBeLessThan, 1*time.Second)
+						So(time.Now().Sub(m.LastStarted), ShouldBeLessThan, 2*time.Minute)
 						So(time.Now().Sub(m.LastEnded), ShouldBeLessThan, 1*time.Second)
 					})
 				})
@@ -251,6 +254,7 @@ func TestHTTPServer(t *testing.T) {
 					So(m.Size, ShouldEqual, status.Size)
 					So(m.IsMaster, ShouldEqual, status.IsMaster)
 					So(time.Now().Sub(m.LastUpdate), ShouldBeGreaterThan, 3*time.Second)
+					So(time.Now().Sub(m.LastStarted), ShouldBeGreaterThan, 1*time.Minute)
 					So(time.Now().Sub(m.LastEnded), ShouldBeLessThan, 1*time.Second)
 				})
 			})
@@ -258,14 +262,15 @@ func TestHTTPServer(t *testing.T) {
 			Convey("update mirror status of an inexisted worker", func(ctx C) {
 				invalidWorker := "test_worker2"
 				status := MirrorStatus{
-					Name:       "arch-sync2",
-					Worker:     invalidWorker,
-					IsMaster:   true,
-					Status:     Success,
-					LastUpdate: time.Now(),
-					LastEnded:  time.Now(),
-					Upstream:   "mirrors.tuna.tsinghua.edu.cn",
-					Size:       "4GB",
+					Name:        "arch-sync2",
+					Worker:      invalidWorker,
+					IsMaster:    true,
+					Status:      Success,
+					LastUpdate:  time.Now(),
+					LastStarted: time.Now(),
+					LastEnded:   time.Now(),
+					Upstream:    "mirrors.tuna.tsinghua.edu.cn",
+					Size:        "4GB",
 				}
 				resp, err := PostJSON(fmt.Sprintf("%s/workers/%s/jobs/%s",
 					baseURL, status.Worker, status.Name), status, nil)
