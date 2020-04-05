@@ -151,8 +151,38 @@ func TestHTTPServer(t *testing.T) {
 					So(m.Size, ShouldEqual, status.Size)
 					So(m.IsMaster, ShouldEqual, status.IsMaster)
 					So(time.Now().Sub(m.LastUpdate), ShouldBeLessThan, 1*time.Second)
-					So(time.Now().Sub(m.LastStarted), ShouldBeLessThan, 2*time.Minute)
+					So(m.LastStarted.IsZero(), ShouldBeTrue) // hasn't been initialized yet
 					So(time.Now().Sub(m.LastEnded), ShouldBeLessThan, 1*time.Second)
+
+				})
+
+				// start syncing
+				status.Status = PreSyncing
+				time.Sleep(1 * time.Second)
+				resp, err = PostJSON(fmt.Sprintf("%s/workers/%s/jobs/%s", baseURL, status.Worker, status.Name), status, nil)
+				So(err, ShouldBeNil)
+				defer resp.Body.Close()
+				So(resp.StatusCode, ShouldEqual, http.StatusOK)
+
+				Convey("update mirror status to PreSync - starting sync", func(ctx C) {
+					var ms []MirrorStatus
+					resp, err := GetJSON(baseURL+"/workers/test_worker1/jobs", &ms, nil)
+
+					So(err, ShouldBeNil)
+					So(resp.StatusCode, ShouldEqual, http.StatusOK)
+					// err = json.NewDecoder(resp.Body).Decode(&mirrorStatusList)
+					m := ms[0]
+					So(m.Name, ShouldEqual, status.Name)
+					So(m.Worker, ShouldEqual, status.Worker)
+					So(m.Status, ShouldEqual, status.Status)
+					So(m.Upstream, ShouldEqual, status.Upstream)
+					So(m.Size, ShouldEqual, status.Size)
+					So(m.IsMaster, ShouldEqual, status.IsMaster)
+					So(time.Now().Sub(m.LastUpdate), ShouldBeLessThan, 3*time.Second)
+					So(time.Now().Sub(m.LastUpdate), ShouldBeGreaterThan, 1*time.Second)
+					So(time.Now().Sub(m.LastStarted), ShouldBeLessThan, 2*time.Second)
+					So(time.Now().Sub(m.LastEnded), ShouldBeLessThan, 3*time.Second)
+					So(time.Now().Sub(m.LastEnded), ShouldBeGreaterThan, 1*time.Second)
 
 				})
 
@@ -168,9 +198,9 @@ func TestHTTPServer(t *testing.T) {
 					So(m.Upstream, ShouldEqual, status.Upstream)
 					So(m.Size, ShouldEqual, status.Size)
 					So(m.IsMaster, ShouldEqual, status.IsMaster)
-					So(time.Now().Sub(m.LastUpdate.Time), ShouldBeLessThan, 1*time.Second)
-					So(time.Now().Sub(m.LastStarted.Time), ShouldBeLessThan, 2*time.Minute)
-					So(time.Now().Sub(m.LastEnded.Time), ShouldBeLessThan, 1*time.Second)
+					So(time.Now().Sub(m.LastUpdate.Time), ShouldBeLessThan, 3*time.Second)
+					So(time.Now().Sub(m.LastStarted.Time), ShouldBeLessThan, 2*time.Second)
+					So(time.Now().Sub(m.LastEnded.Time), ShouldBeLessThan, 3*time.Second)
 
 				})
 
@@ -199,9 +229,9 @@ func TestHTTPServer(t *testing.T) {
 						So(m.Upstream, ShouldEqual, status.Upstream)
 						So(m.Size, ShouldEqual, "5GB")
 						So(m.IsMaster, ShouldEqual, status.IsMaster)
-						So(time.Now().Sub(m.LastUpdate), ShouldBeLessThan, 1*time.Second)
-						So(time.Now().Sub(m.LastStarted), ShouldBeLessThan, 2*time.Minute)
-						So(time.Now().Sub(m.LastEnded), ShouldBeLessThan, 1*time.Second)
+						So(time.Now().Sub(m.LastUpdate), ShouldBeLessThan, 3*time.Second)
+						So(time.Now().Sub(m.LastStarted), ShouldBeLessThan, 2*time.Second)
+						So(time.Now().Sub(m.LastEnded), ShouldBeLessThan, 3*time.Second)
 					})
 				})
 
@@ -254,7 +284,7 @@ func TestHTTPServer(t *testing.T) {
 					So(m.Size, ShouldEqual, status.Size)
 					So(m.IsMaster, ShouldEqual, status.IsMaster)
 					So(time.Now().Sub(m.LastUpdate), ShouldBeGreaterThan, 3*time.Second)
-					So(time.Now().Sub(m.LastStarted), ShouldBeGreaterThan, 1*time.Minute)
+					So(time.Now().Sub(m.LastStarted), ShouldBeGreaterThan, 3*time.Second)
 					So(time.Now().Sub(m.LastEnded), ShouldBeLessThan, 1*time.Second)
 				})
 			})
