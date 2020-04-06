@@ -15,16 +15,18 @@ func TestStatus(t *testing.T) {
 		So(err, ShouldBeNil)
 		t := time.Date(2016, time.April, 16, 23, 8, 10, 0, loc)
 		m := WebMirrorStatus{
-			Name:         "tunalinux",
-			Status:       Success,
-			LastUpdate:   textTime{t},
-			LastUpdateTs: stampTime{t},
-			LastEnded:    textTime{t},
-			LastEndedTs:  stampTime{t},
-			Scheduled:    textTime{t},
-			ScheduledTs:  stampTime{t},
-			Size:         "5GB",
-			Upstream:     "rsync://mirrors.tuna.tsinghua.edu.cn/tunalinux/",
+			Name:          "tunalinux",
+			Status:        Success,
+			LastUpdate:    textTime{t},
+			LastUpdateTs:  stampTime{t},
+			LastStarted:   textTime{t},
+			LastStartedTs: stampTime{t},
+			LastEnded:     textTime{t},
+			LastEndedTs:   stampTime{t},
+			Scheduled:     textTime{t},
+			ScheduledTs:   stampTime{t},
+			Size:          "5GB",
+			Upstream:      "rsync://mirrors.tuna.tsinghua.edu.cn/tunalinux/",
 		}
 
 		b, err := json.Marshal(m)
@@ -40,6 +42,10 @@ func TestStatus(t *testing.T) {
 		So(m2.LastUpdateTs.Unix(), ShouldEqual, m.LastUpdate.Unix())
 		So(m2.LastUpdate.UnixNano(), ShouldEqual, m.LastUpdate.UnixNano())
 		So(m2.LastUpdateTs.UnixNano(), ShouldEqual, m.LastUpdate.UnixNano())
+		So(m2.LastStarted.Unix(), ShouldEqual, m.LastStarted.Unix())
+		So(m2.LastStartedTs.Unix(), ShouldEqual, m.LastStarted.Unix())
+		So(m2.LastStarted.UnixNano(), ShouldEqual, m.LastStarted.UnixNano())
+		So(m2.LastStartedTs.UnixNano(), ShouldEqual, m.LastStarted.UnixNano())
 		So(m2.LastEnded.Unix(), ShouldEqual, m.LastEnded.Unix())
 		So(m2.LastEndedTs.Unix(), ShouldEqual, m.LastEnded.Unix())
 		So(m2.LastEnded.UnixNano(), ShouldEqual, m.LastEnded.UnixNano())
@@ -53,15 +59,16 @@ func TestStatus(t *testing.T) {
 	})
 	Convey("BuildWebMirrorStatus should work", t, func() {
 		m := MirrorStatus{
-			Name:       "arch-sync3",
-			Worker:     "testWorker",
-			IsMaster:   true,
-			Status:     Failed,
-			LastUpdate: time.Now().Add(-time.Minute * 30),
-			LastEnded:  time.Now(),
-			Scheduled:  time.Now().Add(time.Minute * 5),
-			Upstream:   "mirrors.tuna.tsinghua.edu.cn",
-			Size:       "4GB",
+			Name:        "arch-sync3",
+			Worker:      "testWorker",
+			IsMaster:    true,
+			Status:      Failed,
+			LastUpdate:  time.Now().Add(-time.Minute * 30),
+			LastStarted: time.Now().Add(-time.Minute * 1),
+			LastEnded:   time.Now(),
+			Scheduled:   time.Now().Add(time.Minute * 5),
+			Upstream:    "mirrors.tuna.tsinghua.edu.cn",
+			Size:        "4GB",
 		}
 
 		var m2 WebMirrorStatus
@@ -73,6 +80,10 @@ func TestStatus(t *testing.T) {
 		So(m2.LastUpdateTs.Unix(), ShouldEqual, m.LastUpdate.Unix())
 		So(m2.LastUpdate.UnixNano(), ShouldEqual, m.LastUpdate.UnixNano())
 		So(m2.LastUpdateTs.UnixNano(), ShouldEqual, m.LastUpdate.UnixNano())
+		So(m2.LastStarted.Unix(), ShouldEqual, m.LastStarted.Unix())
+		So(m2.LastStartedTs.Unix(), ShouldEqual, m.LastStarted.Unix())
+		So(m2.LastStarted.UnixNano(), ShouldEqual, m.LastStarted.UnixNano())
+		So(m2.LastStartedTs.UnixNano(), ShouldEqual, m.LastStarted.UnixNano())
 		So(m2.LastEnded.Unix(), ShouldEqual, m.LastEnded.Unix())
 		So(m2.LastEndedTs.Unix(), ShouldEqual, m.LastEnded.Unix())
 		So(m2.LastEnded.UnixNano(), ShouldEqual, m.LastEnded.UnixNano())

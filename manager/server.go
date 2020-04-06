@@ -297,14 +297,21 @@ func (s *Manager) updateJobOfWorker(c *gin.Context) {
 
 	curStatus, _ := s.adapter.GetMirrorStatus(workerID, mirrorName)
 
+	curTime := time.Now()
+
+	if status.Status == PreSyncing && curStatus.Status != PreSyncing {
+		status.LastStarted = curTime
+	} else {
+		status.LastStarted = curStatus.LastStarted
+	}
 	// Only successful syncing needs last_update
 	if status.Status == Success {
-		status.LastUpdate = time.Now()
+		status.LastUpdate = curTime
 	} else {
 		status.LastUpdate = curStatus.LastUpdate
 	}
 	if status.Status == Success || status.Status == Failed {
-		status.LastEnded = time.Now()
+		status.LastEnded = curTime
 	} else {
 		status.LastEnded = curStatus.LastEnded
 	}
