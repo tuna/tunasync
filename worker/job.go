@@ -155,10 +155,20 @@ func (m *mirrorJob) Run(managerChan chan<- jobMessage, semaphore chan empty) err
 
 			var syncErr error
 			syncDone := make(chan error, 1)
+			started := make(chan empty, 10) // we may receive "started" more than one time (e.g. two_stage_rsync)
 			go func() {
-				err := provider.Run()
+				err := provider.Run(started)
 				syncDone <- err
 			}()
+
+			select { // Wait until provider started or error happened
+			case err := <-syncDone:
+				logger.Errorf("failed to start provider %s: %s", m.Name(), err.Error())
+				syncDone <- err // it will be read again later
+			case <-started:
+				logger.Debug("provider started")
+			}
+			// Now terminating the provider is feasible
 
 			select {
 			case syncErr = <-syncDone:

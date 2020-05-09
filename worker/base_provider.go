@@ -142,7 +142,7 @@ func (p *baseProvider) closeLogFile() (err error) {
 	return
 }
 
-func (p *baseProvider) Run() error {
+func (p *baseProvider) Run(started chan empty) error {
 	panic("Not Implemented")
 }
 
@@ -169,6 +169,7 @@ func (p *baseProvider) Terminate() error {
 	defer p.Unlock()
 	logger.Debugf("terminating provider: %s", p.Name())
 	if !p.IsRunning() {
+		logger.Warningf("Terminate() called while IsRunning is false: %s", p.Name())
 		return nil
 	}
 

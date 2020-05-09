@@ -24,9 +24,9 @@ type mirrorProvider interface {
 
 	Type() providerEnum
 
-	// run mirror job in background
-	Run() error
-	// run mirror job in background
+	// Start then Wait
+	Run(started chan empty) error
+	// Start the job
 	Start() error
 	// Wait job to finish
 	Wait() error

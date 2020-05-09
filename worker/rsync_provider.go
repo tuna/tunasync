@@ -103,12 +103,13 @@ func (p *rsyncProvider) DataSize() string {
 	return p.dataSize
 }
 
-func (p *rsyncProvider) Run() error {
+func (p *rsyncProvider) Run(started chan empty) error {
 	p.dataSize = ""
 	defer p.closeLogFile()
 	if err := p.Start(); err != nil {
 		return err
 	}
+	started <- empty{}
 	if err := p.Wait(); err != nil {
 		code, msg := internal.TranslateRsyncErrorCode(err)
 		if code != 0 {
@@ -144,5 +145,6 @@ func (p *rsyncProvider) Start() error {
 		return err
 	}
 	p.isRunning.Store(true)
+	logger.Debugf("set isRunning to true: %s", p.Name())
 	return nil
 }

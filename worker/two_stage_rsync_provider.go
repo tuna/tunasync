@@ -133,7 +133,7 @@ func (p *twoStageRsyncProvider) Options(stage int) ([]string, error) {
 	return options, nil
 }
 
-func (p *twoStageRsyncProvider) Run() error {
+func (p *twoStageRsyncProvider) Run(started chan empty) error {
 	p.Lock()
 	defer p.Unlock()
 
@@ -163,6 +163,7 @@ func (p *twoStageRsyncProvider) Run() error {
 		}
 		p.isRunning.Store(true)
 		logger.Debugf("set isRunning to true: %s", p.Name())
+		started <- empty{}
 
 		p.Unlock()
 		err = p.Wait()

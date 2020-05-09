@@ -96,7 +96,7 @@ exit 0
 				),
 			)
 
-			err = provider.Run()
+			err = provider.Run(make(chan empty, 1))
 			So(err, ShouldBeNil)
 			loggedContent, err := ioutil.ReadFile(provider.LogFile())
 			So(err, ShouldBeNil)
@@ -127,7 +127,7 @@ exit 0
 			provider, err := newRsyncProvider(c)
 			So(err, ShouldBeNil)
 
-			err = provider.Run()
+			err = provider.Run(make(chan empty, 1))
 			So(err, ShouldNotBeNil)
 			loggedContent, err := ioutil.ReadFile(provider.LogFile())
 			So(err, ShouldBeNil)
@@ -195,7 +195,7 @@ exit 0
 				),
 			)
 
-			err = provider.Run()
+			err = provider.Run(make(chan empty, 1))
 			So(err, ShouldBeNil)
 			loggedContent, err := ioutil.ReadFile(provider.LogFile())
 			So(err, ShouldBeNil)
@@ -257,7 +257,7 @@ exit 0
 				provider.WorkingDir(),
 			)
 
-			err = provider.Run()
+			err = provider.Run(make(chan empty, 1))
 			So(err, ShouldBeNil)
 			loggedContent, err := ioutil.ReadFile(provider.LogFile())
 			So(err, ShouldBeNil)
@@ -321,7 +321,7 @@ echo $AOSP_REPO_BIN
 			So(err, ShouldBeNil)
 			So(readedScriptContent, ShouldResemble, []byte(scriptContent))
 
-			err = provider.Run()
+			err = provider.Run(make(chan empty, 1))
 			So(err, ShouldBeNil)
 
 			loggedContent, err := ioutil.ReadFile(provider.LogFile())
@@ -337,7 +337,7 @@ echo $AOSP_REPO_BIN
 			So(err, ShouldBeNil)
 			So(readedScriptContent, ShouldResemble, []byte(scriptContent))
 
-			err = provider.Run()
+			err = provider.Run(make(chan empty, 1))
 			So(err, ShouldNotBeNil)
 
 		})
@@ -349,11 +349,14 @@ sleep 10
 			err = ioutil.WriteFile(scriptFile, []byte(scriptContent), 0755)
 			So(err, ShouldBeNil)
 
+			started := make(chan empty, 1)
 			go func() {
-				err = provider.Run()
+				err := provider.Run(started)
 				ctx.So(err, ShouldNotBeNil)
 			}()
 
+			<-started
+			So(provider.IsRunning(), ShouldBeTrue)
 			time.Sleep(1 * time.Second)
 			err = provider.Terminate()
 			So(err, ShouldBeNil)
@@ -389,7 +392,7 @@ sleep 10
 
 		Convey("Run the command", func() {
 
-			err = provider.Run()
+			err = provider.Run(make(chan empty, 1))
 			So(err, ShouldBeNil)
 
 		})
@@ -417,7 +420,7 @@ sleep 10
 			provider, err := newCmdProvider(c)
 			So(err, ShouldBeNil)
 
-			err = provider.Run()
+			err = provider.Run(make(chan empty, 1))
 			So(err, ShouldNotBeNil)
 			So(provider.DataSize(), ShouldBeEmpty)
 		})
@@ -427,7 +430,7 @@ sleep 10
 			provider, err := newCmdProvider(c)
 			So(err, ShouldBeNil)
 
-			err = provider.Run()
+			err = provider.Run(make(chan empty, 1))
 			So(err, ShouldBeNil)
 		})
 
@@ -437,7 +440,7 @@ sleep 10
 			provider, err := newCmdProvider(c)
 			So(err, ShouldBeNil)
 
-			err = provider.Run()
+			err = provider.Run(make(chan empty, 1))
 			So(err, ShouldNotBeNil)
 		})
 
@@ -446,7 +449,7 @@ sleep 10
 			provider, err := newCmdProvider(c)
 			So(err, ShouldBeNil)
 
-			err = provider.Run()
+			err = provider.Run(make(chan empty, 1))
 			So(err, ShouldBeNil)
 			So(provider.DataSize(), ShouldNotBeEmpty)
 			_, err = strconv.ParseFloat(provider.DataSize(), 32)
@@ -458,7 +461,7 @@ sleep 10
 			provider, err := newCmdProvider(c)
 			So(err, ShouldBeNil)
 
-			err = provider.Run()
+			err = provider.Run(make(chan empty, 1))
 			So(err, ShouldBeNil)
 			So(provider.DataSize(), ShouldBeEmpty)
 		})
@@ -469,7 +472,7 @@ sleep 10
 			provider, err := newCmdProvider(c)
 			So(err, ShouldBeNil)
 
-			err = provider.Run()
+			err = provider.Run(make(chan empty, 1))
 			So(err, ShouldNotBeNil)
 			So(provider.DataSize(), ShouldBeEmpty)
 		})
@@ -520,7 +523,7 @@ exit 0
 			err = ioutil.WriteFile(scriptFile, []byte(scriptContent), 0755)
 			So(err, ShouldBeNil)
 
-			err = provider.Run()
+			err = provider.Run(make(chan empty, 2))
 			So(err, ShouldBeNil)
 
 			targetDir, _ := filepath.EvalSymlinks(provider.WorkingDir())
@@ -562,11 +565,14 @@ exit 0
 			err = ioutil.WriteFile(scriptFile, []byte(scriptContent), 0755)
 			So(err, ShouldBeNil)
 
+			started := make(chan empty, 2)
 			go func() {
-				err = provider.Run()
+				err := provider.Run(started)
 				ctx.So(err, ShouldNotBeNil)
 			}()
 
+			<-started
+			So(provider.IsRunning(), ShouldBeTrue)
 			time.Sleep(1 * time.Second)
 			err = provider.Terminate()
 			So(err, ShouldBeNil)
@@ -606,7 +612,7 @@ exit 0
 			provider, err := newTwoStageRsyncProvider(c)
 			So(err, ShouldBeNil)
 
-			err = provider.Run()
+			err = provider.Run(make(chan empty, 2))
 			So(err, ShouldNotBeNil)
 			loggedContent, err := ioutil.ReadFile(provider.LogFile())
 			So(err, ShouldBeNil)

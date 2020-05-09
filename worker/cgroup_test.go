@@ -83,7 +83,7 @@ sleep 30
 		So(err, ShouldBeNil)
 
 		go func() {
-			err = provider.Run()
+			err := provider.Run(make(chan empty, 1))
 			ctx.So(err, ShouldNotBeNil)
 		}()
 

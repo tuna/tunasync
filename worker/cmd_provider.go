@@ -86,12 +86,13 @@ func (p *cmdProvider) DataSize() string {
 	return p.dataSize
 }
 
-func (p *cmdProvider) Run() error {
+func (p *cmdProvider) Run(started chan empty) error {
 	p.dataSize = ""
 	defer p.closeLogFile()
 	if err := p.Start(); err != nil {
 		return err
 	}
+	started <- empty{}
 	if err := p.Wait(); err != nil {
 		return err
 	}
@@ -139,5 +140,6 @@ func (p *cmdProvider) Start() error {
 		return err
 	}
 	p.isRunning.Store(true)
+	logger.Debugf("set isRunning to true: %s", p.Name())
 	return nil
 }

@@ -87,7 +87,7 @@ sleep 20
 		cmdRun("docker", []string{"images"})
 		exitedErr := make(chan error, 1)
 		go func() {
-			err = provider.Run()
+			err = provider.Run(make(chan empty, 1))
 			logger.Debugf("provider.Run() exited")
 			if err != nil {
 				logger.Errorf("provider.Run() failed: %v", err)
