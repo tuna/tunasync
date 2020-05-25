@@ -19,6 +19,7 @@ mirror_dir = "/data/mirrors"
 concurrent = 10
 interval = 240
 retry = 3
+timeout = 86400
 
 [manager]
 api_base = "https://127.0.0.1:5000"
@@ -37,6 +38,7 @@ provider = "command"
 upstream = "https://aosp.google.com/"
 interval = 720
 retry = 2
+timeout = 3600
 mirror_dir = "/data/git/AOSP"
 exec_on_success = [
 	"bash -c 'echo ${TUNASYNC_JOB_EXIT_STATUS} > ${TUNASYNC_WORKING_DIR}/exit_status'"
@@ -119,6 +121,7 @@ use_ipv6 = true
 		So(cfg.Global.Name, ShouldEqual, "test_worker")
 		So(cfg.Global.Interval, ShouldEqual, 240)
 		So(cfg.Global.Retry, ShouldEqual, 3)
+		So(cfg.Global.Timeout, ShouldEqual, 86400)
 		So(cfg.Global.MirrorDir, ShouldEqual, "/data/mirrors")
 
 		So(cfg.Manager.APIBase, ShouldEqual, "https://127.0.0.1:5000")
@@ -130,12 +133,14 @@ use_ipv6 = true
 		So(m.Provider, ShouldEqual, provCommand)
 		So(m.Interval, ShouldEqual, 720)
 		So(m.Retry, ShouldEqual, 2)
+		So(m.Timeout, ShouldEqual, 3600)
 		So(m.Env["REPO"], ShouldEqual, "/usr/local/bin/aosp-repo")
 
 		m = cfg.Mirrors[1]
 		So(m.Name, ShouldEqual, "debian")
 		So(m.MirrorDir, ShouldEqual, "")
 		So(m.Provider, ShouldEqual, provTwoStageRsync)
+		So(m.Timeout, ShouldEqual, 86400)
 
 		m = cfg.Mirrors[2]
 		So(m.Name, ShouldEqual, "fedora")
