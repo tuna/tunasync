@@ -28,6 +28,7 @@ func TestRsyncProvider(t *testing.T) {
 			logDir:      tmpDir,
 			logFile:     tmpFile,
 			useIPv6:     true,
+			timeout:     100 * time.Second,
 			interval:    600 * time.Second,
 		}
 
@@ -40,6 +41,7 @@ func TestRsyncProvider(t *testing.T) {
 		So(provider.LogDir(), ShouldEqual, c.logDir)
 		So(provider.LogFile(), ShouldEqual, c.logFile)
 		So(provider.Interval(), ShouldEqual, c.interval)
+		So(provider.Timeout(), ShouldEqual, c.timeout)
 
 		Convey("When entering a context (auto exit)", func() {
 			func() {

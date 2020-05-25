@@ -16,6 +16,7 @@ type baseProvider struct {
 	name     string
 	interval time.Duration
 	retry    int
+	timeout  time.Duration
 	isMaster bool
 
 	cmd       *cmdJob
@@ -54,6 +55,10 @@ func (p *baseProvider) Interval() time.Duration {
 
 func (p *baseProvider) Retry() int {
 	return p.retry
+}
+
+func (p *baseProvider) Timeout() time.Duration {
+	return p.timeout
 }
 
 func (p *baseProvider) IsMaster() bool {

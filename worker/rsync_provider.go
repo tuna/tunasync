@@ -19,6 +19,7 @@ type rsyncConfig struct {
 	useIPv6, useIPv4                             bool
 	interval                                     time.Duration
 	retry                                        int
+	timeout                                      time.Duration
 }
 
 // An RsyncProvider provides the implementation to rsync-based syncing jobs
@@ -43,6 +44,7 @@ func newRsyncProvider(c rsyncConfig) (*rsyncProvider, error) {
 			ctx:      NewContext(),
 			interval: c.interval,
 			retry:    c.retry,
+			timeout:  c.timeout,
 		},
 		rsyncConfig: c,
 	}

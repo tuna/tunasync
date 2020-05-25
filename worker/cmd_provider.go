@@ -16,6 +16,7 @@ type cmdConfig struct {
 	workingDir, logDir, logFile string
 	interval                    time.Duration
 	retry                       int
+	timeout                     time.Duration
 	env                         map[string]string
 	failOnMatch                 string
 	sizePattern                 string
@@ -41,6 +42,7 @@ func newCmdProvider(c cmdConfig) (*cmdProvider, error) {
 			ctx:      NewContext(),
 			interval: c.interval,
 			retry:    c.retry,
+			timeout:  c.timeout,
 		},
 		cmdConfig: c,
 	}

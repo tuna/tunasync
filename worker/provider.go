@@ -46,6 +46,7 @@ type mirrorProvider interface {
 
 	Interval() time.Duration
 	Retry() int
+	Timeout() time.Duration
 
 	WorkingDir() string
 	LogDir() string
@@ -91,6 +92,9 @@ func newMirrorProvider(mirror mirrorConfig, cfg *Config) mirrorProvider {
 	if mirror.Retry == 0 {
 		mirror.Retry = cfg.Global.Retry
 	}
+	if mirror.Timeout == 0 {
+		mirror.Timeout = cfg.Global.Timeout
+	}
 	logDir = formatLogDir(logDir, mirror)
 
 	// IsMaster
@@ -118,6 +122,7 @@ func newMirrorProvider(mirror mirrorConfig, cfg *Config) mirrorProvider {
 			logFile:     filepath.Join(logDir, "latest.log"),
 			interval:    time.Duration(mirror.Interval) * time.Minute,
 			retry:       mirror.Retry,
+			timeout:     time.Duration(mirror.Timeout) * time.Second,
 			env:         mirror.Env,
 		}
 		p, err := newCmdProvider(pc)
@@ -144,6 +149,7 @@ func newMirrorProvider(mirror mirrorConfig, cfg *Config) mirrorProvider {
 			useIPv4:           mirror.UseIPv4,
 			interval:          time.Duration(mirror.Interval) * time.Minute,
 			retry:             mirror.Retry,
+			timeout:           time.Duration(mirror.Timeout) * time.Second,
 		}
 		p, err := newRsyncProvider(rc)
 		if err != nil {
@@ -168,6 +174,7 @@ func newMirrorProvider(mirror mirrorConfig, cfg *Config) mirrorProvider {
 			useIPv6:       mirror.UseIPv6,
 			interval:      time.Duration(mirror.Interval) * time.Minute,
 			retry:         mirror.Retry,
+			timeout:       time.Duration(mirror.Timeout) * time.Second,
 		}
 		p, err := newTwoStageRsyncProvider(rc)
 		if err != nil {

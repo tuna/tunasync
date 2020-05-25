@@ -6,6 +6,7 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
+	"time"
 
 	. "github.com/smartystreets/goconvey/convey"
 )
@@ -140,7 +141,6 @@ use_ipv6 = true
 		So(m.Name, ShouldEqual, "debian")
 		So(m.MirrorDir, ShouldEqual, "")
 		So(m.Provider, ShouldEqual, provTwoStageRsync)
-		So(m.Timeout, ShouldEqual, 86400)
 
 		m = cfg.Mirrors[2]
 		So(m.Name, ShouldEqual, "fedora")
@@ -321,6 +321,7 @@ log_dir = "/var/log/tunasync/{{.Name}}"
 mirror_dir = "/data/mirrors"
 concurrent = 10
 interval = 240
+timeout = 86400
 retry = 3
 
 [manager]
@@ -393,5 +394,6 @@ use_ipv6 = true
 		rp, ok := p.(*rsyncProvider)
 		So(ok, ShouldBeTrue)
 		So(rp.WorkingDir(), ShouldEqual, "/data/mirrors/debian-cd")
+		So(p.Timeout(), ShouldEqual, 86400*time.Second)
 	})
 }
