@@ -170,18 +170,28 @@ func (m *mirrorJob) Run(managerChan chan<- jobMessage, semaphore chan empty) err
 			}
 			// Now terminating the provider is feasible
 
+			var termErr error
+			timeout := provider.Timeout()
+			if timeout <= 0 {
+				timeout = 100000 * time.Hour // never time out
+			}
 			select {
 			case syncErr = <-syncDone:
 				logger.Debug("syncing done")
+			case <-time.After(timeout):
+				logger.Notice("provider timeout")
+				stopASAP = true
+				termErr = provider.Terminate()
+				syncErr = fmt.Errorf("%s timeout after %v", m.Name(), timeout)
 			case <-kill:
 				logger.Debug("received kill")
 				stopASAP = true
-				err := provider.Terminate()
-				if err != nil {
-					logger.Errorf("failed to terminate provider %s: %s", m.Name(), err.Error())
-					return err
-				}
+				termErr = provider.Terminate()
 				syncErr = errors.New("killed by manager")
+			}
+			if termErr != nil {
+				logger.Errorf("failed to terminate provider %s: %s", m.Name(), err.Error())
+				return termErr
 			}
 
 			// post-exec hooks
