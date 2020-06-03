@@ -272,6 +272,78 @@ exit 0
 	})
 }
 
+func TestRsyncProviderWithDocker(t *testing.T) {
+	Convey("Rsync in Docker should work", t, func() {
+		tmpDir, err := ioutil.TempDir("", "tunasync")
+		defer os.RemoveAll(tmpDir)
+		So(err, ShouldBeNil)
+		scriptFile := filepath.Join(tmpDir, "myrsync")
+		excludeFile := filepath.Join(tmpDir, "exclude.txt")
+
+		g := &Config{
+			Global: globalConfig{
+				Retry: 2,
+			},
+			Docker: dockerConfig{
+				Enable: true,
+				Volumes: []string{
+					scriptFile + ":/bin/myrsync",
+					"/etc/gai.conf:/etc/gai.conf:ro",
+				},
+			},
+		}
+		c := mirrorConfig{
+			Name:        "tuna",
+			Provider:    provRsync,
+			Upstream:    "rsync://rsync.tuna.moe/tuna/",
+			Command:     "/bin/myrsync",
+			ExcludeFile: excludeFile,
+			DockerImage: "alpine:3.8",
+			LogDir:      tmpDir,
+			MirrorDir:   tmpDir,
+			UseIPv6:     true,
+			Timeout:     100,
+			Interval:    600,
+		}
+
+		provider := newMirrorProvider(c, g)
+
+		So(provider.Type(), ShouldEqual, provRsync)
+		So(provider.Name(), ShouldEqual, c.Name)
+		So(provider.WorkingDir(), ShouldEqual, c.MirrorDir)
+		So(provider.LogDir(), ShouldEqual, c.LogDir)
+
+		cmdScriptContent := `#!/bin/sh
+#echo "$@"
+while [[ $# -gt 0 ]]; do
+if [[ "$1" = "--exclude-from" ]]; then
+	cat "$2"
+	shift
+fi
+shift
+done
+`
+		err = ioutil.WriteFile(scriptFile, []byte(cmdScriptContent), 0755)
+		So(err, ShouldBeNil)
+		err = ioutil.WriteFile(excludeFile, []byte("__some_pattern"), 0755)
+		So(err, ShouldBeNil)
+
+		for _, hook := range provider.Hooks() {
+			err = hook.preExec()
+			So(err, ShouldBeNil)
+		}
+		err = provider.Run(make(chan empty, 1))
+		So(err, ShouldBeNil)
+		for _, hook := range provider.Hooks() {
+			err = hook.postExec()
+			So(err, ShouldBeNil)
+		}
+		loggedContent, err := ioutil.ReadFile(provider.LogFile())
+		So(err, ShouldBeNil)
+		So(string(loggedContent), ShouldEqual, "__some_pattern")
+	})
+}
+
 func TestCmdProvider(t *testing.T) {
 	Convey("Command Provider should work", t, func(ctx C) {
 		tmpDir, err := ioutil.TempDir("", "tunasync")
