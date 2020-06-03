@@ -19,6 +19,10 @@ func newDockerHook(p mirrorProvider, gCfg dockerConfig, mCfg mirrorConfig) *dock
 	volumes := []string{}
 	volumes = append(volumes, gCfg.Volumes...)
 	volumes = append(volumes, mCfg.DockerVolumes...)
+	if len(mCfg.ExcludeFile) > 0 {
+		arg := fmt.Sprintf("%s:%s:ro", mCfg.ExcludeFile, mCfg.ExcludeFile)
+		volumes = append(volumes, arg)
+	}
 
 	options := []string{}
 	options = append(options, gCfg.Options...)
