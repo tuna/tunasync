@@ -142,6 +142,8 @@ type mirrorConfig struct {
 	ExcludeFile   string   `toml:"exclude_file"`
 	Username      string   `toml:"username"`
 	Password      string   `toml:"password"`
+	RsyncNoTimeo  bool     `toml:"rsync_no_timeout"`
+	RsyncTimeout  int      `toml:"rsync_timeout"`
 	RsyncOptions  []string `toml:"rsync_options"`
 	RsyncOverride []string `toml:"rsync_override"`
 	Stage1Profile string   `toml:"stage1_profile"`

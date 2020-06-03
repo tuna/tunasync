@@ -148,18 +148,19 @@ func TestRsyncProviderWithAuthentication(t *testing.T) {
 		proxyAddr := "127.0.0.1:1233"
 
 		c := rsyncConfig{
-			name:         "tuna",
-			upstreamURL:  "rsync://rsync.tuna.moe/tuna/",
-			rsyncCmd:     scriptFile,
-			username:     "tunasync",
-			password:     "tunasyncpassword",
-			workingDir:   tmpDir,
-			extraOptions: []string{"--delete-excluded"},
-			rsyncEnv:     map[string]string{"RSYNC_PROXY": proxyAddr},
-			logDir:       tmpDir,
-			logFile:      tmpFile,
-			useIPv4:      true,
-			interval:     600 * time.Second,
+			name:              "tuna",
+			upstreamURL:       "rsync://rsync.tuna.moe/tuna/",
+			rsyncCmd:          scriptFile,
+			username:          "tunasync",
+			password:          "tunasyncpassword",
+			workingDir:        tmpDir,
+			extraOptions:      []string{"--delete-excluded"},
+			rsyncTimeoutValue: 30,
+			rsyncEnv:          map[string]string{"RSYNC_PROXY": proxyAddr},
+			logDir:            tmpDir,
+			logFile:           tmpFile,
+			useIPv4:           true,
+			interval:          600 * time.Second,
 		}
 
 		provider, err := newRsyncProvider(c)
@@ -191,7 +192,7 @@ exit 0
 				fmt.Sprintf(
 					"%s %s %s -aHvh --no-o --no-g --stats --exclude .~tmp~/ "+
 						"--delete --delete-after --delay-updates --safe-links "+
-						"--timeout=120 -4 --delete-excluded %s %s",
+						"--timeout=30 -4 --delete-excluded %s %s",
 					provider.username, provider.password, proxyAddr,
 					provider.upstreamURL, provider.WorkingDir(),
 				),
@@ -221,6 +222,7 @@ func TestRsyncProviderWithOverriddenOptions(t *testing.T) {
 			upstreamURL:       "rsync://rsync.tuna.moe/tuna/",
 			rsyncCmd:          scriptFile,
 			workingDir:        tmpDir,
+			rsyncNeverTimeout: true,
 			overriddenOptions: []string{"-aHvh", "--no-o", "--no-g", "--stats"},
 			extraOptions:      []string{"--delete-excluded"},
 			logDir:            tmpDir,
@@ -490,18 +492,19 @@ func TestTwoStageRsyncProvider(t *testing.T) {
 		tmpFile := filepath.Join(tmpDir, "log_file")
 
 		c := twoStageRsyncConfig{
-			name:          "tuna-two-stage-rsync",
-			upstreamURL:   "rsync://mirrors.tuna.moe/",
-			stage1Profile: "debian",
-			rsyncCmd:      scriptFile,
-			workingDir:    tmpDir,
-			logDir:        tmpDir,
-			logFile:       tmpFile,
-			useIPv6:       true,
-			excludeFile:   tmpFile,
-			extraOptions:  []string{"--delete-excluded", "--cache"},
-			username:      "hello",
-			password:      "world",
+			name:              "tuna-two-stage-rsync",
+			upstreamURL:       "rsync://mirrors.tuna.moe/",
+			stage1Profile:     "debian",
+			rsyncCmd:          scriptFile,
+			workingDir:        tmpDir,
+			logDir:            tmpDir,
+			logFile:           tmpFile,
+			useIPv6:           true,
+			excludeFile:       tmpFile,
+			rsyncTimeoutValue: 30,
+			extraOptions:      []string{"--delete-excluded", "--cache"},
+			username:          "hello",
+			password:          "world",
 		}
 
 		provider, err := newTwoStageRsyncProvider(c)
@@ -539,7 +542,7 @@ exit 0
 				targetDir,
 				fmt.Sprintf(
 					"-aHvh --no-o --no-g --stats --exclude .~tmp~/ --safe-links "+
-						"--timeout=120 --exclude dists/ -6 "+
+						"--exclude dists/ --timeout=30 -6 "+
 						"--exclude-from %s %s %s",
 					provider.excludeFile, provider.upstreamURL, provider.WorkingDir(),
 				),
@@ -547,7 +550,7 @@ exit 0
 				fmt.Sprintf(
 					"-aHvh --no-o --no-g --stats --exclude .~tmp~/ "+
 						"--delete --delete-after --delay-updates --safe-links "+
-						"--timeout=120 --delete-excluded --cache -6 --exclude-from %s %s %s",
+						"--delete-excluded --cache --timeout=30 -6 --exclude-from %s %s %s",
 					provider.excludeFile, provider.upstreamURL, provider.WorkingDir(),
 				),
 			)
@@ -581,7 +584,7 @@ exit 0
 
 			expectedOutput := fmt.Sprintf(
 				"-aHvh --no-o --no-g --stats --exclude .~tmp~/ --safe-links "+
-					"--timeout=120 --exclude dists/ -6 "+
+					"--exclude dists/ --timeout=30 -6 "+
 					"--exclude-from %s %s %s\n",
 				provider.excludeFile, provider.upstreamURL, provider.WorkingDir(),
 			)

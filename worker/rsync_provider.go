@@ -2,6 +2,7 @@ package worker
 
 import (
 	"errors"
+	"fmt"
 	"strings"
 	"time"
 
@@ -14,6 +15,8 @@ type rsyncConfig struct {
 	upstreamURL, username, password, excludeFile string
 	extraOptions                                 []string
 	overriddenOptions                            []string
+	rsyncNeverTimeout                            bool
+	rsyncTimeoutValue                            int
 	rsyncEnv                                     map[string]string
 	workingDir, logDir, logFile                  string
 	useIPv6, useIPv4                             bool
@@ -66,10 +69,18 @@ func newRsyncProvider(c rsyncConfig) (*rsyncProvider, error) {
 		"-aHvh", "--no-o", "--no-g", "--stats",
 		"--exclude", ".~tmp~/",
 		"--delete", "--delete-after", "--delay-updates",
-		"--safe-links", "--timeout=120",
+		"--safe-links",
 	}
 	if c.overriddenOptions != nil {
 		options = c.overriddenOptions
+	}
+
+	if !c.rsyncNeverTimeout {
+		timeo := 120
+		if c.rsyncTimeoutValue > 0 {
+			timeo = c.rsyncTimeoutValue
+		}
+		options = append(options, fmt.Sprintf("--timeout=%d", timeo))
 	}
 
 	if c.useIPv6 {

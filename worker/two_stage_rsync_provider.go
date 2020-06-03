@@ -15,6 +15,8 @@ type twoStageRsyncConfig struct {
 	stage1Profile                                string
 	upstreamURL, username, password, excludeFile string
 	extraOptions                                 []string
+	rsyncNeverTimeout                            bool
+	rsyncTimeoutValue                            int
 	rsyncEnv                                     map[string]string
 	workingDir, logDir, logFile                  string
 	useIPv6                                      bool
@@ -61,13 +63,13 @@ func newTwoStageRsyncProvider(c twoStageRsyncConfig) (*twoStageRsyncProvider, er
 		stage1Options: []string{
 			"-aHvh", "--no-o", "--no-g", "--stats",
 			"--exclude", ".~tmp~/",
-			"--safe-links", "--timeout=120",
+			"--safe-links",
 		},
 		stage2Options: []string{
 			"-aHvh", "--no-o", "--no-g", "--stats",
 			"--exclude", ".~tmp~/",
 			"--delete", "--delete-after", "--delay-updates",
-			"--safe-links", "--timeout=120",
+			"--safe-links",
 		},
 	}
 
@@ -122,6 +124,14 @@ func (p *twoStageRsyncProvider) Options(stage int) ([]string, error) {
 		}
 	} else {
 		return []string{}, fmt.Errorf("Invalid stage: %d", stage)
+	}
+
+	if !p.rsyncNeverTimeout {
+		timeo := 120
+		if p.rsyncTimeoutValue > 0 {
+			timeo = p.rsyncTimeoutValue
+		}
+		options = append(options, fmt.Sprintf("--timeout=%d", timeo))
 	}
 
 	if p.useIPv6 {

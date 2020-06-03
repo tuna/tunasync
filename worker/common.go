@@ -1,6 +1,6 @@
 package worker
 
-// put global viables and types here
+// put global variables and types here
 
 import (
 	"gopkg.in/op/go-logging.v1"
