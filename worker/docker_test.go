@@ -94,22 +94,27 @@ sleep 20
 			}
 			exitedErr <- err
 		}()
-		cmdRun("ps", []string{"aux"})
 
 		// Wait for docker running
-		time.Sleep(8 * time.Second)
-
-		cmdRun("ps", []string{"aux"})
+		for wait := 0; wait < 8; wait++ {
+			names, err := getDockerByName(d.Name())
+			So(err, ShouldBeNil)
+			if names != "" {
+				break
+			}
+			time.Sleep(1 * time.Second)
+		}
+		// cmdRun("ps", []string{"aux"})
 
 		// assert container running
 		names, err := getDockerByName(d.Name())
 		So(err, ShouldBeNil)
-		// So(names, ShouldEqual, d.Name()+"\n")
+		So(names, ShouldEqual, d.Name()+"\n")
 
 		err = provider.Terminate()
-		// So(err, ShouldBeNil)
+		So(err, ShouldBeNil)
 
-		cmdRun("ps", []string{"aux"})
+		// cmdRun("ps", []string{"aux"})
 		<-exitedErr
 
 		// container should be terminated and removed

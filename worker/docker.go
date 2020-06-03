@@ -3,6 +3,9 @@ package worker
 import (
 	"fmt"
 	"os"
+	"time"
+
+	"github.com/codeskyblue/go-sh"
 )
 
 type dockerHook struct {
@@ -60,6 +63,27 @@ func (d *dockerHook) postExec() error {
 	// sh.Command(
 	// 	"docker", "rm", "-f", d.Name(),
 	// ).Run()
+	name := d.Name()
+	retry := 10
+	for ; retry > 0; retry-- {
+		out, err := sh.Command(
+			"docker", "ps", "-a",
+			"--filter", "name=^"+name+"$",
+			"--format", "{{.Status}}",
+		).Output()
+		if err != nil {
+			logger.Errorf("docker ps failed: %v", err)
+			break
+		}
+		if len(out) == 0 {
+			break
+		}
+		logger.Debugf("container %s still exists: '%s'", name, string(out))
+		time.Sleep(1 * time.Second)
+	}
+	if retry == 0 {
+		logger.Warningf("container %s not removed automatically, next sync may fail", name)
+	}
 	d.provider.ExitContext()
 	return nil
 }
