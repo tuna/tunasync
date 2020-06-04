@@ -335,7 +335,6 @@ echo $TUNASYNC_WORKING_DIR
 			})
 		})
 
-
 		Convey("When a job timed out", func(ctx C) {
 			scriptContent := `#!/bin/bash
 echo $TUNASYNC_WORKING_DIR
@@ -368,6 +367,30 @@ echo $TUNASYNC_WORKING_DIR
 				loggedContent, err := ioutil.ReadFile(provider.LogFile())
 				So(err, ShouldBeNil)
 				So(string(loggedContent), ShouldEqual, expectedOutput)
+				job.ctrlChan <- jobDisable
+				<-job.disabled
+			})
+
+			Convey("It should be retried", func(ctx C) {
+				go job.Run(managerChan, semaphore)
+				job.ctrlChan <- jobStart
+				time.Sleep(1 * time.Second)
+				msg := <-managerChan
+				So(msg.status, ShouldEqual, PreSyncing)
+
+				for i := 0; i < defaultMaxRetry; i++ {
+					msg = <-managerChan
+					So(msg.status, ShouldEqual, Syncing)
+
+					job.ctrlChan <- jobStart // should be ignored
+
+					msg = <-managerChan
+					So(msg.status, ShouldEqual, Failed)
+					So(msg.msg, ShouldContainSubstring, "timeout after")
+					// re-schedule after last try
+					So(msg.schedule, ShouldEqual, i == defaultMaxRetry-1)
+				}
+
 				job.ctrlChan <- jobDisable
 				<-job.disabled
 			})

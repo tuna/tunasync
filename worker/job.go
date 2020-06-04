@@ -180,7 +180,6 @@ func (m *mirrorJob) Run(managerChan chan<- jobMessage, semaphore chan empty) err
 				logger.Debug("syncing done")
 			case <-time.After(timeout):
 				logger.Notice("provider timeout")
-				stopASAP = true
 				termErr = provider.Terminate()
 				syncErr = fmt.Errorf("%s timeout after %v", m.Name(), timeout)
 			case <-kill:
