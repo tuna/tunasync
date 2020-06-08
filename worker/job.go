@@ -189,7 +189,7 @@ func (m *mirrorJob) Run(managerChan chan<- jobMessage, semaphore chan empty) err
 				syncErr = errors.New("killed by manager")
 			}
 			if termErr != nil {
-				logger.Errorf("failed to terminate provider %s: %s", m.Name(), err.Error())
+				logger.Errorf("failed to terminate provider %s: %s", m.Name(), termErr.Error())
 				return termErr
 			}
 
