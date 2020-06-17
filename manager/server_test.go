@@ -7,6 +7,7 @@ import (
 	"math/rand"
 	"net/http"
 	"strings"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -62,6 +63,34 @@ func TestHTTPServer(t *testing.T) {
 			err = json.NewDecoder(resp.Body).Decode(&msg)
 			So(err, ShouldBeNil)
 			So(msg[_errorKey], ShouldEqual, fmt.Sprintf("failed to list jobs of worker %s: %s", _magicBadWorkerID, "database fail"))
+		})
+
+		Convey("when register multiple workers", func(ctx C) {
+			N := 10
+			var cnt uint32
+			for i := 0; i < N; i++ {
+				go func(id int) {
+					w := WorkerStatus{
+						ID: fmt.Sprintf("worker%d", id),
+					}
+					resp, err := PostJSON(baseURL+"/workers", w, nil)
+					ctx.So(err, ShouldBeNil)
+					ctx.So(resp.StatusCode, ShouldEqual, http.StatusOK)
+					atomic.AddUint32(&cnt, 1)
+				}(i)
+			}
+			time.Sleep(2 * time.Second)
+			So(cnt, ShouldEqual, N)
+
+			Convey("list all workers", func(ctx C) {
+				resp, err := http.Get(baseURL + "/workers")
+				So(err, ShouldBeNil)
+				defer resp.Body.Close()
+				var actualResponseObj []WorkerStatus
+				err = json.NewDecoder(resp.Body).Decode(&actualResponseObj)
+				So(err, ShouldBeNil)
+				So(len(actualResponseObj), ShouldEqual, N+1)
+			})
 		})
 
 		Convey("when register a worker", func(ctx C) {
