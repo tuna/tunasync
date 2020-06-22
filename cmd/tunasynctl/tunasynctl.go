@@ -8,6 +8,7 @@ import (
 	"os"
 	"strconv"
 	"strings"
+	"text/template"
 	"time"
 
 	"github.com/BurntSushi/toml"
@@ -160,8 +161,31 @@ func listJobs(c *cli.Context) error {
 					"of all jobs from manager server: %s", err.Error()),
 				1)
 		}
-		genericJobs = jobs
-
+		if statusStr := c.String("status"); statusStr != "" {
+			filteredJobs := make([]tunasync.WebMirrorStatus, 0, len(jobs))
+			var statuses []tunasync.SyncStatus
+			for _, s := range strings.Split(statusStr, ",") {
+				var status tunasync.SyncStatus
+				err = status.UnmarshalJSON([]byte("\"" + strings.TrimSpace(s) + "\""))
+				if err != nil {
+					return cli.NewExitError(
+						fmt.Sprintf("Error parsing status: %s", err.Error()),
+						1)
+				}
+				statuses = append(statuses, status)
+			}
+			for _, job := range jobs {
+				for _, s := range statuses {
+					if job.Status == s {
+						filteredJobs = append(filteredJobs, job)
+						break
+					}
+				}
+			}
+			genericJobs = filteredJobs
+		} else {
+			genericJobs = jobs
+		}
 	} else {
 		var jobs []tunasync.MirrorStatus
 		args := c.Args()
@@ -196,13 +220,46 @@ func listJobs(c *cli.Context) error {
 		genericJobs = jobs
 	}
 
-	b, err := json.MarshalIndent(genericJobs, "", "  ")
-	if err != nil {
-		return cli.NewExitError(
-			fmt.Sprintf("Error printing out information: %s", err.Error()),
-			1)
+	if format := c.String("format"); format != "" {
+		tpl := template.New("")
+		_, err := tpl.Parse(format)
+		if err != nil {
+			return cli.NewExitError(
+				fmt.Sprintf("Error parsing format template: %s", err.Error()),
+				1)
+		}
+		switch jobs := genericJobs.(type) {
+		case []tunasync.WebMirrorStatus:
+			for _, job := range jobs {
+				err = tpl.Execute(os.Stdout, job)
+				if err != nil {
+					return cli.NewExitError(
+						fmt.Sprintf("Error printing out information: %s", err.Error()),
+						1)
+				}
+				fmt.Println()
+			}
+		case []tunasync.MirrorStatus:
+			for _, job := range jobs {
+				err = tpl.Execute(os.Stdout, job)
+				if err != nil {
+					return cli.NewExitError(
+						fmt.Sprintf("Error printing out information: %s", err.Error()),
+						1)
+				}
+				fmt.Println()
+			}
+		}
+	} else {
+		b, err := json.MarshalIndent(genericJobs, "", "  ")
+		if err != nil {
+			return cli.NewExitError(
+				fmt.Sprintf("Error printing out information: %s", err.Error()),
+				1)
+		}
+		fmt.Println(string(b))
 	}
-	fmt.Println(string(b))
+
 	return nil
 }
 
@@ -505,6 +562,14 @@ func main() {
 					cli.BoolFlag{
 						Name:  "all, a",
 						Usage: "List all jobs of all workers",
+					},
+					cli.StringFlag{
+						Name:  "status, s",
+						Usage: "Filter output based on status provided",
+					},
+					cli.StringFlag{
+						Name:  "format, f",
+						Usage: "Pretty-print containers using a Go template",
 					},
 				}...),
 			Action: initializeWrapper(listJobs),
