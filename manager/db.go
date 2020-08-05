@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/boltdb/bolt"
 
@@ -26,7 +27,9 @@ type dbAdapter interface {
 
 func makeDBAdapter(dbType string, dbFile string) (dbAdapter, error) {
 	if dbType == "bolt" {
-		innerDB, err := bolt.Open(dbFile, 0600, nil)
+		innerDB, err := bolt.Open(dbFile, 0600, &bolt.Options{
+			Timeout: 5 * time.Second,
+		})
 		if err != nil {
 			return nil, err
 		}
