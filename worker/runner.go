@@ -149,10 +149,10 @@ func (c *cmdJob) Terminate() error {
 	select {
 	case <-time.After(2 * time.Second):
 		unix.Kill(c.cmd.Process.Pid, syscall.SIGKILL)
-		return errors.New("SIGTERM failed to kill the job")
+		logger.Warningf("SIGTERM failed to kill the job in 2s. SIGKILL sent")
 	case <-c.finished:
-		return nil
 	}
+	return nil
 }
 
 // Copied from go-sh
