@@ -61,7 +61,7 @@ func NewTUNASyncWorker(cfg *Config) *Worker {
 
 // Run runs worker forever
 func (w *Worker) Run() {
-	w.registorWorker()
+	w.registerWorker()
 	go w.runHTTPServer()
 	w.runSchedule()
 }
@@ -393,7 +393,7 @@ func (w *Worker) URL() string {
 	return fmt.Sprintf("%s://%s:%d/", proto, w.cfg.Server.Hostname, w.cfg.Server.Port)
 }
 
-func (w *Worker) registorWorker() {
+func (w *Worker) registerWorker() {
 	msg := WorkerStatus{
 		ID:  w.Name(),
 		URL: w.URL(),
