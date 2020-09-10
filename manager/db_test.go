@@ -35,6 +35,7 @@ func TestBoltAdapter(t *testing.T) {
 					ID:         id,
 					Token:      "token_" + id,
 					LastOnline: time.Now(),
+					LastRegister: time.Now(),
 				}
 				w, err = boltDB.CreateWorker(w)
 				So(err, ShouldBeNil)

@@ -24,10 +24,11 @@ type MirrorStatus struct {
 // A WorkerStatus is the information struct that describe
 // a worker, and sent from the manager to clients.
 type WorkerStatus struct {
-	ID         string    `json:"id"`
-	URL        string    `json:"url"`         // worker url
-	Token      string    `json:"token"`       // session token
-	LastOnline time.Time `json:"last_online"` // last seen
+	ID           string    `json:"id"`
+	URL          string    `json:"url"`           // worker url
+	Token        string    `json:"token"`         // session token
+	LastOnline   time.Time `json:"last_online"`   // last seen
+	LastRegister time.Time `json:"last_register"` // last register time
 }
 
 type MirrorSchedules struct {
