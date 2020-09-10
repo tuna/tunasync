@@ -203,8 +203,9 @@ func (s *Manager) listWorkers(c *gin.Context) {
 	for _, w := range workers {
 		workerInfos = append(workerInfos,
 			WorkerStatus{
-				ID:         w.ID,
-				LastOnline: w.LastOnline,
+				ID:           w.ID,
+				LastOnline:   w.LastOnline,
+				LastRegister: w.LastRegister,
 			})
 	}
 	c.JSON(http.StatusOK, workerInfos)
@@ -215,6 +216,7 @@ func (s *Manager) registerWorker(c *gin.Context) {
 	var _worker WorkerStatus
 	c.BindJSON(&_worker)
 	_worker.LastOnline = time.Now()
+	_worker.LastRegister = time.Now()
 	newWorker, err := s.adapter.CreateWorker(_worker)
 	if err != nil {
 		err := fmt.Errorf("failed to register worker: %s",

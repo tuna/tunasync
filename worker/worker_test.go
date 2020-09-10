@@ -25,6 +25,7 @@ func makeMockManagerServer(recvData chan interface{}) *gin.Engine {
 		var _worker WorkerStatus
 		c.BindJSON(&_worker)
 		_worker.LastOnline = time.Now()
+		_worker.LastRegister = time.Now()
 		recvData <- _worker
 		c.JSON(http.StatusOK, _worker)
 	})
