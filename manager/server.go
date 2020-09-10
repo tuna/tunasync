@@ -270,6 +270,7 @@ func (s *Manager) updateSchedulesOfWorker(c *gin.Context) {
 		}
 
 		s.rwmu.RLock()
+		s.adapter.RefreshWorker(workerID)
 		curStatus, err := s.adapter.GetMirrorStatus(workerID, mirrorName)
 		s.rwmu.RUnlock()
 		if err != nil {
@@ -314,6 +315,7 @@ func (s *Manager) updateJobOfWorker(c *gin.Context) {
 	}
 
 	s.rwmu.RLock()
+	s.adapter.RefreshWorker(workerID)
 	curStatus, _ := s.adapter.GetMirrorStatus(workerID, mirrorName)
 	s.rwmu.RUnlock()
 
@@ -376,6 +378,7 @@ func (s *Manager) updateMirrorSize(c *gin.Context) {
 
 	mirrorName := msg.Name
 	s.rwmu.RLock()
+	s.adapter.RefreshWorker(workerID)
 	status, err := s.adapter.GetMirrorStatus(workerID, mirrorName)
 	s.rwmu.RUnlock()
 	if err != nil {

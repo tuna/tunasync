@@ -17,6 +17,7 @@ type dbAdapter interface {
 	GetWorker(workerID string) (WorkerStatus, error)
 	DeleteWorker(workerID string) error
 	CreateWorker(w WorkerStatus) (WorkerStatus, error)
+	RefreshWorker(workerID string) (WorkerStatus, error)
 	UpdateMirrorStatus(workerID, mirrorID string, status MirrorStatus) (MirrorStatus, error)
 	GetMirrorStatus(workerID, mirrorID string) (MirrorStatus, error)
 	ListMirrorStatus(workerID string) ([]MirrorStatus, error)
@@ -122,6 +123,15 @@ func (b *boltAdapter) CreateWorker(w WorkerStatus) (WorkerStatus, error) {
 		err = bucket.Put([]byte(w.ID), v)
 		return err
 	})
+	return w, err
+}
+
+func (b *boltAdapter) RefreshWorker(workerID string) (w WorkerStatus, err error) {
+	w, err = b.GetWorker(workerID)
+	if err == nil {
+		w.LastOnline = time.Now()
+		w, err = b.CreateWorker(w)
+	}
 	return w, err
 }
 
