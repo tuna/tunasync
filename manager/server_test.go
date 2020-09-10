@@ -462,6 +462,15 @@ func (b *mockDBAdapter) CreateWorker(w WorkerStatus) (WorkerStatus, error) {
 	return w, nil
 }
 
+func (b *mockDBAdapter) RefreshWorker(workerID string) (w WorkerStatus, err error) {
+	w, err = b.GetWorker(workerID)
+	if err == nil {
+		w.LastOnline = time.Now()
+		w, err = b.CreateWorker(w)
+	}
+	return w, err
+}
+
 func (b *mockDBAdapter) GetMirrorStatus(workerID, mirrorID string) (MirrorStatus, error) {
 	id := mirrorID + "/" + workerID
 	status, ok := b.statusStore[id]
