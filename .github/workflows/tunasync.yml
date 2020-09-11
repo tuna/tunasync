@@ -32,7 +32,7 @@ jobs:
       uses: actions/upload-artifact@v1
       with:
         name: tunasync-bin
-        path: build/
+        path: build-linux-amd64/
 
   test:
     name: Test

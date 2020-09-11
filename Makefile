@@ -1,19 +1,22 @@
 LDFLAGS="-X main.buildstamp=`date -u '+%s'` -X main.githash=`git rev-parse HEAD`"
+ARCH ?= linux-amd64
+ARCH_LIST = $(subst -, ,$(ARCH))
+GOOS = $(word 1, $(ARCH_LIST))
+GOARCH = $(word 2, $(ARCH_LIST))
+BUILDBIN = tunasync tunasynctl
 
-all: get tunasync tunasynctl
+all: $(BUILDBIN)
 
-get: 
-	go get ./cmd/tunasync
-	go get ./cmd/tunasynctl
+build-$(ARCH):
+	mkdir -p $@
 
-build:
-	mkdir -p build
+$(BUILDBIN): % : build-$(ARCH) build-$(ARCH)/%
 
-tunasync: build
-	go build -o build/tunasync -ldflags ${LDFLAGS} github.com/tuna/tunasync/cmd/tunasync
-
-tunasynctl: build
-	go build -o build/tunasynctl -ldflags ${LDFLAGS} github.com/tuna/tunasync/cmd/tunasynctl
+$(BUILDBIN:%=build-$(ARCH)/%) : build-$(ARCH)/% : cmd/%
+	GOOS=$(GOOS) GOARCH=$(GOARCH) go get ./$<
+	GOOS=$(GOOS) GOARCH=$(GOARCH) go build -o $@ -ldflags ${LDFLAGS} github.com/tuna/tunasync/$<
 
 test:
 	go test -v -covermode=count -coverprofile=profile.cov ./...
+
+.PHONY: all test $(BUILDBIN)
