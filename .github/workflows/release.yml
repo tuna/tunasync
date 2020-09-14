@@ -25,7 +25,7 @@ jobs:
       run: |
         for i in linux-amd64 linux-arm64; do
           make ARCH=$i all
-          tar -cz --numeric-owner --owner root -f tunasync-$i-bin.tar.gz -C build-$i tunasync tunasynctl 
+          tar -cz --numeric-owner --owner root --group root -f tunasync-$i-bin.tar.gz -C build-$i tunasync tunasynctl 
         done
 
     - name: Create Release
