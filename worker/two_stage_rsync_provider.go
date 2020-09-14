@@ -34,11 +34,12 @@ type twoStageRsyncProvider struct {
 	dataSize      string
 }
 
+// ref: https://salsa.debian.org/mirror-team/archvsync/-/blob/master/bin/ftpsync#L431
 var rsyncStage1Profiles = map[string]([]string){
-	"debian": []string{"dists/"},
+	"debian": []string{"--include=*.diff/", "--exclude=*.diff/Index", "--exclude=Packages*", "--exclude=Sources*", "--exclude=Release*", "--exclude=InRelease", "--include=i18n/by-hash", "--exclude=i18n/*", "--exclude=ls-lR*"},
 	"debian-oldstyle": []string{
-		"Packages*", "Sources*", "Release*",
-		"InRelease", "i18n/*", "ls-lR*", "dep11/*",
+		"--exclude=Packages*", "--exclude=Sources*", "--exclude=Release*",
+		"--exclude=InRelease", "--exclude=i18n/*", "--exclude=ls-lR*", "--exclude=dep11/*",
 	},
 }
 
@@ -109,12 +110,12 @@ func (p *twoStageRsyncProvider) Options(stage int) ([]string, error) {
 	var options []string
 	if stage == 1 {
 		options = append(options, p.stage1Options...)
-		stage1Excludes, ok := rsyncStage1Profiles[p.stage1Profile]
+		stage1Profile, ok := rsyncStage1Profiles[p.stage1Profile]
 		if !ok {
 			return nil, errors.New("Invalid Stage 1 Profile")
 		}
-		for _, exc := range stage1Excludes {
-			options = append(options, "--exclude", exc)
+		for _, exc := range stage1Profile {
+			options = append(options, exc)
 		}
 
 	} else if stage == 2 {
