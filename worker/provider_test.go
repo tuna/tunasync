@@ -91,7 +91,7 @@ exit 0
 					"Done\n",
 				targetDir,
 				fmt.Sprintf(
-					"-aHvh --no-o --no-g --stats --exclude .~tmp~/ "+
+					"-aHvh --no-o --no-g --stats --exclude .~tmp~/ --filter risk .~tmp~/ "+
 						"--delete --delete-after --delay-updates --safe-links "+
 						"--timeout=120 -6 %s %s",
 					provider.upstreamURL, provider.WorkingDir(),
@@ -190,7 +190,7 @@ exit 0
 					"Done\n",
 				targetDir,
 				fmt.Sprintf(
-					"%s %s %s -aHvh --no-o --no-g --stats --exclude .~tmp~/ "+
+					"%s %s %s -aHvh --no-o --no-g --stats --exclude .~tmp~/ --filter risk .~tmp~/ "+
 						"--delete --delete-after --delay-updates --safe-links "+
 						"--timeout=30 -4 --delete-excluded %s %s",
 					provider.username, provider.password, proxyAddr,
@@ -613,14 +613,14 @@ exit 0
 					"Done\n",
 				targetDir,
 				fmt.Sprintf(
-					"-aHvh --no-o --no-g --stats --exclude .~tmp~/ --safe-links "+
+					"-aHvh --no-o --no-g --stats --exclude .~tmp~/ --filter risk .~tmp~/ --safe-links "+
 						"--include=*.diff/ --exclude=*.diff/Index --exclude=Packages* --exclude=Sources* --exclude=Release* --exclude=InRelease --include=i18n/by-hash --exclude=i18n/* --exclude=ls-lR* --timeout=30 -6 "+
 						"--exclude-from %s %s %s",
 					provider.excludeFile, provider.upstreamURL, provider.WorkingDir(),
 				),
 				targetDir,
 				fmt.Sprintf(
-					"-aHvh --no-o --no-g --stats --exclude .~tmp~/ "+
+					"-aHvh --no-o --no-g --stats --exclude .~tmp~/ --filter risk .~tmp~/ "+
 						"--delete --delete-after --delay-updates --safe-links "+
 						"--delete-excluded --cache --timeout=30 -6 --exclude-from %s %s %s",
 					provider.excludeFile, provider.upstreamURL, provider.WorkingDir(),
@@ -655,7 +655,7 @@ exit 0
 			So(err, ShouldBeNil)
 
 			expectedOutput := fmt.Sprintf(
-				"-aHvh --no-o --no-g --stats --exclude .~tmp~/ --safe-links "+
+				"-aHvh --no-o --no-g --stats --exclude .~tmp~/ --filter risk .~tmp~/ --safe-links "+
 					"--include=*.diff/ --exclude=*.diff/Index --exclude=Packages* --exclude=Sources* --exclude=Release* --exclude=InRelease --include=i18n/by-hash --exclude=i18n/* --exclude=ls-lR* --timeout=30 -6 "+
 					"--exclude-from %s %s %s\n",
 				provider.excludeFile, provider.upstreamURL, provider.WorkingDir(),
