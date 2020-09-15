@@ -204,6 +204,8 @@ func (s *Manager) listWorkers(c *gin.Context) {
 		workerInfos = append(workerInfos,
 			WorkerStatus{
 				ID:           w.ID,
+				URL:          w.URL,
+				Token:        "REDACTED",
 				LastOnline:   w.LastOnline,
 				LastRegister: w.LastRegister,
 			})
