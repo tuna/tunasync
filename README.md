@@ -1,5 +1,4 @@
-tunasync
-========
+# tunasync
 
 ![Build Status](https://github.com/tuna/tunasync/workflows/tunasync/badge.svg)
 [![Coverage Status](https://coveralls.io/repos/github/tuna/tunasync/badge.svg?branch=master)](https://coveralls.io/github/tuna/tunasync?branch=master)
@@ -12,11 +11,11 @@ tunasync
 
 ## Download
 
-Pre-built binary for Linux x86_64 is available at [Github releases](https://github.com/tuna/tunasync/releases/latest).
+Pre-built binary for Linux x86_64 and ARM64 is available at [Github releases](https://github.com/tuna/tunasync/releases/latest).
 
 ## Design
 
-```
+```text
 # Architecture
 
 - Manager: Central instance for status and job management
@@ -50,13 +49,12 @@ PreSyncing                           Syncing                               Succe
                                 +-----------------+
 ```
 
-
 ## Building
 
 Go version: 1.13
 
-```
-make all
+```shell
+> make all
 ```
 
-Binaries in the `build/`.
+Binaries in the `build-linux-amd64/`.
