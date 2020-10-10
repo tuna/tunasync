@@ -1,6 +1,8 @@
 package internal
 
 import (
+	"bytes"
+	"encoding/json"
 	"fmt"
 	"time"
 )
@@ -60,21 +62,45 @@ const (
 )
 
 func (c CmdVerb) String() string {
-	switch c {
-	case CmdStart:
-		return "start"
-	case CmdStop:
-		return "stop"
-	case CmdDisable:
-		return "disable"
-	case CmdRestart:
-		return "restart"
-	case CmdPing:
-		return "ping"
-	case CmdReload:
-		return "reload"
+	mapping := map[CmdVerb]string{
+		CmdStart:   "start",
+		CmdStop:    "stop",
+		CmdDisable: "disable",
+		CmdRestart: "restart",
+		CmdPing:    "ping",
+		CmdReload:  "reload",
 	}
-	return "unknown"
+	return mapping[c]
+}
+
+func NewCmdVerbFromString(s string) CmdVerb {
+	mapping := map[string]CmdVerb{
+		"start":   CmdStart,
+		"stop":    CmdStop,
+		"disable": CmdDisable,
+		"restart": CmdRestart,
+		"ping":    CmdPing,
+		"reload":  CmdReload,
+	}
+	return mapping[s]
+}
+
+// Marshal and Unmarshal for CmdVerb
+func (s CmdVerb) MarshalJSON() ([]byte, error) {
+	buffer := bytes.NewBufferString(`"`)
+	buffer.WriteString(s.String())
+	buffer.WriteString(`"`)
+	return buffer.Bytes(), nil
+}
+
+func (s *CmdVerb) UnmarshalJSON(b []byte) error {
+	var j string
+	err := json.Unmarshal(b, &j)
+	if err != nil {
+		return err
+	}
+	*s = NewCmdVerbFromString(j)
+	return nil
 }
 
 // A WorkerCmd is the command message send from the
