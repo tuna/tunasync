@@ -121,6 +121,10 @@ func (b *kvDBAdapter) GetWorker(workerID string) (w WorkerStatus, err error) {
 }
 
 func (b *kvDBAdapter) DeleteWorker(workerID string) error {
+	v, _ := b.db.Get(_workerBucketKey, workerID)
+	if v == nil {
+		return fmt.Errorf("invalid workerID %s", workerID)
+	}
 	return b.db.Delete(_workerBucketKey, workerID)
 }
 
