@@ -45,13 +45,15 @@ func makeDBAdapter(dbType string, dbFile string) (dbAdapter, error) {
 		err = db.Init()
 		return &db, err
 	} else if dbType == "redis" {
-		innerDB := redis.NewClient(&redis.Options{
-			Addr: dbFile,
-		})
+		opt, err := redis.ParseURL(dbFile)
+		if err != nil {
+			return nil, fmt.Errorf("bad redis url: %s", err)
+		}
+		innerDB := redis.NewClient(opt)
 		db := redisAdapter{
 			db: innerDB,
 		}
-		err := db.Init()
+		err = db.Init()
 		return &db, err
 	}
 	// unsupported db-type
