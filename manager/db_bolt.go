@@ -6,9 +6,9 @@ import (
 	"github.com/boltdb/bolt"
 )
 
+// implement kv interface backed by boltdb
 type boltAdapter struct {
-	db     *bolt.DB
-	dbFile string
+	db *bolt.DB
 }
 
 func (b *boltAdapter) InitBucket(bucket string) (err error) {

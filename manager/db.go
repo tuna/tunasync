@@ -27,6 +27,7 @@ type dbAdapter interface {
 	Close() error
 }
 
+// interface for a kv database
 type kvAdapter interface {
 	InitBucket(bucket string) error
 	Get(bucket string, key string) ([]byte, error)
@@ -50,8 +51,7 @@ func makeDBAdapter(dbType string, dbFile string) (dbAdapter, error) {
 			return nil, err
 		}
 		db := boltAdapter{
-			db:     innerDB,
-			dbFile: dbFile,
+			db: innerDB,
 		}
 		kv := kvDBAdapter{
 			db: &db,
@@ -77,6 +77,7 @@ func makeDBAdapter(dbType string, dbFile string) (dbAdapter, error) {
 	return nil, fmt.Errorf("unsupported db-type: %s", dbType)
 }
 
+// use the underlying kv database to store data
 type kvDBAdapter struct {
 	db kvAdapter
 }

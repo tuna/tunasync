@@ -6,6 +6,7 @@ import (
 	"github.com/go-redis/redis/v8"
 )
 
+// implement kv interface backed by redis
 type redisAdapter struct {
 	db *redis.Client
 }
