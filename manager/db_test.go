@@ -2,6 +2,7 @@ package manager
 
 import (
 	"encoding/json"
+	"fmt"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -9,6 +10,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/alicebob/miniredis"
 	. "github.com/smartystreets/goconvey/convey"
 	. "github.com/tuna/tunasync/internal"
 )
@@ -177,5 +179,23 @@ func TestBoltAdapter(t *testing.T) {
 		}()
 
 		DBAdapterTest(boltDB)
+	})
+
+	Convey("redisAdapter should work", t, func() {
+		mr, err := miniredis.Run()
+		So(err, ShouldBeNil)
+
+		addr := fmt.Sprintf("redis://%s", mr.Addr())
+		redisDB, err := makeDBAdapter("redis", addr)
+		So(err, ShouldBeNil)
+
+		defer func() {
+			// close redisDB
+			err := redisDB.Close()
+			So(err, ShouldBeNil)
+			mr.Close()
+		}()
+
+		DBAdapterTest(redisDB)
 	})
 }

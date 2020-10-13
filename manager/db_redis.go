@@ -20,7 +20,9 @@ func (b *redisAdapter) InitBucket(bucket string) (err error) {
 func (b *redisAdapter) Get(bucket string, key string) (v []byte, err error) {
 	var val string
 	val, err = b.db.HGet(ctx, bucket, key).Result()
-	v = []byte(val)
+	if err == nil {
+		v = []byte(val)
+	}
 	return
 }
 
