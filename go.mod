@@ -10,6 +10,8 @@ require (
 	github.com/dennwc/btrfs v0.0.0-20190517175702-d917b30ff035
 	github.com/flynn/go-shlex v0.0.0-20150515145356-3f9db97f8568 // indirect
 	github.com/gin-gonic/gin v1.5.0
+	github.com/go-redis/redis v6.15.9+incompatible
+	github.com/go-redis/redis/v8 v8.3.0
 	github.com/golang/protobuf v1.4.2 // indirect
 	github.com/google/go-cmp v0.5.2 // indirect
 	github.com/imdario/mergo v0.3.9

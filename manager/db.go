@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/boltdb/bolt"
+	"github.com/go-redis/redis/v8"
 
 	. "github.com/tuna/tunasync/internal"
 )
@@ -24,6 +25,11 @@ type dbAdapter interface {
 	Close() error
 }
 
+const (
+	_workerBucketKey = "workers"
+	_statusBucketKey = "mirror_status"
+)
+
 func makeDBAdapter(dbType string, dbFile string) (dbAdapter, error) {
 	if dbType == "bolt" {
 		innerDB, err := bolt.Open(dbFile, 0600, &bolt.Options{
@@ -37,6 +43,15 @@ func makeDBAdapter(dbType string, dbFile string) (dbAdapter, error) {
 			dbFile: dbFile,
 		}
 		err = db.Init()
+		return &db, err
+	} else if dbType == "redis" {
+		innerDB := redis.NewClient(&redis.Options{
+			Addr: dbFile,
+		})
+		db := redisAdapter{
+			db: innerDB,
+		}
+		err := db.Init()
 		return &db, err
 	}
 	// unsupported db-type

@@ -11,11 +11,6 @@ import (
 	. "github.com/tuna/tunasync/internal"
 )
 
-const (
-	_workerBucketKey = "workers"
-	_statusBucketKey = "mirror_status"
-)
-
 type boltAdapter struct {
 	db     *bolt.DB
 	dbFile string
