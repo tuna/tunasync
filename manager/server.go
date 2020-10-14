@@ -276,7 +276,7 @@ func (s *Manager) updateSchedulesOfWorker(c *gin.Context) {
 		curStatus, err := s.adapter.GetMirrorStatus(workerID, mirrorName)
 		s.rwmu.RUnlock()
 		if err != nil {
-			err = fmt.Errorf("failed to get job %s of worker %s: %s",
+			logger.Errorf("failed to get job %s of worker %s: %s",
 				mirrorName, workerID, err.Error(),
 			)
 			continue
