@@ -29,6 +29,7 @@ type FileConfig struct {
 	CACert string `toml:"ca_cert"`
 }
 
+// LoadConfig loads config from specified file
 func LoadConfig(cfgFile string, c *cli.Context) (*Config, error) {
 
 	cfg := new(Config)

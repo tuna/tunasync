@@ -82,6 +82,8 @@ db_file = "/tmp/tunasync/manager.db"
 ca_cert = ""
 ```
 
+如果使用 redis 作为数据库后端，把 db_type 改为 redis，下面的 db_file 设为 redis 服务器的地址： `redis://user:password@host:port/db_number`。
+
 ### 运行
 
 ```shell
