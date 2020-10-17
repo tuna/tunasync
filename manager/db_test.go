@@ -162,7 +162,7 @@ func DBAdapterTest(db dbAdapter) {
 	return
 }
 
-func TestBoltAdapter(t *testing.T) {
+func TestDBAdapter(t *testing.T) {
 	Convey("boltAdapter should work", t, func() {
 		tmpDir, err := ioutil.TempDir("", "tunasync")
 		defer os.RemoveAll(tmpDir)
@@ -197,5 +197,23 @@ func TestBoltAdapter(t *testing.T) {
 		}()
 
 		DBAdapterTest(redisDB)
+	})
+
+	Convey("badgerAdapter should work", t, func() {
+		tmpDir, err := ioutil.TempDir("", "tunasync")
+		defer os.RemoveAll(tmpDir)
+		So(err, ShouldBeNil)
+
+		dbType, dbFile := "badger", filepath.Join(tmpDir, "badger.db")
+		badgerDB, err := makeDBAdapter(dbType, dbFile)
+		So(err, ShouldBeNil)
+
+		defer func() {
+			// close badgerDB
+			err := badgerDB.Close()
+			So(err, ShouldBeNil)
+		}()
+
+		DBAdapterTest(badgerDB)
 	})
 }

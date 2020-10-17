@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/boltdb/bolt"
+	"github.com/dgraph-io/badger/v2"
 	"github.com/go-redis/redis/v8"
 
 	. "github.com/tuna/tunasync/internal"
@@ -65,6 +66,19 @@ func makeDBAdapter(dbType string, dbFile string) (dbAdapter, error) {
 		}
 		innerDB := redis.NewClient(opt)
 		db := redisAdapter{
+			db: innerDB,
+		}
+		kv := kvDBAdapter{
+			db: &db,
+		}
+		err = kv.Init()
+		return &kv, err
+	} else if dbType == "badger" {
+		innerDB, err := badger.Open(badger.DefaultOptions(dbFile))
+		if err != nil {
+			return nil, err
+		}
+		db := badgerAdapter{
 			db: innerDB,
 		}
 		kv := kvDBAdapter{
