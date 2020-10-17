@@ -82,7 +82,7 @@ db_file = "/tmp/tunasync/manager.db"
 ca_cert = ""
 ```
 
-如果使用 redis 作为数据库后端，把 db_type 改为 redis，下面的 db_file 设为 redis 服务器的地址： `redis://user:password@host:port/db_number`。
+除了 bolt 以外，还支持 badger、leveldb 和 redis 的数据库后端。对于 badger 和 leveldb，只需要修改 db_type。如果使用 redis 作为数据库后端，把 db_type 改为 redis，并把下面的 db_file 设为 redis 服务器的地址： `redis://user:password@host:port/db_number`。
 
 ### 运行
 
