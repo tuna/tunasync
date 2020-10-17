@@ -216,4 +216,22 @@ func TestDBAdapter(t *testing.T) {
 
 		DBAdapterTest(badgerDB)
 	})
+
+	Convey("leveldbAdapter should work", t, func() {
+		tmpDir, err := ioutil.TempDir("", "tunasync")
+		defer os.RemoveAll(tmpDir)
+		So(err, ShouldBeNil)
+
+		dbType, dbFile := "leveldb", filepath.Join(tmpDir, "leveldb.db")
+		leveldbDB, err := makeDBAdapter(dbType, dbFile)
+		So(err, ShouldBeNil)
+
+		defer func() {
+			// close leveldbDB
+			err := leveldbDB.Close()
+			So(err, ShouldBeNil)
+		}()
+
+		DBAdapterTest(leveldbDB)
+	})
 }
