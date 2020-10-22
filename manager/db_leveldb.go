@@ -30,7 +30,7 @@ func (b *leveldbAdapter) GetAll(bucket string) (m map[string][]byte, err error) 
 		// it.Value() changes on next iteration
 		val := it.Value()
 		v := make([]byte, len(val))
-		copy(v, it.Value())
+		copy(v, val)
 		m[actualKey] = v
 	}
 	return
