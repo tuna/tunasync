@@ -7,7 +7,10 @@ import (
 	"time"
 
 	"github.com/boltdb/bolt"
+	"github.com/dgraph-io/badger/v2"
 	"github.com/go-redis/redis/v8"
+	"github.com/pkg/errors"
+	"github.com/syndtr/goleveldb/leveldb"
 
 	. "github.com/tuna/tunasync/internal"
 )
@@ -72,6 +75,32 @@ func makeDBAdapter(dbType string, dbFile string) (dbAdapter, error) {
 		}
 		err = kv.Init()
 		return &kv, err
+	} else if dbType == "badger" {
+		innerDB, err := badger.Open(badger.DefaultOptions(dbFile))
+		if err != nil {
+			return nil, err
+		}
+		db := badgerAdapter{
+			db: innerDB,
+		}
+		kv := kvDBAdapter{
+			db: &db,
+		}
+		err = kv.Init()
+		return &kv, err
+	} else if dbType == "leveldb" {
+		innerDB, err := leveldb.OpenFile(dbFile, nil)
+		if err != nil {
+			return nil, err
+		}
+		db := leveldbAdapter{
+			db: innerDB,
+		}
+		kv := kvDBAdapter{
+			db: &db,
+		}
+		err = kv.Init()
+		return &kv, err
 	}
 	// unsupported db-type
 	return nil, fmt.Errorf("unsupported db-type: %s", dbType)
@@ -102,7 +131,7 @@ func (b *kvDBAdapter) ListWorkers() (ws []WorkerStatus, err error) {
 	for _, v := range workers {
 		jsonErr := json.Unmarshal(v, &w)
 		if jsonErr != nil {
-			err = fmt.Errorf("%s; %s", err.Error(), jsonErr)
+			err = errors.Wrap(err, jsonErr.Error())
 			continue
 		}
 		ws = append(ws, w)
@@ -179,7 +208,7 @@ func (b *kvDBAdapter) ListMirrorStatus(workerID string) (ms []MirrorStatus, err 
 			var m MirrorStatus
 			jsonErr := json.Unmarshal(v, &m)
 			if jsonErr != nil {
-				err = fmt.Errorf("%s; %s", err.Error(), jsonErr)
+				err = errors.Wrap(err, jsonErr.Error())
 				continue
 			}
 			ms = append(ms, m)
@@ -199,7 +228,7 @@ func (b *kvDBAdapter) ListAllMirrorStatus() (ms []MirrorStatus, err error) {
 		var m MirrorStatus
 		jsonErr := json.Unmarshal(v, &m)
 		if jsonErr != nil {
-			err = fmt.Errorf("%s; %s", err.Error(), jsonErr)
+			err = errors.Wrap(err, jsonErr.Error())
 			continue
 		}
 		ms = append(ms, m)
@@ -218,13 +247,13 @@ func (b *kvDBAdapter) FlushDisabledJobs() (err error) {
 		var m MirrorStatus
 		jsonErr := json.Unmarshal(v, &m)
 		if jsonErr != nil {
-			err = fmt.Errorf("%s; %s", err.Error(), jsonErr)
+			err = errors.Wrap(err, jsonErr.Error())
 			continue
 		}
 		if m.Status == Disabled || len(m.Name) == 0 {
 			deleteErr := b.db.Delete(_statusBucketKey, k)
 			if deleteErr != nil {
-				err = fmt.Errorf("%s; %s", err.Error(), deleteErr)
+				err = errors.Wrap(err, deleteErr.Error())
 			}
 		}
 	}
