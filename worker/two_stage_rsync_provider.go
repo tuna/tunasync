@@ -63,12 +63,12 @@ func newTwoStageRsyncProvider(c twoStageRsyncConfig) (*twoStageRsyncProvider, er
 		twoStageRsyncConfig: c,
 		stage1Options: []string{
 			"-aHvh", "--no-o", "--no-g", "--stats",
-			"--exclude", ".~tmp~/", "--filter", "risk .~tmp~/",
+			"--filter", "risk .~tmp~/", "--exclude", ".~tmp~/",
 			"--safe-links",
 		},
 		stage2Options: []string{
 			"-aHvh", "--no-o", "--no-g", "--stats",
-			"--exclude", ".~tmp~/", "--filter", "risk .~tmp~/",
+			"--filter", "risk .~tmp~/", "--exclude", ".~tmp~/",
 			"--delete", "--delete-after", "--delay-updates",
 			"--safe-links",
 		},
