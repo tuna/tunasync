@@ -19,7 +19,7 @@ type twoStageRsyncConfig struct {
 	rsyncTimeoutValue                            int
 	rsyncEnv                                     map[string]string
 	workingDir, logDir, logFile                  string
-	useIPv6                                      bool
+	useIPv6, useIPv4                             bool
 	interval                                     time.Duration
 	retry                                        int
 	timeout                                      time.Duration
@@ -137,6 +137,8 @@ func (p *twoStageRsyncProvider) Options(stage int) ([]string, error) {
 
 	if p.useIPv6 {
 		options = append(options, "-6")
+	} else if p.useIPv4 {
+		options = append(options, "-4")
 	}
 
 	if p.excludeFile != "" {
