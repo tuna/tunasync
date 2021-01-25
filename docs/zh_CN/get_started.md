@@ -8,7 +8,7 @@ date: 2016-10-31 00:50:00
 
 本例中:
 
-- 只镜像[elvish](https://elvish.io)项目
+- 只镜像[elvish](https://elv.sh)项目
 - 禁用了https
 - 禁用了cgroup支持
 
@@ -61,7 +61,7 @@ ssl_key = ""
 [[mirrors]]
 name = "elvish"
 provider = "rsync"
-upstream = "rsync://rsync.elvish.io/elvish/"
+upstream = "rsync://rsync.elv.sh/elvish/"
 use_ipv6 = false
 ```
 
