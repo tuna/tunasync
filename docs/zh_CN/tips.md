@@ -83,7 +83,7 @@ snapshot_path = "/path/to/snapshot/directory"
 [[mirrors]]
 name = "elvish"
 provider = "rsync"
-upstream = "rsync://rsync.elvish.io/elvish/"
+upstream = "rsync://rsync.elv.sh/elvish/"
 interval = 1440
 snapshot_path = "/data/publish/elvish"
 ```
