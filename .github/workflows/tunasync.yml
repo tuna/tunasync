@@ -42,7 +42,7 @@ jobs:
     - name: Setup test dependencies
       run: |
         sudo apt-get update
-        sudo apt-get install -y cgroup-bin
+        sudo apt-get install -y cgroup-tools
         docker pull alpine:3.8
         lssubsys -am
         sudo cgcreate -a $USER -t $USER -g cpu:tunasync
