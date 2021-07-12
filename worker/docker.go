@@ -13,6 +13,7 @@ type dockerHook struct {
 	image   string
 	volumes []string
 	options []string
+	memoryLimit MemBytes
 }
 
 func newDockerHook(p mirrorProvider, gCfg dockerConfig, mCfg mirrorConfig) *dockerHook {
@@ -35,6 +36,7 @@ func newDockerHook(p mirrorProvider, gCfg dockerConfig, mCfg mirrorConfig) *dock
 		image:   mCfg.DockerImage,
 		volumes: volumes,
 		options: options,
+		memoryLimit: mCfg.MemoryLimit,
 	}
 }
 

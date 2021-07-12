@@ -56,6 +56,10 @@ func newCmdJob(provider mirrorProvider, cmdAndArgs []string, workingDir string, 
 			kv := fmt.Sprintf("%s=%s", k, v)
 			args = append(args, "-e", kv)
 		}
+		// set memlimit
+		if d.memoryLimit != 0 {
+		  args = append(args, "-m", fmt.Sprint(d.memoryLimit.Value()))
+		}
 		// apply options
 		args = append(args, d.options...)
 		// apply image and command
