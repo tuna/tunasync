@@ -7,6 +7,7 @@ import (
 
 	"github.com/BurntSushi/toml"
 	"github.com/imdario/mergo"
+	units "github.com/docker/go-units"
 )
 
 type providerEnum uint8
@@ -113,6 +114,32 @@ type includedMirrorConfig struct {
 	Mirrors []mirrorConfig `toml:"mirrors"`
 }
 
+type MemBytes int64
+
+// Set sets the value of the MemBytes by passing a string
+func (m *MemBytes) Set(value string) error {
+	val, err := units.RAMInBytes(value)
+	*m = MemBytes(val)
+	return err
+}
+
+// Type returns the type
+func (m *MemBytes) Type() string {
+	return "bytes"
+}
+
+// Value returns the value in int64
+func (m *MemBytes) Value() int64 {
+	return int64(*m)
+}
+
+// UnmarshalJSON is the customized unmarshaler for MemBytes
+func (m *MemBytes) UnmarshalText(s []byte) error {
+	val, err := units.RAMInBytes(string(s))
+	*m = MemBytes(val)
+	return err
+}
+
 type mirrorConfig struct {
 	Name         string            `toml:"name"`
 	Provider     providerEnum      `toml:"provider"`
@@ -148,7 +175,7 @@ type mirrorConfig struct {
 	RsyncOverride []string `toml:"rsync_override"`
 	Stage1Profile string   `toml:"stage1_profile"`
 
-	MemoryLimit string `toml:"memory_limit"`
+	MemoryLimit MemBytes `toml:"memory_limit"`
 
 	DockerImage   string   `toml:"docker_image"`
 	DockerVolumes []string `toml:"docker_volumes"`

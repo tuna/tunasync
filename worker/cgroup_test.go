@@ -8,6 +8,7 @@ import (
 	"strings"
 	"testing"
 	"time"
+	units "github.com/docker/go-units"
 
 	. "github.com/smartystreets/goconvey/convey"
 )
@@ -72,7 +73,7 @@ sleep 30
 		provider, err := newCmdProvider(c)
 		So(err, ShouldBeNil)
 
-		cg := newCgroupHook(provider, "/sys/fs/cgroup", "tunasync", "cpu", "")
+		cg := newCgroupHook(provider, "/sys/fs/cgroup", "tunasync", "cpu", 0)
 		provider.AddHook(cg)
 
 		err = cg.preExec()
@@ -132,7 +133,7 @@ sleep 30
 		provider, err := newRsyncProvider(c)
 		So(err, ShouldBeNil)
 
-		cg := newCgroupHook(provider, "/sys/fs/cgroup", "tunasync", "cpu", "512M")
+		cg := newCgroupHook(provider, "/sys/fs/cgroup", "tunasync", "cpu", 512 * units.MiB)
 		provider.AddHook(cg)
 
 		err = cg.preExec()

@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 	"testing"
 	"time"
+	units "github.com/docker/go-units"
 
 	. "github.com/smartystreets/goconvey/convey"
 )
@@ -53,12 +54,15 @@ provider = "two-stage-rsync"
 stage1_profile = "debian"
 upstream = "rsync://ftp.debian.org/debian/"
 use_ipv6 = true
+memory_limit = "256MiB"
 
 [[mirrors]]
 name = "fedora"
 provider = "rsync"
 upstream = "rsync://ftp.fedoraproject.org/fedora/"
 use_ipv6 = true
+memory_limit = "128M"
+
 exclude_file = "/etc/tunasync.d/fedora-exclude.txt"
 exec_on_failure = [
 	"bash -c 'echo ${TUNASYNC_JOB_EXIT_STATUS} > ${TUNASYNC_WORKING_DIR}/exit_status'"
@@ -141,17 +145,20 @@ use_ipv6 = true
 		So(m.Name, ShouldEqual, "debian")
 		So(m.MirrorDir, ShouldEqual, "")
 		So(m.Provider, ShouldEqual, provTwoStageRsync)
+		So(m.MemoryLimit.Value(), ShouldEqual, 256 * units.MiB)
 
 		m = cfg.Mirrors[2]
 		So(m.Name, ShouldEqual, "fedora")
 		So(m.MirrorDir, ShouldEqual, "")
 		So(m.Provider, ShouldEqual, provRsync)
 		So(m.ExcludeFile, ShouldEqual, "/etc/tunasync.d/fedora-exclude.txt")
+		So(m.MemoryLimit.Value(), ShouldEqual,  128 * units.MiB)
 
 		m = cfg.Mirrors[3]
 		So(m.Name, ShouldEqual, "debian-cd")
 		So(m.MirrorDir, ShouldEqual, "")
 		So(m.Provider, ShouldEqual, provTwoStageRsync)
+		So(m.MemoryLimit.Value(), ShouldEqual,  0)
 
 		m = cfg.Mirrors[4]
 		So(m.Name, ShouldEqual, "debian-security")

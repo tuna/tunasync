@@ -21,10 +21,10 @@ type cgroupHook struct {
 	baseGroup string
 	created   bool
 	subsystem string
-	memLimit  string
+	memLimit  MemBytes
 }
 
-func newCgroupHook(p mirrorProvider, basePath, baseGroup, subsystem, memLimit string) *cgroupHook {
+func newCgroupHook(p mirrorProvider, basePath, baseGroup, subsystem string, memLimit MemBytes) *cgroupHook {
 	if basePath == "" {
 		basePath = "/sys/fs/cgroup"
 	}
@@ -52,11 +52,11 @@ func (c *cgroupHook) preExec() error {
 	if c.subsystem != "memory" {
 		return nil
 	}
-	if c.memLimit != "" {
+	if c.memLimit != 0 {
 		gname := fmt.Sprintf("%s/%s", c.baseGroup, c.provider.Name())
 		return sh.Command(
 			"cgset", "-r",
-			fmt.Sprintf("memory.limit_in_bytes=%s", c.memLimit),
+			fmt.Sprintf("memory.limit_in_bytes=%d", c.memLimit.Value()),
 			gname,
 		).Run()
 	}

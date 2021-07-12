@@ -11,6 +11,7 @@ require (
 	github.com/codeskyblue/go-sh v0.0.0-20190412065543-76bd3d59ff27
 	github.com/dennwc/btrfs v0.0.0-20190517175702-d917b30ff035
 	github.com/dgraph-io/badger/v2 v2.2007.2
+	github.com/docker/go-units v0.4.0 // indirect
 	github.com/flynn/go-shlex v0.0.0-20150515145356-3f9db97f8568 // indirect
 	github.com/gin-gonic/gin v1.5.0
 	github.com/go-redis/redis/v8 v8.3.0
