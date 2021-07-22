@@ -12,6 +12,7 @@ import (
 	"github.com/pkg/profile"
 	"gopkg.in/op/go-logging.v1"
 	"github.com/urfave/cli"
+	"github.com/moby/moby/pkg/reexec"
 
 	tunasync "github.com/tuna/tunasync/internal"
 	"github.com/tuna/tunasync/manager"
@@ -108,6 +109,10 @@ func startWorker(c *cli.Context) error {
 }
 
 func main() {
+
+	if reexec.Init() {
+		return
+	}
 
 	cli.VersionPrinter = func(c *cli.Context) {
 		var builddate string

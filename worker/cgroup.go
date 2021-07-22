@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strconv"
 	"syscall"
@@ -13,6 +14,7 @@ import (
 	"golang.org/x/sys/unix"
 
 	"github.com/codeskyblue/go-sh"
+	"github.com/moby/moby/pkg/reexec"
 )
 
 type cgroupHook struct {
@@ -22,6 +24,42 @@ type cgroupHook struct {
 	created   bool
 	subsystem string
 	memLimit  MemBytes
+}
+
+func init () {
+  reexec.Register("tunasync-exec", waitExec)
+}
+
+func waitExec () {
+  binary, lookErr := exec.LookPath(os.Args[1])
+  if lookErr != nil {
+    panic(lookErr)
+  }
+
+  pipe := os.NewFile(3, "pipe")
+  if pipe != nil {
+    for {
+      tmpBytes := make([]byte, 1)
+      nRead, err := pipe.Read(tmpBytes)
+      if err != nil {
+        break
+      }
+      if nRead == 0 {
+        break
+      }
+    }
+    err := pipe.Close()
+    if err != nil {
+    }
+  }
+
+  args := os.Args[1:]
+  env := os.Environ()
+  execErr := syscall.Exec(binary, args, env)
+  if execErr != nil {
+    panic(execErr)
+  }
+  panic("Exec failed.")
 }
 
 func newCgroupHook(p mirrorProvider, basePath, baseGroup, subsystem string, memLimit MemBytes) *cgroupHook {
