@@ -15,58 +15,100 @@ import (
 
 	"github.com/codeskyblue/go-sh"
 	"github.com/moby/moby/pkg/reexec"
+	cgv1 "github.com/containerd/cgroups"
+	cgv2 "github.com/containerd/cgroups/v2"
 )
 
 type cgroupHook struct {
 	emptyHook
-	basePath  string
+	basePath	string
 	baseGroup string
-	created   bool
+	created	 bool
 	subsystem string
-	memLimit  MemBytes
+	memLimit	MemBytes
 }
 
 func init () {
-  reexec.Register("tunasync-exec", waitExec)
+	reexec.Register("tunasync-exec", waitExec)
 }
 
 func waitExec () {
-  binary, lookErr := exec.LookPath(os.Args[1])
-  if lookErr != nil {
-    panic(lookErr)
-  }
+	binary, lookErr := exec.LookPath(os.Args[1])
+	if lookErr != nil {
+		panic(lookErr)
+	}
 
-  pipe := os.NewFile(3, "pipe")
-  if pipe != nil {
-    for {
-      tmpBytes := make([]byte, 1)
-      nRead, err := pipe.Read(tmpBytes)
-      if err != nil {
-        break
-      }
-      if nRead == 0 {
-        break
-      }
-    }
-    err := pipe.Close()
-    if err != nil {
-    }
-  }
+	pipe := os.NewFile(3, "pipe")
+	if pipe != nil {
+		for {
+			tmpBytes := make([]byte, 1)
+			nRead, err := pipe.Read(tmpBytes)
+			if err != nil {
+				break
+			}
+			if nRead == 0 {
+				break
+			}
+		}
+		err := pipe.Close()
+		if err != nil {
+		}
+	}
 
-  args := os.Args[1:]
-  env := os.Environ()
-  execErr := syscall.Exec(binary, args, env)
-  if execErr != nil {
-    panic(execErr)
-  }
-  panic("Exec failed.")
+	args := os.Args[1:]
+	env := os.Environ()
+	execErr := syscall.Exec(binary, args, env)
+	if execErr != nil {
+		panic(execErr)
+	}
+	panic("Exec failed.")
+}
+
+func initCgroup(cfg *cgroupConfig) (error) {
+
+	baseGroup := cfg.Group
+	//subsystem := cfg.Subsystem
+
+	// If baseGroup is empty, it implies using the cgroup of the current process
+	// otherwise, it refers to a absolute group path
+	if baseGroup != "" {
+		baseGroup = filepath.Join("/", baseGroup)
+	}
+
+	cfg.isUnified = cgv1.Mode() == cgv1.Unified
+
+	if cfg.isUnified {
+		var err error
+		g := baseGroup
+		if g == "" {
+			if g, err = cgv2.NestedGroupPath(""); err != nil {
+				return err
+			}
+		}
+		if cfg.cgMgrV2, err = cgv2.LoadManager("/sys/fs/cgroup", g); err != nil {
+			return err
+		}
+	} else {
+		var err error
+		var pather cgv1.Path
+		if baseGroup != "" {
+			pather = cgv1.StaticPath(baseGroup)
+		} else {
+			pather = cgv1.NestedPath("")
+		}
+		if cfg.cgMgrV1, err = cgv1.Load(cgv1.V1, pather); err != nil {
+			return err
+		}
+	}
+
+	return nil
 }
 
 func newCgroupHook(p mirrorProvider, cfg cgroupConfig, memLimit MemBytes) *cgroupHook {
 	var (
-	  basePath = cfg.BasePath
-	  baseGroup = cfg.Group
-	  subsystem = cfg.Subsystem
+		basePath = cfg.BasePath
+		baseGroup = cfg.Group
+		subsystem = cfg.Subsystem
 	)
 	if basePath == "" {
 		basePath = "/sys/fs/cgroup"
@@ -81,7 +123,7 @@ func newCgroupHook(p mirrorProvider, cfg cgroupConfig, memLimit MemBytes) *cgrou
 		emptyHook: emptyHook{
 			provider: p,
 		},
-		basePath:  basePath,
+		basePath:	basePath,
 		baseGroup: baseGroup,
 		subsystem: subsystem,
 	}

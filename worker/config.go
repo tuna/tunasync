@@ -8,6 +8,8 @@ import (
 	"github.com/BurntSushi/toml"
 	"github.com/imdario/mergo"
 	units "github.com/docker/go-units"
+	cgv1 "github.com/containerd/cgroups"
+	cgv2 "github.com/containerd/cgroups/v2"
 )
 
 type providerEnum uint8
@@ -88,6 +90,9 @@ type cgroupConfig struct {
 	BasePath  string `toml:"base_path"`
 	Group     string `toml:"group"`
 	Subsystem string `toml:"subsystem"`
+	isUnified bool
+	cgMgrV1   cgv1.Cgroup
+	cgMgrV2   *cgv2.Manager
 }
 
 type dockerConfig struct {
