@@ -73,7 +73,8 @@ sleep 30
 		provider, err := newCmdProvider(c)
 		So(err, ShouldBeNil)
 
-		cg := newCgroupHook(provider, "/sys/fs/cgroup", "tunasync", "cpu", 0)
+		cgcf := cgroupConfig{BasePath: "/sys/fs/cgroup", Group: "tunasync", Subsystem: "cpu"}
+		cg := newCgroupHook(provider, cgcf, 0)
 		provider.AddHook(cg)
 
 		err = cg.preExec()
@@ -133,7 +134,8 @@ sleep 30
 		provider, err := newRsyncProvider(c)
 		So(err, ShouldBeNil)
 
-		cg := newCgroupHook(provider, "/sys/fs/cgroup", "tunasync", "cpu", 512 * units.MiB)
+		cgcf := cgroupConfig{BasePath: "/sys/fs/cgroup", Group: "tunasync", Subsystem: "cpu"}
+		cg := newCgroupHook(provider, cgcf, 512 * units.MiB)
 		provider.AddHook(cg)
 
 		err = cg.preExec()

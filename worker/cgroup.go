@@ -62,7 +62,12 @@ func waitExec () {
   panic("Exec failed.")
 }
 
-func newCgroupHook(p mirrorProvider, basePath, baseGroup, subsystem string, memLimit MemBytes) *cgroupHook {
+func newCgroupHook(p mirrorProvider, cfg cgroupConfig, memLimit MemBytes) *cgroupHook {
+	var (
+	  basePath = cfg.BasePath
+	  baseGroup = cfg.Group
+	  subsystem = cfg.Subsystem
+	)
 	if basePath == "" {
 		basePath = "/sys/fs/cgroup"
 	}
