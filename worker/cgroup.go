@@ -1,19 +1,16 @@
 package worker
 
 import (
-	"bufio"
 	"errors"
 	"fmt"
 	"os"
 	"os/exec"
 	"path/filepath"
-	"strconv"
 	"syscall"
 	"time"
 
 	"golang.org/x/sys/unix"
 
-	"github.com/codeskyblue/go-sh"
 	"github.com/moby/moby/pkg/reexec"
 	cgv1 "github.com/containerd/cgroups"
 	cgv2 "github.com/containerd/cgroups/v2"
@@ -22,11 +19,10 @@ import (
 
 type cgroupHook struct {
 	emptyHook
-	basePath	string
-	baseGroup string
-	created	 bool
-	subsystem string
-	memLimit	MemBytes
+	cgCfg     cgroupConfig
+	memLimit  MemBytes
+	cgMgrV1   cgv1.Cgroup
+	cgMgrV2   *cgv2.Manager
 }
 
 func init () {
@@ -240,45 +236,47 @@ func initCgroup(cfg *cgroupConfig) (error) {
 }
 
 func newCgroupHook(p mirrorProvider, cfg cgroupConfig, memLimit MemBytes) *cgroupHook {
-	var (
-		basePath = cfg.BasePath
-		baseGroup = cfg.Group
-		subsystem = cfg.Subsystem
-	)
-	if basePath == "" {
-		basePath = "/sys/fs/cgroup"
-	}
-	if baseGroup == "" {
-		baseGroup = "tunasync"
-	}
-	if subsystem == "" {
-		subsystem = "cpu"
-	}
 	return &cgroupHook{
 		emptyHook: emptyHook{
 			provider: p,
 		},
-		basePath:  basePath,
-		baseGroup: baseGroup,
-		subsystem: subsystem,
+		cgCfg: cfg,
 	}
 }
 
 func (c *cgroupHook) preExec() error {
-	c.created = true
-	if err := sh.Command("cgcreate", "-g", c.Cgroup()).Run(); err != nil {
-		return err
-	}
-	if c.subsystem != "memory" {
-		return nil
-	}
-	if c.memLimit != 0 {
-		gname := fmt.Sprintf("%s/%s", c.baseGroup, c.provider.Name())
-		return sh.Command(
-			"cgset", "-r",
-			fmt.Sprintf("memory.limit_in_bytes=%d", c.memLimit.Value()),
-			gname,
-		).Run()
+	if c.cgCfg.isUnified {
+		logger.Debugf("Creating v2 cgroup for task %s", c.provider.Name())
+		var resSet *cgv2.Resources
+		if c.memLimit != 0 {
+			resSet = &cgv2.Resources {
+				Memory: &cgv2.Memory{
+					Max: func(i int64) *int64 { return &i }(c.memLimit.Value()),
+				},
+			}
+		}
+		subMgr, err := c.cgMgrV2.NewChild(c.provider.Name(), resSet)
+		if err != nil {
+			logger.Errorf("Failed to create cgroup for task %s: %s", c.provider.Name(), err.Error())
+			return err
+		}
+		c.cgMgrV2 = subMgr
+	} else {
+		logger.Debugf("Creating v1 cgroup for task %s", c.provider.Name())
+		var resSet *contspecs.LinuxResources
+		if c.memLimit != 0 {
+			resSet = &contspecs.LinuxResources {
+				Memory: &contspecs.LinuxMemory{
+					Limit: func(i int64) *int64 { return &i }(c.memLimit.Value()),
+				},
+			}
+		}
+		subMgr, err := c.cgMgrV1.New(c.provider.Name(), resSet)
+		if err != nil {
+			logger.Errorf("Failed to create cgroup for task %s: %s", c.provider.Name(), err.Error())
+			return err
+		}
+		c.cgMgrV1 = subMgr
 	}
 	return nil
 }
@@ -289,36 +287,59 @@ func (c *cgroupHook) postExec() error {
 		logger.Errorf("Error killing tasks: %s", err.Error())
 	}
 
-	c.created = false
-	return sh.Command("cgdelete", c.Cgroup()).Run()
-}
-
-func (c *cgroupHook) Cgroup() string {
-	name := c.provider.Name()
-	return fmt.Sprintf("%s:%s/%s", c.subsystem, c.baseGroup, name)
+	if c.cgCfg.isUnified {
+		logger.Debugf("Deleting v2 cgroup for task %s", c.provider.Name())
+		if err := c.cgMgrV2.Delete(); err != nil {
+			logger.Errorf("Failed to delete cgroup for task %s: %s", c.provider.Name(), err.Error())
+			return err
+		}
+		c.cgMgrV2 = nil
+	} else {
+		logger.Debugf("Deleting v1 cgroup for task %s", c.provider.Name())
+		if err := c.cgMgrV1.Delete(); err != nil {
+			logger.Errorf("Failed to delete cgroup for task %s: %s", c.provider.Name(), err.Error())
+			return err
+		}
+		c.cgMgrV1 = nil
+	}
+	return nil
 }
 
 func (c *cgroupHook) killAll() error {
-	if !c.created {
-		return nil
+	if c.cgCfg.isUnified {
+		if c.cgMgrV2 == nil {
+			return nil
+		}
+	} else {
+		if c.cgMgrV1 == nil {
+			return nil
+		}
 	}
-	name := c.provider.Name()
 
 	readTaskList := func() ([]int, error) {
 		taskList := []int{}
-		taskFile, err := os.Open(filepath.Join(c.basePath, c.subsystem, c.baseGroup, name, "tasks"))
-		if err != nil {
-			return taskList, err
-		}
-		defer taskFile.Close()
-
-		scanner := bufio.NewScanner(taskFile)
-		for scanner.Scan() {
-			pid, err := strconv.Atoi(scanner.Text())
-			if err != nil {
-				return taskList, err
+		if c.cgCfg.isUnified {
+			procs, err := c.cgMgrV2.Procs(false)
+			if (err != nil) {
+				return []int{}, err
 			}
-			taskList = append(taskList, pid)
+			for _, proc := range procs {
+				taskList = append(taskList, int(proc))
+			}
+		} else {
+			taskSet := make(map[int]struct{})
+			for _, subsys := range(c.cgMgrV1.Subsystems()) {
+				procs, err := c.cgMgrV1.Processes(subsys.Name(), false)
+				if err != nil {
+					return []int{}, err
+				}
+				for _, proc := range(procs) {
+					taskSet[proc.Pid] = struct{}{}
+				}
+			}
+			for proc := range(taskSet) {
+				taskList = append(taskList, proc)
+			}
 		}
 		return taskList, nil
 	}

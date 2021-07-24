@@ -70,10 +70,11 @@ func newCmdJob(provider mirrorProvider, cmdAndArgs []string, workingDir string, 
 		cmd = exec.Command(c, args...)
 
 	} else if provider.Cgroup() != nil {
-		c := "cgexec"
-		args := []string{"-g", provider.Cgroup().Cgroup()}
-		args = append(args, cmdAndArgs...)
-		cmd = exec.Command(c, args...)
+		//c := "cgexec"
+		//args := []string{"-g", provider.Cgroup().Cgroup()}
+		//args = append(args, cmdAndArgs...)
+		//cmd = exec.Command(c, args...)
+		cmd = exec.Command(cmdAndArgs[0], cmdAndArgs[1:]...)
 
 	} else {
 		if len(cmdAndArgs) == 1 {
