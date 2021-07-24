@@ -74,6 +74,8 @@ sleep 30
 		So(err, ShouldBeNil)
 
 		cgcf := cgroupConfig{BasePath: "/sys/fs/cgroup", Group: "tunasync", Subsystem: "cpu"}
+		err = initCgroup(&cgcf)
+		So(err, ShouldBeNil)
 		cg := newCgroupHook(provider, cgcf, 0)
 		provider.AddHook(cg)
 
@@ -135,6 +137,8 @@ sleep 30
 		So(err, ShouldBeNil)
 
 		cgcf := cgroupConfig{BasePath: "/sys/fs/cgroup", Group: "tunasync", Subsystem: "cpu"}
+		err = initCgroup(&cgcf)
+		So(err, ShouldBeNil)
 		cg := newCgroupHook(provider, cgcf, 512 * units.MiB)
 		provider.AddHook(cg)
 
