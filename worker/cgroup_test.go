@@ -10,9 +10,14 @@ import (
 	"time"
 	cgv1 "github.com/containerd/cgroups"
 	units "github.com/docker/go-units"
+	"github.com/moby/moby/pkg/reexec"
 
 	. "github.com/smartystreets/goconvey/convey"
 )
+
+func init() {
+	reexec.Init()
+}
 
 func TestCgroup(t *testing.T) {
 	Convey("Cgroup Should Work", t, func(ctx C) {
@@ -77,14 +82,15 @@ sleep 30
 		cgcf := cgroupConfig{BasePath: "/sys/fs/cgroup", Group: "tunasync", Subsystem: "cpu"}
 		err = initCgroup(&cgcf)
 		So(err, ShouldBeNil)
+		if cgcf.isUnified {
+			So(cgcf.cgMgrV2, ShouldNotBeNil)
+		} else {
+			So(cgcf.cgMgrV1, ShouldNotBeNil)
+		}
 		cg := newCgroupHook(provider, cgcf, 0)
 		provider.AddHook(cg)
 
 		err = cg.preExec()
-		if err != nil {
-			logger.Errorf("Failed to create cgroup")
-			return
-		}
 		So(err, ShouldBeNil)
 
 		go func() {
@@ -140,20 +146,27 @@ sleep 30
 		cgcf := cgroupConfig{BasePath: "/sys/fs/cgroup", Group: "tunasync", Subsystem: "cpu"}
 		err = initCgroup(&cgcf)
 		So(err, ShouldBeNil)
+		if cgcf.isUnified {
+			So(cgcf.cgMgrV2, ShouldNotBeNil)
+		} else {
+			So(cgcf.cgMgrV1, ShouldNotBeNil)
+		}
 		cg := newCgroupHook(provider, cgcf, 512 * units.MiB)
 		provider.AddHook(cg)
 
 		err = cg.preExec()
-		if err != nil {
-			logger.Errorf("Failed to create cgroup")
-			return
-		}
-		So(cg.cgMgrV1, ShouldNotBeNil)
-		for _, subsys := range(cg.cgMgrV1.Subsystems()) {
-			if subsys.Name() == cgv1.Memory {
-				memoLimit, err := ioutil.ReadFile(filepath.Join(cgcf.BasePath, "memory", cgcf.Group, provider.Name(), "memory.limit_in_bytes"))
-				So(err, ShouldBeNil)
-				So(strings.Trim(string(memoLimit), "\n"), ShouldEqual, strconv.Itoa(512*1024*1024))
+		So(err, ShouldBeNil)
+		if cgcf.isUnified {
+			memoLimit, err := ioutil.ReadFile(filepath.Join(cgcf.BasePath, cgcf.Group, provider.Name(), "memory.max"))
+			So(err, ShouldBeNil)
+			So(strings.Trim(string(memoLimit), "\n"), ShouldEqual, strconv.Itoa(512*1024*1024))
+		} else {
+			for _, subsys := range(cg.cgMgrV1.Subsystems()) {
+				if subsys.Name() == cgv1.Memory {
+					memoLimit, err := ioutil.ReadFile(filepath.Join(cgcf.BasePath, "memory", cgcf.Group, provider.Name(), "memory.limit_in_bytes"))
+					So(err, ShouldBeNil)
+					So(strings.Trim(string(memoLimit), "\n"), ShouldEqual, strconv.Itoa(512*1024*1024))
+				}
 			}
 		}
 		cg.postExec()

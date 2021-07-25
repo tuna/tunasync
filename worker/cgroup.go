@@ -3,6 +3,7 @@ package worker
 import (
 	"errors"
 	"fmt"
+	"io/ioutil"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -25,38 +26,47 @@ type cgroupHook struct {
 	cgMgrV2   *cgv2.Manager
 }
 
+type execCmd string
+
+const (
+	cmdCont     execCmd = "cont"
+	cmdAbrt     execCmd = "abrt"
+)
+
 func init () {
 	reexec.Register("tunasync-exec", waitExec)
 }
 
 func waitExec () {
-	binary, lookErr := exec.LookPath(os.Args[1])
-	if lookErr != nil {
-		panic(lookErr)
+	binary, err := exec.LookPath(os.Args[1])
+	if err != nil {
+		panic(err)
 	}
 
 	pipe := os.NewFile(3, "pipe")
 	if pipe != nil {
-		for {
-			tmpBytes := make([]byte, 1)
-			nRead, err := pipe.Read(tmpBytes)
+		if _, err := pipe.Stat(); err == nil {
+			cmdBytes, err := ioutil.ReadAll(pipe)
 			if err != nil {
-				break
+				panic(err)
 			}
-			if nRead == 0 {
-				break
+			if err := pipe.Close(); err != nil {
 			}
-		}
-		err := pipe.Close()
-		if err != nil {
+			cmd := execCmd(string(cmdBytes))
+			switch cmd {
+				case cmdAbrt:
+					fallthrough
+				default:
+					panic("Exited on request")
+				case cmdCont:
+			}
 		}
 	}
 
 	args := os.Args[1:]
 	env := os.Environ()
-	execErr := syscall.Exec(binary, args, env)
-	if execErr != nil {
-		panic(execErr)
+	if err := syscall.Exec(binary, args, env); err != nil {
+		panic(err)
 	}
 	panic("Exec failed.")
 }
@@ -241,6 +251,7 @@ func newCgroupHook(p mirrorProvider, cfg cgroupConfig, memLimit MemBytes) *cgrou
 			provider: p,
 		},
 		cgCfg: cfg,
+		memLimit: memLimit,
 	}
 }
 
@@ -255,7 +266,7 @@ func (c *cgroupHook) preExec() error {
 				},
 			}
 		}
-		subMgr, err := c.cgMgrV2.NewChild(c.provider.Name(), resSet)
+		subMgr, err := c.cgCfg.cgMgrV2.NewChild(c.provider.Name(), resSet)
 		if err != nil {
 			logger.Errorf("Failed to create cgroup for task %s: %s", c.provider.Name(), err.Error())
 			return err
@@ -263,15 +274,15 @@ func (c *cgroupHook) preExec() error {
 		c.cgMgrV2 = subMgr
 	} else {
 		logger.Debugf("Creating v1 cgroup for task %s", c.provider.Name())
-		var resSet *contspecs.LinuxResources
+		var resSet contspecs.LinuxResources
 		if c.memLimit != 0 {
-			resSet = &contspecs.LinuxResources {
+			resSet = contspecs.LinuxResources {
 				Memory: &contspecs.LinuxMemory{
 					Limit: func(i int64) *int64 { return &i }(c.memLimit.Value()),
 				},
 			}
 		}
-		subMgr, err := c.cgMgrV1.New(c.provider.Name(), resSet)
+		subMgr, err := c.cgCfg.cgMgrV1.New(c.provider.Name(), &resSet)
 		if err != nil {
 			logger.Errorf("Failed to create cgroup for task %s: %s", c.provider.Name(), err.Error())
 			return err

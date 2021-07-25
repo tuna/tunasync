@@ -12,6 +12,8 @@ import (
 
 	"github.com/codeskyblue/go-sh"
 	"golang.org/x/sys/unix"
+	"github.com/moby/moby/pkg/reexec"
+	cgv1 "github.com/containerd/cgroups"
 )
 
 // runner is to run os commands giving command line, env and log file
@@ -70,11 +72,7 @@ func newCmdJob(provider mirrorProvider, cmdAndArgs []string, workingDir string, 
 		cmd = exec.Command(c, args...)
 
 	} else if provider.Cgroup() != nil {
-		//c := "cgexec"
-		//args := []string{"-g", provider.Cgroup().Cgroup()}
-		//args = append(args, cmdAndArgs...)
-		//cmd = exec.Command(c, args...)
-		cmd = exec.Command(cmdAndArgs[0], cmdAndArgs[1:]...)
+		cmd = reexec.Command(append([]string{"tunasync-exec"}, cmdAndArgs...)...)
 
 	} else {
 		if len(cmdAndArgs) == 1 {
@@ -109,9 +107,59 @@ func newCmdJob(provider mirrorProvider, cmdAndArgs []string, workingDir string, 
 }
 
 func (c *cmdJob) Start() error {
+	cg := c.provider.Cgroup()
+	var (
+		pipeR *os.File
+		pipeW *os.File
+	)
+	if cg != nil {
+		logger.Debugf("Preparing cgroup sync pipes for job %s", c.provider.Name())
+		var err error
+		pipeR, pipeW, err = os.Pipe();
+		if err != nil {
+			return err
+		}
+		c.cmd.ExtraFiles = []*os.File{pipeR}
+		defer pipeR.Close()
+		defer pipeW.Close()
+	}
+
 	logger.Debugf("Command start: %v", c.cmd.Args)
 	c.finished = make(chan empty, 1)
-	return c.cmd.Start()
+
+	if err := c.cmd.Start(); err != nil {
+		return err
+	}
+	if cg != nil {
+		if err := pipeR.Close(); err != nil {
+			return err
+		}
+		if c.cmd == nil || c.cmd.Process == nil {
+			return errProcessNotStarted
+		}
+		pid := c.cmd.Process.Pid
+		if cg.cgCfg.isUnified {
+			if err := cg.cgMgrV2.AddProc(uint64(pid)); err != nil{
+				if errors.Is(err, syscall.ESRCH) {
+					logger.Infof("Write pid %d to cgroup failed: process vanished, ignoring")
+				} else {
+					return err
+				}
+			}
+		} else {
+			if err := cg.cgMgrV1.Add(cgv1.Process{Pid: pid}); err != nil{
+				if errors.Is(err, syscall.ESRCH) {
+					logger.Infof("Write pid %d to cgroup failed: process vanished, ignoring")
+				} else {
+					return err
+				}
+			}
+		}
+		if _, err := pipeW.WriteString(string(cmdCont)); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 func (c *cmdJob) Wait() error {
