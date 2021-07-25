@@ -8,6 +8,7 @@ import (
 	"strings"
 	"testing"
 	"time"
+	cgv1 "github.com/containerd/cgroups"
 	units "github.com/docker/go-units"
 
 	. "github.com/smartystreets/goconvey/convey"
@@ -46,13 +47,13 @@ redirect-std() {
 close-fds() {
     eval exec {3..255}\>\&-
 }
- 
+
 # full daemonization of external command with setsid
 daemonize() {
     (
-        redirect-std    
-        cd /            
-        close-fds       
+        redirect-std
+        cd /
+        close-fds
         exec setsid "$@"
     ) &
 }
@@ -147,11 +148,15 @@ sleep 30
 			logger.Errorf("Failed to create cgroup")
 			return
 		}
-		if cg.subsystem == "memory" {
-			memoLimit, err := ioutil.ReadFile(filepath.Join(cg.basePath, "memory", cg.baseGroup, provider.Name(), "memory.limit_in_bytes"))
-			So(err, ShouldBeNil)
-			So(strings.Trim(string(memoLimit), "\n"), ShouldEqual, strconv.Itoa(512*1024*1024))
+		So(cg.cgMgrV1, ShouldNotBeNil)
+		for _, subsys := range(cg.cgMgrV1.Subsystems()) {
+			if subsys.Name() == cgv1.Memory {
+				memoLimit, err := ioutil.ReadFile(filepath.Join(cgcf.BasePath, "memory", cgcf.Group, provider.Name(), "memory.limit_in_bytes"))
+				So(err, ShouldBeNil)
+				So(strings.Trim(string(memoLimit), "\n"), ShouldEqual, strconv.Itoa(512*1024*1024))
+			}
 		}
 		cg.postExec()
+		So(cg.cgMgrV1, ShouldBeNil)
 	})
 }
