@@ -60,6 +60,11 @@ jobs:
     - name: Run Unit tests.
       run: make test
 
+    - name: Run Additional Unit tests.
+      run: |
+        make build-test-worker
+        sudo cgexec -g "*:/" -g cpu,memory:tunasync bash -c "echo 0 > /sys/fs/cgroup/systemd/tasks; exec sudo -u $USER env USECURCGROUP=1 ./worker.test -test.v -test.coverprofile profile.cov -test.run TestCgroup"
+
     - name: Convert coverage to lcov
       uses: jandelgado/gcov2lcov-action@v1.0.0
       with:
