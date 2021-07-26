@@ -231,7 +231,10 @@ sleep 30
 						return path, err
 					}
 				})(cgv1.NestedPath(""))
-				wkrMgr, err := cgv1.Load(cgv1.V1, pather)
+				wkrMgr, err := cgv1.Load(cgv1.V1, pather, func(cfg *cgv1.InitConfig) error{
+					cfg.InitCheck = cgv1.AllowAny
+					return nil
+				})
 				So(err, ShouldBeNil)
 				origMgr := cgcf.cgMgrV1
 				for _, subsys := range(wkrMgr.Subsystems()){

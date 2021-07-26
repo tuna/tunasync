@@ -167,7 +167,10 @@ func initCgroup(cfg *cgroupConfig) (error) {
 		}
 		logger.Infof("Loading cgroup")
 		var err error
-		if cfg.cgMgrV1, err = cgv1.Load(cgv1.V1, pather); err != nil {
+		if cfg.cgMgrV1, err = cgv1.Load(cgv1.V1, pather, func(cfg *cgv1.InitConfig) error{
+			cfg.InitCheck = cgv1.AllowAny
+			return nil
+		}); err != nil {
 			return err
 		}
 		logger.Debugf("Available subsystems:")
