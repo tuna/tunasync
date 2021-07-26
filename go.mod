@@ -36,3 +36,5 @@ require (
 	gopkg.in/op/go-logging.v1 v1.0.0-20160211212156-b2cb9fa56473
 	gotest.tools/v3 v3.0.3 // indirect
 )
+
+replace github.com/containerd/cgroups v1.0.1 => github.com/shankerwangmiao/cgroups v1.0.1-p6
