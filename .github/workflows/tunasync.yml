@@ -60,12 +60,12 @@ jobs:
     - name: Run Unit tests.
       run: |
         go install github.com/wadey/gocovmerge@latest
-        make test
+        TERM=xterm-256color make test
 
     - name: Run Additional Unit tests.
       run: |
         make build-test-worker
-        sudo cgexec -g "*:/" bash -c "echo 0 > /sys/fs/cgroup/systemd/tasks; exec sudo -u $USER env USECURCGROUP=1 cgexec -g cpu,memory:tunasync ./worker.test -test.v -test.coverprofile profile2.cov -test.run TestCgroup"
+        sudo cgexec -g "*:/" bash -c "echo 0 > /sys/fs/cgroup/systemd/tasks; exec sudo -u $USER env USECURCGROUP=1 TERM=xterm-256color cgexec -g cpu,memory:tunasync ./worker.test -test.v=true -test.coverprofile profile2.cov -test.run TestCgroup"
 
     - name: Combine coverage files
       run : |
