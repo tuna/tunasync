@@ -9,10 +9,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
 
-    - name: Set up Go 1.13
+    - name: Set up Go 1.16
       uses: actions/setup-go@v1
       with:
-        go-version: 1.13
+        go-version: 1.16
       id: go
 
     - name: Check out code into the Go module directory
@@ -48,27 +48,33 @@ jobs:
         sudo cgcreate -a $USER -t $USER -g cpu:tunasync
         sudo cgcreate -a $USER -t $USER -g memory:tunasync
 
-    - name: Set up Go 1.13
+    - name: Set up Go 1.16
       uses: actions/setup-go@v1
       with:
-        go-version: 1.13
+        go-version: 1.16
       id: go
 
     - name: Check out code into the Go module directory
       uses: actions/checkout@v2
 
     - name: Run Unit tests.
-      run: make test
+      run: |
+        go install github.com/wadey/gocovmerge@latest
+        make test
 
     - name: Run Additional Unit tests.
       run: |
         make build-test-worker
-        sudo cgexec -g "*:/" bash -c "echo 0 > /sys/fs/cgroup/systemd/tasks; exec sudo -u $USER env USECURCGROUP=1 cgexec -g cpu,memory:tunasync ./worker.test -test.v -test.coverprofile profile.cov -test.run TestCgroup"
+        sudo cgexec -g "*:/" bash -c "echo 0 > /sys/fs/cgroup/systemd/tasks; exec sudo -u $USER env USECURCGROUP=1 cgexec -g cpu,memory:tunasync ./worker.test -test.v -test.coverprofile profile2.cov -test.run TestCgroup"
+
+    - name: Combine coverage files
+      run : |
+        $HOME/go/bin/gocovmerge profile.cov profile2.cov > profile-all.cov
 
     - name: Convert coverage to lcov
       uses: jandelgado/gcov2lcov-action@v1.0.0
       with:
-          infile: profile.cov
+          infile: profile-all.cov
           outfile: coverage.lcov
 
     - name: Coveralls
