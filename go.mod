@@ -26,6 +26,7 @@ require (
 	github.com/pkg/profile v1.4.0
 	github.com/ryszard/goskiplist v0.0.0-20150312221310-2dfbae5fcf46
 	github.com/sirupsen/logrus v1.8.1 // indirect
+	github.com/smartystreets/assertions v1.2.0 // indirect
 	github.com/smartystreets/goconvey v1.6.4
 	github.com/syndtr/goleveldb v1.0.0
 	github.com/urfave/cli v1.22.3

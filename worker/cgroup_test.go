@@ -3,6 +3,7 @@ package worker
 import (
 	"io/ioutil"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strconv"
 	"strings"
@@ -19,7 +20,65 @@ import (
 )
 
 func init() {
-	reexec.Init()
+	_, testReexec := os.LookupEnv("TESTREEXEC")
+	if ! testReexec {
+		reexec.Init()
+	}
+}
+
+func TestReexec(t *testing.T) {
+	testCase, testReexec := os.LookupEnv("TESTREEXEC")
+	if ! testReexec {
+		return
+	}
+	for len(os.Args) > 1 {
+		thisArg := os.Args[1]
+		os.Args = append([]string{os.Args[0]}, os.Args[2:]...)
+		if thisArg == "--" {
+			break
+		}
+	}
+	switch testCase {
+		case "1":
+			Convey("Reexec should panic when command not found", t, func(ctx C){
+				So(func(){
+					reexec.Init()
+				}, ShouldPanicWith, exec.ErrNotFound)
+			})
+		case "2":
+			Convey("Reexec should run when fd 3 is not open", t, func(ctx C){
+				So((func() error{
+					pipe := os.NewFile(3, "pipe")
+					if pipe == nil {
+						return errors.New("pipe is nil")
+					} else {
+						_, err := pipe.Stat()
+						return err
+					}
+				})(), ShouldNotBeNil)
+				So(func(){
+					reexec.Init()
+				}, ShouldPanicWith, syscall.ENOEXEC)
+			})
+		case "3":
+			Convey("Reexec should fail when fd 3 is sent with abrt cmd", t, func(ctx C){
+				So(func(){
+					reexec.Init()
+				}, ShouldPanicWith, "Exited on request")
+			})
+		case "4":
+			Convey("Reexec should run when fd 3 is sent with cont cmd", t, func(ctx C){
+				So(func(){
+					reexec.Init()
+				}, ShouldPanicWith, syscall.ENOEXEC)
+			})
+		case "5":
+			Convey("Reexec should not be triggered when argv[0] is not reexec", t, func(ctx C){
+				So(func(){
+					reexec.Init()
+				}, ShouldNotPanic)
+			})
+	}
 }
 
 func TestCgroup(t *testing.T) {
