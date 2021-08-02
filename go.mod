@@ -10,8 +10,7 @@ require (
 	github.com/boltdb/bolt v1.3.1
 	github.com/cilium/ebpf v0.6.2 // indirect
 	github.com/codeskyblue/go-sh v0.0.0-20190412065543-76bd3d59ff27
-	github.com/containerd/cgroups v1.0.1
-	github.com/coreos/go-systemd/v22 v22.3.2 // indirect
+	github.com/containerd/cgroups v1.0.2-0.20210729163027-ddda8a174e9a
 	github.com/dennwc/btrfs v0.0.0-20190517175702-d917b30ff035
 	github.com/dgraph-io/badger/v2 v2.2007.2
 	github.com/docker/go-units v0.4.0
@@ -37,5 +36,3 @@ require (
 	gopkg.in/op/go-logging.v1 v1.0.0-20160211212156-b2cb9fa56473
 	gotest.tools/v3 v3.0.3 // indirect
 )
-
-replace github.com/containerd/cgroups v1.0.1 => github.com/shankerwangmiao/cgroups v1.0.1-p6

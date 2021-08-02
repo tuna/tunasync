@@ -169,6 +169,7 @@ jobs:
         done
         if [ "$started" != "1" ]; then
           echo "Failed to wait Umlinux online"
+          exit 1
         fi
 
     - name: Prepare Uml Environment
