@@ -54,6 +54,12 @@ func NewTUNASyncWorker(cfg *Config) *Worker {
 		w.httpClient = httpClient
 	}
 
+	if cfg.Cgroup.Enable {
+		if err := initCgroup(&cfg.Cgroup); err != nil {
+			logger.Errorf("Error initializing Cgroup: %s", err.Error())
+			return nil
+		}
+	}
 	w.initJobs()
 	w.makeHTTPServer()
 	return w

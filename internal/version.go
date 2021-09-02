@@ -1,4 +1,4 @@
 package internal
 
 // Version of the program
-const Version string = "0.7.1"
+const Version string = "0.8.0"

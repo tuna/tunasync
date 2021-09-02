@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 	"testing"
 	"time"
+	units "github.com/docker/go-units"
 
 	"github.com/codeskyblue/go-sh"
 	. "github.com/smartystreets/goconvey/convey"
@@ -77,6 +78,7 @@ sleep 20
 			volumes: []string{
 				fmt.Sprintf("%s:%s", cmdScript, "/bin/cmd.sh"),
 			},
+			memoryLimit: 512 * units.MiB,
 		}
 		provider.AddHook(d)
 		So(provider.Docker(), ShouldNotBeNil)

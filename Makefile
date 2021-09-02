@@ -19,4 +19,7 @@ $(BUILDBIN:%=build-$(ARCH)/%) : build-$(ARCH)/% : cmd/%
 test:
 	go test -v -covermode=count -coverprofile=profile.cov ./...
 
-.PHONY: all test $(BUILDBIN)
+build-test-worker:
+	go test -c -covermode=count ./worker
+
+.PHONY: all test $(BUILDBIN) build-test-worker

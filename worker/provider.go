@@ -212,8 +212,7 @@ func newMirrorProvider(mirror mirrorConfig, cfg *Config) mirrorProvider {
 		// Add Cgroup Hook
 		provider.AddHook(
 			newCgroupHook(
-				provider, cfg.Cgroup.BasePath, cfg.Cgroup.Group,
-				cfg.Cgroup.Subsystem, mirror.MemoryLimit,
+				provider, cfg.Cgroup, mirror.MemoryLimit,
 			),
 		)
 	}
