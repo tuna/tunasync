@@ -1,4 +1,4 @@
-LDFLAGS="-X main.buildstamp=`date -u '+%s'` -X main.githash=`git rev-parse HEAD`"
+LDFLAGS="-X main.buildstamp=`date -u '+%s'` -X main.githash=`git rev-parse HEAD` -linkmode 'external' -extldflags '-static'"
 
 all: get tunasync tunasynctl
 
