@@ -10,9 +10,9 @@ import (
 
 type dockerHook struct {
 	emptyHook
-	image   string
-	volumes []string
-	options []string
+	image       string
+	volumes     []string
+	options     []string
 	memoryLimit MemBytes
 }
 
@@ -33,9 +33,9 @@ func newDockerHook(p mirrorProvider, gCfg dockerConfig, mCfg mirrorConfig) *dock
 		emptyHook: emptyHook{
 			provider: p,
 		},
-		image:   mCfg.DockerImage,
-		volumes: volumes,
-		options: options,
+		image:       mCfg.DockerImage,
+		volumes:     volumes,
+		options:     options,
 		memoryLimit: mCfg.MemoryLimit,
 	}
 }
@@ -49,7 +49,7 @@ func (d *dockerHook) preExec() error {
 	if _, err := os.Stat(workingDir); os.IsNotExist(err) {
 		logger.Debugf("Making dir %s", workingDir)
 		if err = os.MkdirAll(workingDir, 0755); err != nil {
-			return fmt.Errorf("Error making dir %s: %s", workingDir, err.Error())
+			return fmt.Errorf("error making dir %s: %s", workingDir, err.Error())
 		}
 	}
 

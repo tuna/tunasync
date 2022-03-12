@@ -10,12 +10,12 @@ import (
 func TestConfigDiff(t *testing.T) {
 	Convey("When old and new configs are equal", t, func() {
 		oldList := []mirrorConfig{
-			mirrorConfig{Name: "debian"},
-			mirrorConfig{Name: "debian-security"},
-			mirrorConfig{Name: "fedora"},
-			mirrorConfig{Name: "archlinux"},
-			mirrorConfig{Name: "AOSP"},
-			mirrorConfig{Name: "ubuntu"},
+			{Name: "debian"},
+			{Name: "debian-security"},
+			{Name: "fedora"},
+			{Name: "archlinux"},
+			{Name: "AOSP"},
+			{Name: "ubuntu"},
 		}
 		newList := make([]mirrorConfig, len(oldList))
 		copy(newList, oldList)
@@ -25,19 +25,19 @@ func TestConfigDiff(t *testing.T) {
 	})
 	Convey("When giving two config lists with different names", t, func() {
 		oldList := []mirrorConfig{
-			mirrorConfig{Name: "debian"},
-			mirrorConfig{Name: "debian-security"},
-			mirrorConfig{Name: "fedora"},
-			mirrorConfig{Name: "archlinux"},
-			mirrorConfig{Name: "AOSP", Env: map[string]string{"REPO": "/usr/bin/repo"}},
-			mirrorConfig{Name: "ubuntu"},
+			{Name: "debian"},
+			{Name: "debian-security"},
+			{Name: "fedora"},
+			{Name: "archlinux"},
+			{Name: "AOSP", Env: map[string]string{"REPO": "/usr/bin/repo"}},
+			{Name: "ubuntu"},
 		}
 		newList := []mirrorConfig{
-			mirrorConfig{Name: "debian"},
-			mirrorConfig{Name: "debian-cd"},
-			mirrorConfig{Name: "archlinuxcn"},
-			mirrorConfig{Name: "AOSP", Env: map[string]string{"REPO": "/usr/local/bin/aosp-repo"}},
-			mirrorConfig{Name: "ubuntu-ports"},
+			{Name: "debian"},
+			{Name: "debian-cd"},
+			{Name: "archlinuxcn"},
+			{Name: "AOSP", Env: map[string]string{"REPO": "/usr/local/bin/aosp-repo"}},
+			{Name: "ubuntu-ports"},
 		}
 
 		difference := diffMirrorConfig(oldList, newList)

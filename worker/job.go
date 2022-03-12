@@ -79,7 +79,7 @@ func (m *mirrorJob) SetState(state uint32) {
 func (m *mirrorJob) SetProvider(provider mirrorProvider) error {
 	s := m.State()
 	if (s != stateNone) && (s != stateDisabled) {
-		return fmt.Errorf("Provider cannot be switched when job state is %d", s)
+		return fmt.Errorf("provider cannot be switched when job state is %d", s)
 	}
 	m.provider = provider
 	return nil

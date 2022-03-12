@@ -9,10 +9,10 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
-	"github.com/pkg/profile"
-	"gopkg.in/op/go-logging.v1"
-	"github.com/urfave/cli"
 	"github.com/moby/moby/pkg/reexec"
+	"github.com/pkg/profile"
+	"github.com/urfave/cli"
+	"gopkg.in/op/go-logging.v1"
 
 	tunasync "github.com/tuna/tunasync/internal"
 	"github.com/tuna/tunasync/manager"

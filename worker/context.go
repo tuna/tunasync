@@ -34,7 +34,7 @@ func (ctx *Context) Enter() *Context {
 // Exit return the upper  layer of context
 func (ctx *Context) Exit() (*Context, error) {
 	if ctx.parent == nil {
-		return nil, errors.New("Cannot exit the bottom layer context")
+		return nil, errors.New("cannot exit the bottom layer context")
 	}
 	return ctx.parent, nil
 }

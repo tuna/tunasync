@@ -11,22 +11,21 @@ import (
 	"time"
 
 	"github.com/codeskyblue/go-sh"
-	"golang.org/x/sys/unix"
-	"github.com/moby/moby/pkg/reexec"
 	cgv1 "github.com/containerd/cgroups"
+	"github.com/moby/moby/pkg/reexec"
+	"golang.org/x/sys/unix"
 )
 
 // runner is to run os commands giving command line, env and log file
 // it's an alternative to python-sh or go-sh
 
-var errProcessNotStarted = errors.New("Process Not Started")
+var errProcessNotStarted = errors.New("process not started")
 
 type cmdJob struct {
 	sync.Mutex
 	cmd        *exec.Cmd
 	workingDir string
 	env        map[string]string
-	logFile    *os.File
 	finished   chan empty
 	provider   mirrorProvider
 	retErr     error
@@ -60,7 +59,7 @@ func newCmdJob(provider mirrorProvider, cmdAndArgs []string, workingDir string, 
 		}
 		// set memlimit
 		if d.memoryLimit != 0 {
-		  args = append(args, "-m", fmt.Sprint(d.memoryLimit.Value()))
+			args = append(args, "-m", fmt.Sprint(d.memoryLimit.Value()))
 		}
 		// apply options
 		args = append(args, d.options...)
@@ -115,7 +114,7 @@ func (c *cmdJob) Start() error {
 	if cg != nil {
 		logger.Debugf("Preparing cgroup sync pipes for job %s", c.provider.Name())
 		var err error
-		pipeR, pipeW, err = os.Pipe();
+		pipeR, pipeW, err = os.Pipe()
 		if err != nil {
 			return err
 		}
@@ -139,7 +138,7 @@ func (c *cmdJob) Start() error {
 		}
 		pid := c.cmd.Process.Pid
 		if cg.cgCfg.isUnified {
-			if err := cg.cgMgrV2.AddProc(uint64(pid)); err != nil{
+			if err := cg.cgMgrV2.AddProc(uint64(pid)); err != nil {
 				if errors.Is(err, syscall.ESRCH) {
 					logger.Infof("Write pid %d to cgroup failed: process vanished, ignoring")
 				} else {
@@ -147,7 +146,7 @@ func (c *cmdJob) Start() error {
 				}
 			}
 		} else {
-			if err := cg.cgMgrV1.Add(cgv1.Process{Pid: pid}); err != nil{
+			if err := cg.cgMgrV1.Add(cgv1.Process{Pid: pid}); err != nil {
 				if errors.Is(err, syscall.ESRCH) {
 					logger.Infof("Write pid %d to cgroup failed: process vanished, ignoring")
 				} else {
