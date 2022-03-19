@@ -179,6 +179,8 @@ type mirrorConfig struct {
 	RsyncOptions  []string `toml:"rsync_options"`
 	RsyncOverride []string `toml:"rsync_override"`
 	Stage1Profile string   `toml:"stage1_profile"`
+	ArchInclude   []string `toml:"arch_include"`
+	ArchExclude   []string `toml:"arch_exclude"`
 
 	MemoryLimit MemBytes `toml:"memory_limit"`
 

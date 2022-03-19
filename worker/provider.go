@@ -169,6 +169,8 @@ func newMirrorProvider(mirror mirrorConfig, cfg *Config) mirrorProvider {
 			password:          mirror.Password,
 			excludeFile:       mirror.ExcludeFile,
 			extraOptions:      mirror.RsyncOptions,
+			archInclude:       mirror.ArchInclude,
+			archExclude:       mirror.ArchExclude,
 			rsyncNeverTimeout: mirror.RsyncNoTimeo,
 			rsyncTimeoutValue: mirror.RsyncTimeout,
 			rsyncEnv:          mirror.Env,

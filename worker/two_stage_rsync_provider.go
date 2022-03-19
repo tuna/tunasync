@@ -14,7 +14,7 @@ type twoStageRsyncConfig struct {
 	rsyncCmd                                     string
 	stage1Profile                                string
 	upstreamURL, username, password, excludeFile string
-	extraOptions                                 []string
+	extraOptions, archInclude, archExclude       []string
 	rsyncNeverTimeout                            bool
 	rsyncTimeoutValue                            int
 	rsyncEnv                                     map[string]string
@@ -31,6 +31,7 @@ type twoStageRsyncProvider struct {
 	twoStageRsyncConfig
 	stage1Options []string
 	stage2Options []string
+	archOptions   []string
 	dataSize      string
 }
 
@@ -43,6 +44,63 @@ var rsyncStage1Profiles = map[string]([]string){
 	},
 }
 
+func genRsyncFiltersForDebianArch(flag string, archList []string) ([]string, error) {
+	archFilters := make([]string, 0)
+	excludeArch := make([]string, 0)
+	allArch := map[string]string{
+		"source":         "",
+		"alpha":          "",
+		"amd64":          "",
+		"arm":            "",
+		"armel":          "",
+		"armhf":          "",
+		"hppa":           "",
+		"hurd-i386":      "",
+		"i386":           "",
+		"ia64":           "",
+		"kfreebsd-amd64": "",
+		"kfreebsd-i386":  "",
+		"mips":           "",
+		"mipsel":         "",
+		"mips64el":       "",
+		"powerpc":        "",
+		"ppc64el":        "",
+		"s390":           "",
+		"s390x":          "",
+		"sparc":          "",
+	}
+	if flag == "exclude" {
+		excludeArch = archList
+	}
+
+	if flag == "include" {
+		for _, arch := range archList {
+			delete(allArch, arch)
+		}
+		for k := range allArch {
+			excludeArch = append(excludeArch, k)
+		}
+	}
+
+	for _, arch := range excludeArch {
+		if arch == "source" {
+			archFilters = append(archFilters, "--exclude=/dists/**/source", "--exclude=/pool/**/*.tar.*", "--exclude=/pool/**/*.diff.*", "--exclude=/pool/**/*.dsc")
+		} else {
+			archFilters = append(archFilters, fmt.Sprintf("--exclude=/dists/**/binary-%s/", arch))
+			archFilters = append(archFilters, fmt.Sprintf("--exclude=/dists/**/installer-%s/", arch))
+			archFilters = append(archFilters, fmt.Sprintf("--exclude=Contents-%s.gz", arch))
+			archFilters = append(archFilters, fmt.Sprintf("--exclude=Contents-udeb-%s.gz", arch))
+			archFilters = append(archFilters, fmt.Sprintf("--exclude=/dists/**/Contents-%s.diff/", arch))
+			archFilters = append(archFilters, fmt.Sprintf("--exclude=arch-%s.files", arch))
+			archFilters = append(archFilters, fmt.Sprintf("--exclude=arch-%s.list.gz", arch))
+			archFilters = append(archFilters, fmt.Sprintf("--exclude=*_%s.deb", arch))
+			archFilters = append(archFilters, fmt.Sprintf("--exclude=*_%s.udeb", arch))
+			archFilters = append(archFilters, fmt.Sprintf("--exclude=*_%s.changes", arch))
+		}
+	}
+	return archFilters, nil
+}
+
 func newTwoStageRsyncProvider(c twoStageRsyncConfig) (*twoStageRsyncProvider, error) {
 	// TODO: check config options
 	if !strings.HasSuffix(c.upstreamURL, "/") {
@@ -50,6 +108,10 @@ func newTwoStageRsyncProvider(c twoStageRsyncConfig) (*twoStageRsyncProvider, er
 	}
 	if c.retry == 0 {
 		c.retry = defaultMaxRetry
+	}
+
+	if c.archInclude != nil && c.archExclude != nil {
+		return nil, errors.New("ARCH_EXCLUDE and ARCH_INCLUDE are mutually exclusive.  Set only one.")
 	}
 
 	provider := &twoStageRsyncProvider{
@@ -72,6 +134,20 @@ func newTwoStageRsyncProvider(c twoStageRsyncConfig) (*twoStageRsyncProvider, er
 			"--delete", "--delete-after", "--delay-updates",
 			"--safe-links",
 		},
+		archOptions: []string{},
+	}
+
+	if c.stage1Profile == "debian" || c.stage1Profile == "debian-oldstyle" {
+		if c.archInclude != nil {
+			genedFilters, _ := genRsyncFiltersForDebianArch("include", c.archInclude)
+			provider.archOptions = append(provider.archOptions, genedFilters...)
+
+		}
+		if c.archExclude != nil {
+			genedFilters, _ := genRsyncFiltersForDebianArch("exclude", c.archExclude)
+			provider.archOptions = append(provider.archOptions, genedFilters...)
+		}
+
 	}
 
 	if c.rsyncEnv == nil {
@@ -114,13 +190,16 @@ func (p *twoStageRsyncProvider) Options(stage int) ([]string, error) {
 		if !ok {
 			return nil, errors.New("Invalid Stage 1 Profile")
 		}
-		for _, exc := range stage1Profile {
-			options = append(options, exc)
+		options = append(options, stage1Profile...)
+		options = append(options, p.archOptions...)
+		if p.twoStageRsyncConfig.extraOptions != nil {
+			options = append(options, p.extraOptions...)
 		}
 
 	} else if stage == 2 {
 		options = append(options, p.stage2Options...)
-		if p.extraOptions != nil {
+		options = append(options, p.archOptions...)
+		if p.twoStageRsyncConfig.extraOptions != nil {
 			options = append(options, p.extraOptions...)
 		}
 	} else {
