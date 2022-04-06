@@ -13,7 +13,7 @@ build-image-job:
       /kaniko/executor
       --context "${CI_PROJECT_DIR}"
       --dockerfile "${CI_PROJECT_DIR}/Dockerfile"
-      --destination "${CI_REGISTRY_IMAGE}:${CI_COMMIT_TITLE}"
+      --destination "${CI_REGISTRY_IMAGE}:${CI_COMMIT_BRANCH}"
       --build-arg TARGETOS=linux
       --build-arg TARGETARCH=amd64
       --force
