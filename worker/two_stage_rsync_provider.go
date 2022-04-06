@@ -193,7 +193,11 @@ func (p *twoStageRsyncProvider) Options(stage int) ([]string, error) {
 		options = append(options, stage1Profile...)
 		options = append(options, p.archOptions...)
 		if p.twoStageRsyncConfig.extraOptions != nil {
-			options = append(options, p.extraOptions...)
+			for _, option := range p.extraOptions {
+				if option != "--delete-excluded" {
+					options = append(options, option)
+				}
+			}
 		}
 
 	} else if stage == 2 {
