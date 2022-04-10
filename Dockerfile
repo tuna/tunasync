@@ -16,7 +16,7 @@ RUN cd / && git clone https://github.com/tuna/tunasync-scripts.git
 
 FROM --platform=$TARGETPLATFORM alpine:3
 
-RUN apk update && apk add --no-cache rsync wget htop bash python3 && \
+RUN apk update && apk add --no-cache rsync wget htop bash python3 py3-pip && \
     mkdir -p /app && mkdir /data && rm -rf /var/cache/apk/* 
 
 RUN wget http://ftp-master.debian.org/ftpsync.tar.gz && tar -vxf *.tar.gz -C / && rm -rf *.tar.gz && cp -rf /distrib/* / && rm -rf /distrib
