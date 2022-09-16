@@ -19,7 +19,7 @@ require (
 	github.com/go-redis/redis/v8 v8.3.0
 	github.com/gomodule/redigo v1.8.2 // indirect
 	github.com/imdario/mergo v0.3.9
-	github.com/moby/moby v20.10.7+incompatible
+	github.com/moby/moby v20.10.18+incompatible
 	github.com/opencontainers/runtime-spec v1.0.3-0.20210326190908-1c3f411f0417
 	github.com/pkg/errors v0.9.1
 	github.com/pkg/profile v1.4.0
