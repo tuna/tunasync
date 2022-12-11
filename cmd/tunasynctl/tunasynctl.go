@@ -266,7 +266,7 @@ func listJobs(c *cli.Context) error {
 func updateMirrorSize(c *cli.Context) error {
 	args := c.Args()
 	if len(args) != 2 {
-		return cli.NewExitError("Usage: tunasynctl -w <worker-id> <mirror> <size>", 1)
+		return cli.NewExitError("Usage: tunasynctl set-size -w <worker-id> <mirror> <size>", 1)
 	}
 	workerID := c.String("worker")
 	mirrorID := args.Get(0)
