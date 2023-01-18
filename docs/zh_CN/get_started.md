@@ -39,7 +39,7 @@ name = "test_worker"
 log_dir = "/tmp/tunasync/log/tunasync/{{.Name}}"
 mirror_dir = "/tmp/tunasync"
 concurrent = 10
-interval = 1
+interval = 120
 
 [manager]
 api_base = "http://localhost:12345"
