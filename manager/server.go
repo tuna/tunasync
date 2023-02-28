@@ -216,7 +216,7 @@ func (s *Manager) listWorkers(c *gin.Context) {
 // registerWorker register an newly-online worker
 func (s *Manager) registerWorker(c *gin.Context) {
 	var _worker WorkerStatus
-	c.BindJSON(&_worker)
+	HandleError(c.BindJSON(&_worker))
 	_worker.LastOnline = time.Now()
 	_worker.LastRegister = time.Now()
 	newWorker, err := s.adapter.CreateWorker(_worker)
@@ -260,7 +260,7 @@ func (s *Manager) returnErrJSON(c *gin.Context, code int, err error) {
 func (s *Manager) updateSchedulesOfWorker(c *gin.Context) {
 	workerID := c.Param("id")
 	var schedules MirrorSchedules
-	c.BindJSON(&schedules)
+	HandleError(c.BindJSON(&schedules))
 
 	for _, schedule := range schedules.Schedules {
 		mirrorName := schedule.MirrorName
@@ -272,7 +272,8 @@ func (s *Manager) updateSchedulesOfWorker(c *gin.Context) {
 		}
 
 		s.rwmu.RLock()
-		s.adapter.RefreshWorker(workerID)
+		_, err2 := s.adapter.RefreshWorker(workerID)
+		HandleError(err2)
 		curStatus, err := s.adapter.GetMirrorStatus(workerID, mirrorName)
 		s.rwmu.RUnlock()
 		if err != nil {
@@ -307,7 +308,7 @@ func (s *Manager) updateSchedulesOfWorker(c *gin.Context) {
 func (s *Manager) updateJobOfWorker(c *gin.Context) {
 	workerID := c.Param("id")
 	var status MirrorStatus
-	c.BindJSON(&status)
+	HandleError(c.BindJSON(&status))
 	mirrorName := status.Name
 	if len(mirrorName) == 0 {
 		s.returnErrJSON(
@@ -317,7 +318,8 @@ func (s *Manager) updateJobOfWorker(c *gin.Context) {
 	}
 
 	s.rwmu.RLock()
-	s.adapter.RefreshWorker(workerID)
+	_, err := s.adapter.RefreshWorker(workerID)
+	HandleError(err)
 	curStatus, _ := s.adapter.GetMirrorStatus(workerID, mirrorName)
 	s.rwmu.RUnlock()
 
@@ -376,11 +378,12 @@ func (s *Manager) updateMirrorSize(c *gin.Context) {
 		Size string `json:"size"`
 	}
 	var msg SizeMsg
-	c.BindJSON(&msg)
+	HandleError(c.BindJSON(&msg))
 
 	mirrorName := msg.Name
 	s.rwmu.RLock()
-	s.adapter.RefreshWorker(workerID)
+	_, err1 := s.adapter.RefreshWorker(workerID)
+	HandleError(err1)
 	status, err := s.adapter.GetMirrorStatus(workerID, mirrorName)
 	s.rwmu.RUnlock()
 	if err != nil {
@@ -415,7 +418,7 @@ func (s *Manager) updateMirrorSize(c *gin.Context) {
 
 func (s *Manager) handleClientCmd(c *gin.Context) {
 	var clientCmd ClientCmd
-	c.BindJSON(&clientCmd)
+	HandleError(c.BindJSON(&clientCmd))
 	workerID := clientCmd.WorkerID
 	if workerID == "" {
 		// TODO: decide which worker should do this mirror when WorkerID is null string
@@ -472,4 +475,11 @@ func (s *Manager) handleClientCmd(c *gin.Context) {
 	}
 	// TODO: check response for success
 	c.JSON(http.StatusOK, gin.H{_infoKey: "successfully send command to worker " + workerID})
+}
+
+func HandleError(err error) {
+	if err != nil {
+		logger.Errorf("here are some error.", err)
+		return
+	}
 }
