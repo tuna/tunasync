@@ -53,34 +53,43 @@ func diffMirrorConfig(oldList, newList []mirrorConfig) []mirrorCfgTrans {
 	sort.Sort(sortableMirrorList(oList))
 	sort.Sort(sortableMirrorList(nList))
 
-	// insert a tail node to both lists
-	// as the maximum node
-	lastOld, lastNew := oList[len(oList)-1], nList[len(nList)-1]
-	maxName := lastOld.Name
-	if lastNew.Name > lastOld.Name {
-		maxName = lastNew.Name
-	}
-	Nil := mirrorConfig{Name: "~" + maxName}
-	if Nil.Name <= maxName {
-		panic("Nil.Name should be larger than maxName")
-	}
-	oList, nList = append(oList, Nil), append(nList, Nil)
+	if len(oList) != 0 && len(nList) != 0 {
+		// insert a tail node to both lists
+		// as the maximum node
+		lastOld, lastNew := oList[len(oList)-1], nList[len(nList)-1]
+		maxName := lastOld.Name
+		if lastNew.Name > lastOld.Name {
+			maxName = lastNew.Name
+		}
+		Nil := mirrorConfig{Name: "~" + maxName}
+		if Nil.Name <= maxName {
+			panic("Nil.Name should be larger than maxName")
+		}
+		oList, nList = append(oList, Nil), append(nList, Nil)
 
-	// iterate over both lists to find the difference
-	for i, j := 0, 0; i < len(oList) && j < len(nList); {
-		o, n := oList[i], nList[j]
-		if n.Name < o.Name {
-			operations = append(operations, mirrorCfgTrans{diffAdd, n})
-			j++
-		} else if o.Name < n.Name {
-			operations = append(operations, mirrorCfgTrans{diffDelete, o})
-			i++
-		} else {
-			if !reflect.DeepEqual(o, n) {
-				operations = append(operations, mirrorCfgTrans{diffModify, n})
+		// iterate over both lists to find the difference
+		for i, j := 0, 0; i < len(oList) && j < len(nList); {
+			o, n := oList[i], nList[j]
+			if n.Name < o.Name {
+				operations = append(operations, mirrorCfgTrans{diffAdd, n})
+				j++
+			} else if o.Name < n.Name {
+				operations = append(operations, mirrorCfgTrans{diffDelete, o})
+				i++
+			} else {
+				if !reflect.DeepEqual(o, n) {
+					operations = append(operations, mirrorCfgTrans{diffModify, n})
+				}
+				i++
+				j++
 			}
-			i++
-			j++
+		}
+	} else {
+		for i := 0; i < len(oList); i++ {
+			operations = append(operations, mirrorCfgTrans{diffDelete, oList[i]})
+		}
+		for i := 0; i < len(nList); i++ {
+			operations = append(operations, mirrorCfgTrans{diffAdd, nList[i]})
 		}
 	}
 
