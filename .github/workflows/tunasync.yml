@@ -9,14 +9,14 @@ jobs:
     runs-on: ubuntu-latest
     steps:
 
+    - name: Check out code into the Go module directory
+      uses: actions/checkout@v3
+
     - name: Set up Go 1.16
       uses: actions/setup-go@v4
       with:
         go-version: 1.16
       id: go
-
-    - name: Check out code into the Go module directory
-      uses: actions/checkout@v3
 
     - name: Get dependencies
       run: |
@@ -50,14 +50,14 @@ jobs:
         sudo apt-get install -y cgroup-tools
         docker pull alpine:3.8
 
+    - name: Check out code into the Go module directory
+      uses: actions/checkout@v3
+
     - name: Set up Go 1.16
       uses: actions/setup-go@v4
       with:
         go-version: 1.16
       id: go
-
-    - name: Check out code into the Go module directory
-      uses: actions/checkout@v3
 
     - name: Run Unit tests.
       run: |
