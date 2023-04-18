@@ -3,7 +3,7 @@ package manager
 import (
 	"fmt"
 
-	"github.com/boltdb/bolt"
+	bolt "github.com/boltdb/bolt"
 )
 
 // implement kv interface backed by boltdb
