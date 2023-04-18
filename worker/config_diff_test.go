@@ -23,6 +23,34 @@ func TestConfigDiff(t *testing.T) {
 		difference := diffMirrorConfig(oldList, newList)
 		So(len(difference), ShouldEqual, 0)
 	})
+	Convey("When old config is empty", t, func() {
+		newList := []mirrorConfig{
+			mirrorConfig{Name: "debian"},
+			mirrorConfig{Name: "debian-security"},
+			mirrorConfig{Name: "fedora"},
+			mirrorConfig{Name: "archlinux"},
+			mirrorConfig{Name: "AOSP"},
+			mirrorConfig{Name: "ubuntu"},
+		}
+		oldList := make([]mirrorConfig, 0)
+
+		difference := diffMirrorConfig(oldList, newList)
+		So(len(difference), ShouldEqual, len(newList))
+	})
+	Convey("When new config is empty", t, func() {
+		oldList := []mirrorConfig{
+			mirrorConfig{Name: "debian"},
+			mirrorConfig{Name: "debian-security"},
+			mirrorConfig{Name: "fedora"},
+			mirrorConfig{Name: "archlinux"},
+			mirrorConfig{Name: "AOSP"},
+			mirrorConfig{Name: "ubuntu"},
+		}
+		newList := make([]mirrorConfig, 0)
+
+		difference := diffMirrorConfig(oldList, newList)
+		So(len(difference), ShouldEqual, len(oldList))
+	})
 	Convey("When giving two config lists with different names", t, func() {
 		oldList := []mirrorConfig{
 			mirrorConfig{Name: "debian"},
