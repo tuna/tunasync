@@ -49,9 +49,6 @@ jobs:
         sudo apt-get update
         sudo apt-get install -y cgroup-tools
         docker pull alpine:3.8
-        lssubsys -am
-        sudo cgcreate -a $USER -t $USER -g cpu:tunasync
-        sudo cgcreate -a $USER -t $USER -g memory:tunasync
 
     - name: Set up Go 1.16
       uses: actions/setup-go@v1
@@ -65,12 +62,17 @@ jobs:
     - name: Run Unit tests.
       run: |
         go install github.com/wadey/gocovmerge@latest
-        TERM=xterm-256color make test
+        sudo systemd-run --service-type=oneshot --uid="$(id --user)" --pipe --wait \
+          --property=Delegate=yes --setenv=USECURCGROUP=1 \
+          --setenv=TERM=xterm-256color --same-dir \
+          make test
 
     - name: Run Additional Unit tests.
       run: |
         make build-test-worker
-        sudo cgexec -g "*:/" bash -c "echo 0 > /sys/fs/cgroup/systemd/tasks; exec sudo -u $USER env USECURCGROUP=1 TERM=xterm-256color cgexec -g cpu,memory:tunasync ./worker.test -test.v=true -test.coverprofile profile2.cov -test.run TestCgroup"
+        sudo mkdir /sys/fs/cgroup/tunasync
+        sudo ./worker.test -test.v=true -test.coverprofile profile2.cov -test.run TestCgroup
+        sudo rmdir /sys/fs/cgroup/tunasync
         touch /tmp/dummy_exec
         chmod +x /tmp/dummy_exec
         run_test_reexec (){
@@ -132,10 +134,10 @@ jobs:
         sudo apt-get update
         sudo apt-get install -y debian-archive-keyring
         sudo ln -sf /usr/share/keyrings/debian-archive-keyring.gpg /etc/apt/trusted.gpg.d/
-        echo "deb http://deb.debian.org/debian buster main" | sudo tee /etc/apt/sources.list.d/buster.list
+        echo "deb http://deb.debian.org/debian bullseye main" | sudo tee /etc/apt/sources.list.d/bullseye.list
         sudo apt-get update
-        apt-get download user-mode-linux/buster
-        sudo rm /etc/apt/sources.list.d/buster.list
+        apt-get download user-mode-linux/bullseye
+        sudo rm /etc/apt/sources.list.d/bullseye.list
         sudo apt-get update
         sudo mv user-mode-linux_*.deb /tmp/uml.deb
         sudo apt-get install --no-install-recommends -y /tmp/uml.deb
@@ -157,7 +159,7 @@ jobs:
     - name: Start Uml
       run: |
         start_uml () {
-          sudo bash -c 'linux root=/dev/root rootflags=/ rw rootfstype=hostfs mem=2G eth0=tuntap,umltap hostfs="$PWD/umlrootfs" con1=pts systemd.unified_cgroup_hierarchy=1 & pid=$!; echo "UMLINUX_PID=$pid" >> '"$GITHUB_ENV"
+          sudo bash -c 'linux root=/dev/root rootflags=/ rw rootfstype=hostfs mem=2G eth0=tuntap,umltap hostfs="$PWD/umlrootfs" con1=pts systemd.unified_cgroup_hierarchy=0 & pid=$!; echo "UMLINUX_PID=$pid" >> '"$GITHUB_ENV"
         }
         ( start_uml )
         started=0
@@ -184,20 +186,17 @@ jobs:
         EOF
         ln ./worker.test "umlrootfs/home/${CUSER}/worker.test"
 
-    - name: Run Tests in Cgroupv2
+    - name: Run Tests in Cgroupv1
       run: |
         CUSER="$(id --user --name)"
         sudo rsh 254.255.255.2 bash --noprofile --norc -eo pipefail << EOF
           cd "/home/${CUSER}"
-          mkdir -p /sys/fs/cgroup/tunasync
+          lssubsys -am
+          cgcreate -a "$CUSER" -t "$CUSER" -g cpu:tunasync
+          cgcreate -a "$CUSER" -t "$CUSER" -g memory:tunasync
           TERM=xterm-256color ./worker.test -test.v=true -test.coverprofile \
             profile3.cov -test.run TestCgroup
-          rmdir /sys/fs/cgroup/tunasync
-          systemd-run --service-type=oneshot --uid="${CUSER}" --pipe --wait \
-            --property=Delegate=yes --setenv=USECURCGROUP=1 \
-            --setenv=TERM=xterm-256color --same-dir \
-            "\${PWD}/worker.test" -test.v=true -test.coverprofile \
-            profile4.cov -test.run TestCgroup
+          cgexec -g "*:/" bash -c "echo 0 > /sys/fs/cgroup/systemd/tasks; exec sudo -u $CUSER env USECURCGROUP=1 TERM=xterm-256color cgexec -g cpu,memory:tunasync ./worker.test -test.v=true -test.coverprofile profile4.cov -test.run TestCgroup"
         EOF
 
     - name: Stop Uml
