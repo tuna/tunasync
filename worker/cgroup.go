@@ -12,32 +12,32 @@ import (
 
 	"golang.org/x/sys/unix"
 
-	"github.com/moby/moby/pkg/reexec"
 	cgv1 "github.com/containerd/cgroups"
 	cgv2 "github.com/containerd/cgroups/v2"
+	"github.com/moby/moby/pkg/reexec"
 	contspecs "github.com/opencontainers/runtime-spec/specs-go"
 )
 
 type cgroupHook struct {
 	emptyHook
-	cgCfg     cgroupConfig
-	memLimit  MemBytes
-	cgMgrV1   cgv1.Cgroup
-	cgMgrV2   *cgv2.Manager
+	cgCfg    cgroupConfig
+	memLimit MemBytes
+	cgMgrV1  cgv1.Cgroup
+	cgMgrV2  *cgv2.Manager
 }
 
 type execCmd string
 
 const (
-	cmdCont     execCmd = "cont"
-	cmdAbrt     execCmd = "abrt"
+	cmdCont execCmd = "cont"
+	cmdAbrt execCmd = "abrt"
 )
 
-func init () {
+func init() {
 	reexec.Register("tunasync-exec", waitExec)
 }
 
-func waitExec () {
+func waitExec() {
 	binary, err := exec.LookPath(os.Args[1])
 	if err != nil {
 		panic(err)
@@ -51,14 +51,15 @@ func waitExec () {
 				panic(err)
 			}
 			if err := pipe.Close(); err != nil {
+				panic(err)
 			}
 			cmd := execCmd(string(cmdBytes))
 			switch cmd {
-				case cmdAbrt:
-					fallthrough
-				default:
-					panic("Exited on request")
-				case cmdCont:
+			case cmdAbrt:
+				fallthrough
+			case cmdCont:
+			default:
+				panic("Exited on request")
 			}
 		}
 	}
@@ -71,7 +72,7 @@ func waitExec () {
 	panic("Exec failed.")
 }
 
-func initCgroup(cfg *cgroupConfig) (error) {
+func initCgroup(cfg *cgroupConfig) error {
 
 	logger.Debugf("Initializing cgroup")
 	baseGroup := cfg.Group
@@ -103,7 +104,7 @@ func initCgroup(cfg *cgroupConfig) (error) {
 		}
 		if baseGroup == "" {
 			logger.Debugf("Creating a sub group and move all processes into it")
-			wkrMgr, err := cfg.cgMgrV2.NewChild("__worker", nil);
+			wkrMgr, err := cfg.cgMgrV2.NewChild("__worker", nil)
 			if err != nil {
 				return err
 			}
@@ -117,8 +118,8 @@ func initCgroup(cfg *cgroupConfig) (error) {
 				if len(procs) == 0 {
 					break
 				}
-				for _, p := range(procs) {
-					if err := wkrMgr.AddProc(p); err != nil{
+				for _, p := range procs {
+					if err := wkrMgr.AddProc(p); err != nil {
 						if errors.Is(err, syscall.ESRCH) {
 							logger.Debugf("Write pid %d to sub group failed: process vanished, ignoring")
 						} else {
@@ -129,7 +130,7 @@ func initCgroup(cfg *cgroupConfig) (error) {
 			}
 		} else {
 			logger.Debugf("Trying to create a sub group in that group")
-			testMgr, err := cfg.cgMgrV2.NewChild("__test", nil);
+			testMgr, err := cfg.cgMgrV2.NewChild("__test", nil)
 			if err != nil {
 				logger.Errorf("Cannot create a sub group in the cgroup")
 				return err
@@ -143,7 +144,7 @@ func initCgroup(cfg *cgroupConfig) (error) {
 				return err
 			}
 			if len(procs) != 0 {
-				return fmt.Errorf("There are remaining processes in cgroup %s", baseGroup)
+				return fmt.Errorf("there are remaining processes in cgroup %s", baseGroup)
 			}
 		}
 	} else {
@@ -152,9 +153,9 @@ func initCgroup(cfg *cgroupConfig) (error) {
 		if baseGroup != "" {
 			pather = cgv1.StaticPath(baseGroup)
 		} else {
-			pather = (func(p cgv1.Path) (cgv1.Path){
-				return func(subsys cgv1.Name) (string, error){
-					path, err := p(subsys);
+			pather = (func(p cgv1.Path) cgv1.Path {
+				return func(subsys cgv1.Name) (string, error) {
+					path, err := p(subsys)
 					if err != nil {
 						return "", err
 					}
@@ -167,14 +168,14 @@ func initCgroup(cfg *cgroupConfig) (error) {
 		}
 		logger.Infof("Loading cgroup")
 		var err error
-		if cfg.cgMgrV1, err = cgv1.Load(cgv1.V1, pather, func(cfg *cgv1.InitConfig) error{
+		if cfg.cgMgrV1, err = cgv1.Load(cgv1.V1, pather, func(cfg *cgv1.InitConfig) error {
 			cfg.InitCheck = cgv1.AllowAny
 			return nil
 		}); err != nil {
 			return err
 		}
 		logger.Debugf("Available subsystems:")
-		for _, subsys := range(cfg.cgMgrV1.Subsystems()) {
+		for _, subsys := range cfg.cgMgrV1.Subsystems() {
 			p, err := pather(subsys.Name())
 			if err != nil {
 				return err
@@ -183,11 +184,11 @@ func initCgroup(cfg *cgroupConfig) (error) {
 		}
 		if baseGroup == "" {
 			logger.Debugf("Creating a sub group and move all processes into it")
-			wkrMgr, err := cfg.cgMgrV1.New("__worker", &contspecs.LinuxResources{});
+			wkrMgr, err := cfg.cgMgrV1.New("__worker", &contspecs.LinuxResources{})
 			if err != nil {
 				return err
 			}
-			for _, subsys := range(cfg.cgMgrV1.Subsystems()) {
+			for _, subsys := range cfg.cgMgrV1.Subsystems() {
 				logger.Debugf("Reading pids for subsystem %s", subsys.Name())
 				for {
 					procs, err := cfg.cgMgrV1.Processes(subsys.Name(), false)
@@ -202,7 +203,7 @@ func initCgroup(cfg *cgroupConfig) (error) {
 					if len(procs) == 0 {
 						break
 					}
-					for _, proc := range(procs) {
+					for _, proc := range procs {
 						if err := wkrMgr.Add(proc); err != nil {
 							if errors.Is(err, syscall.ESRCH) {
 								logger.Debugf("Write pid %d to sub group failed: process vanished, ignoring")
@@ -215,7 +216,7 @@ func initCgroup(cfg *cgroupConfig) (error) {
 			}
 		} else {
 			logger.Debugf("Trying to create a sub group in that group")
-			testMgr, err := cfg.cgMgrV1.New("__test", &contspecs.LinuxResources{});
+			testMgr, err := cfg.cgMgrV1.New("__test", &contspecs.LinuxResources{})
 			if err != nil {
 				logger.Errorf("Cannot create a sub group in the cgroup")
 				return err
@@ -223,7 +224,7 @@ func initCgroup(cfg *cgroupConfig) (error) {
 			if err := testMgr.Delete(); err != nil {
 				return err
 			}
-			for _, subsys := range(cfg.cgMgrV1.Subsystems()) {
+			for _, subsys := range cfg.cgMgrV1.Subsystems() {
 				logger.Debugf("Reading pids for subsystem %s", subsys.Name())
 				procs, err := cfg.cgMgrV1.Processes(subsys.Name(), false)
 				if err != nil {
@@ -239,7 +240,7 @@ func initCgroup(cfg *cgroupConfig) (error) {
 					if err != nil {
 						return err
 					}
-					return fmt.Errorf("There are remaining processes in cgroup %s of subsystem %s", p, subsys.Name())
+					return fmt.Errorf("there are remaining processes in cgroup %s of subsystem %s", p, subsys.Name())
 				}
 			}
 		}
@@ -253,7 +254,7 @@ func newCgroupHook(p mirrorProvider, cfg cgroupConfig, memLimit MemBytes) *cgrou
 		emptyHook: emptyHook{
 			provider: p,
 		},
-		cgCfg: cfg,
+		cgCfg:    cfg,
 		memLimit: memLimit,
 	}
 }
@@ -263,7 +264,7 @@ func (c *cgroupHook) preExec() error {
 		logger.Debugf("Creating v2 cgroup for task %s", c.provider.Name())
 		var resSet *cgv2.Resources
 		if c.memLimit != 0 {
-			resSet = &cgv2.Resources {
+			resSet = &cgv2.Resources{
 				Memory: &cgv2.Memory{
 					Max: func(i int64) *int64 { return &i }(c.memLimit.Value()),
 				},
@@ -279,7 +280,7 @@ func (c *cgroupHook) preExec() error {
 		logger.Debugf("Creating v1 cgroup for task %s", c.provider.Name())
 		var resSet contspecs.LinuxResources
 		if c.memLimit != 0 {
-			resSet = contspecs.LinuxResources {
+			resSet = contspecs.LinuxResources{
 				Memory: &contspecs.LinuxMemory{
 					Limit: func(i int64) *int64 { return &i }(c.memLimit.Value()),
 				},
@@ -334,7 +335,7 @@ func (c *cgroupHook) killAll() error {
 		taskList := []int{}
 		if c.cgCfg.isUnified {
 			procs, err := c.cgMgrV2.Procs(false)
-			if (err != nil) {
+			if err != nil {
 				return []int{}, err
 			}
 			for _, proc := range procs {
@@ -342,16 +343,16 @@ func (c *cgroupHook) killAll() error {
 			}
 		} else {
 			taskSet := make(map[int]struct{})
-			for _, subsys := range(c.cgMgrV1.Subsystems()) {
+			for _, subsys := range c.cgMgrV1.Subsystems() {
 				procs, err := c.cgMgrV1.Processes(subsys.Name(), false)
 				if err != nil {
 					return []int{}, err
 				}
-				for _, proc := range(procs) {
+				for _, proc := range procs {
 					taskSet[proc.Pid] = struct{}{}
 				}
 			}
-			for proc := range(taskSet) {
+			for proc := range taskSet {
 				taskList = append(taskList, proc)
 			}
 		}
@@ -360,7 +361,7 @@ func (c *cgroupHook) killAll() error {
 
 	for i := 0; i < 4; i++ {
 		if i == 3 {
-			return errors.New("Unable to kill all child tasks")
+			return errors.New("unable to kill all child tasks")
 		}
 		taskList, err := readTaskList()
 		if err != nil {

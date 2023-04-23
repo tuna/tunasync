@@ -32,7 +32,7 @@ func newExecPostHook(provider mirrorProvider, execOn uint8, command string) (*ex
 		return nil, err
 	}
 	if execOn != execOnSuccess && execOn != execOnFailure {
-		return nil, fmt.Errorf("Invalid option for exec-on: %d", execOn)
+		return nil, fmt.Errorf("invalid option for exec-on: %d", execOn)
 	}
 
 	return &execPostHook{
@@ -92,7 +92,7 @@ func (h *execPostHook) Do() error {
 			args = append(args, arg)
 		}
 	} else {
-		return errors.New("Invalid Command")
+		return errors.New("invalid command")
 	}
 	return session.Command(cmd, args...).Run()
 }
