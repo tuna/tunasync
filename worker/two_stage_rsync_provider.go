@@ -36,7 +36,20 @@ type twoStageRsyncProvider struct {
 
 // ref: https://salsa.debian.org/mirror-team/archvsync/-/blob/master/bin/ftpsync#L431
 var rsyncStage1Profiles = map[string]([]string){
-	"debian": []string{"--include=*.diff/", "--exclude=*.diff/Index", "--exclude=Packages*", "--exclude=Sources*", "--exclude=Release*", "--exclude=InRelease", "--include=i18n/by-hash", "--exclude=i18n/*", "--exclude=ls-lR*"},
+	"debian": []string{
+		"--include=*.diff/",
+		"--include=by-hash/",
+		"--exclude=*.diff/Index",
+		"--exclude=Contents*",
+		"--exclude=Packages*",
+		"--exclude=Sources*",
+		"--exclude=Release*",
+		"--exclude=InRelease",
+		"--exclude=i18n/*",
+		"--exclude=dep11/*",
+		"--exclude=installer-*/current",
+		"--exclude=ls-lR*",
+	},
 	"debian-oldstyle": []string{
 		"--exclude=Packages*", "--exclude=Sources*", "--exclude=Release*",
 		"--exclude=InRelease", "--exclude=i18n/*", "--exclude=ls-lR*", "--exclude=dep11/*",
