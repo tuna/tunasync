@@ -15,7 +15,7 @@ require (
 	github.com/dgraph-io/badger/v2 v2.2007.2
 	github.com/docker/go-units v0.4.0
 	github.com/flynn/go-shlex v0.0.0-20150515145356-3f9db97f8568 // indirect
-	github.com/gin-gonic/gin v1.7.7
+	github.com/gin-gonic/gin v1.9.1
 	github.com/go-redis/redis/v8 v8.3.0
 	github.com/gomodule/redigo v1.8.2 // indirect
 	github.com/imdario/mergo v0.3.9
@@ -30,9 +30,7 @@ require (
 	github.com/syndtr/goleveldb v1.0.0
 	github.com/urfave/cli v1.22.3
 	github.com/yuin/gopher-lua v0.0.0-20191220021717-ab39c6098bdb // indirect
-	golang.org/x/net v0.7.0 // indirect
-	golang.org/x/sys v0.5.0
-	google.golang.org/protobuf v1.26.0 // indirect
+	golang.org/x/sys v0.8.0
 	gopkg.in/op/go-logging.v1 v1.0.0-20160211212156-b2cb9fa56473
 	gotest.tools/v3 v3.0.3 // indirect
 )
