@@ -125,11 +125,9 @@ func (p *twoStageRsyncProvider) Options(stage int) ([]string, error) {
 		options = append(options, p.stage1Options...)
 		stage1Profile, ok := rsyncStage1Profiles[p.stage1Profile]
 		if !ok {
-			return nil, errors.New("Invalid Stage 1 Profile")
+			return nil, errors.New("invalid stage 1 profile")
 		}
-		for _, exc := range stage1Profile {
-			options = append(options, exc)
-		}
+		options = append(options, stage1Profile...)
 
 	} else if stage == 2 {
 		options = append(options, p.stage2Options...)
@@ -137,7 +135,7 @@ func (p *twoStageRsyncProvider) Options(stage int) ([]string, error) {
 			options = append(options, p.extraOptions...)
 		}
 	} else {
-		return []string{}, fmt.Errorf("Invalid stage: %d", stage)
+		return []string{}, fmt.Errorf("invalid stage: %d", stage)
 	}
 
 	if !p.rsyncNeverTimeout {

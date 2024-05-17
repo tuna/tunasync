@@ -106,7 +106,7 @@ func (p *cmdProvider) Run(started chan empty) error {
 		}
 		if len(matches) != 0 {
 			logger.Debug("Fail-on-match: %r", matches)
-			return fmt.Errorf("Fail-on-match regexp found %d matches", len(matches))
+			return fmt.Errorf("fail-on-match regexp found %d matches", len(matches))
 		}
 	}
 	if p.sizePattern != nil {

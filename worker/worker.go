@@ -317,7 +317,8 @@ func (w *Worker) runSchedule() {
 	schedInfo := w.schedule.GetJobs()
 	w.updateSchedInfo(schedInfo)
 
-	tick := time.Tick(5 * time.Second)
+	tick := time.NewTicker(5 * time.Second)
+	defer tick.Stop()
 	for {
 		select {
 		case jobMsg := <-w.managerChan:
@@ -356,7 +357,7 @@ func (w *Worker) runSchedule() {
 			schedInfo = w.schedule.GetJobs()
 			w.updateSchedInfo(schedInfo)
 
-		case <-tick:
+		case <-tick.C:
 			// check schedule every 5 seconds
 			if job := w.schedule.Pop(); job != nil {
 				job.ctrlChan <- jobStart

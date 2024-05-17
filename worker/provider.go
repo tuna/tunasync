@@ -188,7 +188,7 @@ func newMirrorProvider(mirror mirrorConfig, cfg *Config) mirrorProvider {
 		p.isMaster = isMaster
 		provider = p
 	default:
-		panic(errors.New("Invalid mirror provider"))
+		panic(errors.New("invalid mirror provider"))
 	}
 
 	// Add Logging Hook

@@ -6,10 +6,10 @@ import (
 	"path/filepath"
 
 	"github.com/BurntSushi/toml"
-	"github.com/imdario/mergo"
-	units "github.com/docker/go-units"
 	cgv1 "github.com/containerd/cgroups"
 	cgv2 "github.com/containerd/cgroups/v2"
+	units "github.com/docker/go-units"
+	"github.com/imdario/mergo"
 )
 
 type providerEnum uint8
@@ -30,7 +30,7 @@ func (p *providerEnum) UnmarshalText(text []byte) error {
 	case `two-stage-rsync`:
 		*p = provTwoStageRsync
 	default:
-		return errors.New("Invalid value to provierEnum")
+		return errors.New("invalid value to provierEnum")
 	}
 	return nil
 }
