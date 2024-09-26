@@ -10,10 +10,10 @@ jobs:
     steps:
 
     - name: Check out code into the Go module directory
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4
 
     - name: Set up Go 1.18
-      uses: actions/setup-go@v4
+      uses: actions/setup-go@v5
       with:
         go-version: 1.18
       id: go
@@ -29,7 +29,7 @@ jobs:
         make tunasynctl
 
     - name: Keep artifacts
-      uses: actions/upload-artifact@v1
+      uses: actions/upload-artifact@v4
       with:
         name: tunasync-bin
         path: build-linux-amd64/
@@ -51,10 +51,10 @@ jobs:
         docker pull alpine:3.8
 
     - name: Check out code into the Go module directory
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4
 
     - name: Set up Go 1.18
-      uses: actions/setup-go@v4
+      uses: actions/setup-go@v5
       with:
         go-version: 1.18
       id: go
@@ -89,11 +89,11 @@ jobs:
         run_test_reexec 5 tunasync-exec2
 
     - name: Set up Docker Buildx
-      uses: docker/setup-buildx-action@v2
+      uses: docker/setup-buildx-action@v3
       with:
         driver-opts: network=host
     - name: Cache Docker layers
-      uses: actions/cache@v3
+      uses: actions/cache@v4
       if: github.event_name == 'push'
       with:
         path: /tmp/.buildx-cache
@@ -101,7 +101,7 @@ jobs:
         restore-keys: |
           ${{ runner.os }}-buildx-
     - name: Cache Docker layers
-      uses: actions/cache@v3
+      uses: actions/cache@v4
       if: github.event_name == 'pull_request'
       with:
         path: /tmp/.buildx-cache
@@ -120,7 +120,7 @@ jobs:
         mkdir -p /tmp/.buildx-cache
 
     - name: Build Docker image for uml rootfs
-      uses: docker/build-push-action@v3
+      uses: docker/build-push-action@v6
       with:
         context: .umlrootfs
         file: .umlrootfs/Dockerfile
@@ -227,7 +227,7 @@ jobs:
           profile5_*.cov > profile-all.cov
 
     - name: Convert coverage to lcov
-      uses: jandelgado/gcov2lcov-action@v1.0.0
+      uses: jandelgado/gcov2lcov-action@v1
       with:
           infile: profile-all.cov
           outfile: coverage.lcov
