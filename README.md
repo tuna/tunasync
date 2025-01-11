@@ -51,10 +51,13 @@ PreSyncing                           Syncing                               Succe
 
 ## Building
 
-Go version: 1.13
+Go version: 1.22
 
 ```shell
+# for native arch
 > make all
+# for other arch
+> make ARCH=linux-arm64 all
 ```
 
-Binaries in the `build-linux-amd64/`.
+Binaries are in `build-$ARCH/`, e.g., `build-linux-amd64/`.
