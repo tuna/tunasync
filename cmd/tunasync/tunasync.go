@@ -40,7 +40,7 @@ func startManager(c *cli.Context) error {
 
 	m := manager.GetTUNASyncManager(cfg)
 	if m == nil {
-		logger.Errorf("Error intializing TUNA sync worker.")
+		logger.Errorf("Error intializing TUNA sync manager.")
 		os.Exit(1)
 	}
 
