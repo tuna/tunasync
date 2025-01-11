@@ -29,6 +29,8 @@ require (
 	gopkg.in/op/go-logging.v1 v1.0.0-20160211212156-b2cb9fa56473
 )
 
+replace github.com/boltdb/bolt v1.3.1 => go.etcd.io/bbolt v1.3.11
+
 require (
 	github.com/DataDog/zstd v1.5.6 // indirect
 	github.com/OneOfOne/xxhash v1.2.2 // indirect

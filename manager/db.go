@@ -6,7 +6,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/boltdb/bolt"
+	bolt "github.com/boltdb/bolt"
 	"github.com/dgraph-io/badger/v2"
 	"github.com/go-redis/redis/v8"
 	"github.com/pkg/errors"
