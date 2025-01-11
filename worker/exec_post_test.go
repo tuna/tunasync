@@ -1,7 +1,6 @@
 package worker
 
 import (
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"testing"
@@ -13,7 +12,7 @@ import (
 
 func TestExecPost(t *testing.T) {
 	Convey("ExecPost should work", t, func(ctx C) {
-		tmpDir, err := ioutil.TempDir("", "tunasync")
+		tmpDir, err := os.MkdirTemp("", "tunasync")
 		defer os.RemoveAll(tmpDir)
 		So(err, ShouldBeNil)
 		scriptFile := filepath.Join(tmpDir, "cmd.sh")
@@ -46,7 +45,7 @@ echo $TUNASYNC_UPSTREAM_URL
 echo $TUNASYNC_LOG_FILE
 			`
 
-			err = ioutil.WriteFile(scriptFile, []byte(scriptContent), 0755)
+			err = os.WriteFile(scriptFile, []byte(scriptContent), 0755)
 			So(err, ShouldBeNil)
 
 			go job.Run(managerChan, semaphore)
@@ -64,7 +63,7 @@ echo $TUNASYNC_LOG_FILE
 
 			expectedOutput := "success\n"
 
-			outputContent, err := ioutil.ReadFile(filepath.Join(provider.WorkingDir(), "exit_status"))
+			outputContent, err := os.ReadFile(filepath.Join(provider.WorkingDir(), "exit_status"))
 			So(err, ShouldBeNil)
 			So(string(outputContent), ShouldEqual, expectedOutput)
 		})
@@ -85,7 +84,7 @@ echo $TUNASYNC_LOG_FILE
 exit 1
 			`
 
-			err = ioutil.WriteFile(scriptFile, []byte(scriptContent), 0755)
+			err = os.WriteFile(scriptFile, []byte(scriptContent), 0755)
 			So(err, ShouldBeNil)
 
 			go job.Run(managerChan, semaphore)
@@ -105,7 +104,7 @@ exit 1
 
 			expectedOutput := "failure\n"
 
-			outputContent, err := ioutil.ReadFile(filepath.Join(provider.WorkingDir(), "exit_status"))
+			outputContent, err := os.ReadFile(filepath.Join(provider.WorkingDir(), "exit_status"))
 			So(err, ShouldBeNil)
 			So(string(outputContent), ShouldEqual, expectedOutput)
 		})

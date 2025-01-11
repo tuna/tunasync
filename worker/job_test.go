@@ -2,7 +2,6 @@ package worker
 
 import (
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"testing"
@@ -17,7 +16,7 @@ func TestMirrorJob(t *testing.T) {
 	InitLogger(true, true, false)
 
 	Convey("MirrorJob should work", t, func(ctx C) {
-		tmpDir, err := ioutil.TempDir("", "tunasync")
+		tmpDir, err := os.MkdirTemp("", "tunasync")
 		defer os.RemoveAll(tmpDir)
 		So(err, ShouldBeNil)
 		scriptFile := filepath.Join(tmpDir, "cmd.sh")
@@ -58,9 +57,9 @@ func TestMirrorJob(t *testing.T) {
 				provider.upstreamURL,
 				provider.LogFile(),
 			)
-			err = ioutil.WriteFile(scriptFile, []byte(scriptContent), 0755)
+			err = os.WriteFile(scriptFile, []byte(scriptContent), 0755)
 			So(err, ShouldBeNil)
-			readedScriptContent, err := ioutil.ReadFile(scriptFile)
+			readedScriptContent, err := os.ReadFile(scriptFile)
 			So(err, ShouldBeNil)
 			So(readedScriptContent, ShouldResemble, []byte(scriptContent))
 
@@ -86,7 +85,7 @@ func TestMirrorJob(t *testing.T) {
 					So(msg.status, ShouldEqual, Syncing)
 					msg = <-managerChan
 					So(msg.status, ShouldEqual, Success)
-					loggedContent, err := ioutil.ReadFile(provider.LogFile())
+					loggedContent, err := os.ReadFile(provider.LogFile())
 					So(err, ShouldBeNil)
 					So(string(loggedContent), ShouldEqual, expectedOutput)
 					job.ctrlChan <- jobStart
@@ -123,11 +122,11 @@ sleep 3
 echo $TUNASYNC_WORKING_DIR
 echo '------'
 			`
-			err = ioutil.WriteFile(scriptFile, []byte(scriptContent), 0755)
+			err = os.WriteFile(scriptFile, []byte(scriptContent), 0755)
 			So(err, ShouldBeNil)
 
 			hookScriptFile := filepath.Join(tmpDir, "hook.sh")
-			err = ioutil.WriteFile(hookScriptFile, []byte(scriptContent), 0755)
+			err = os.WriteFile(hookScriptFile, []byte(scriptContent), 0755)
 			So(err, ShouldBeNil)
 
 			h, err := newExecPostHook(provider, execOnFailure, hookScriptFile)
@@ -188,7 +187,7 @@ echo $TUNASYNC_WORKING_DIR
 sleep 5
 echo $TUNASYNC_WORKING_DIR
 			`
-			err = ioutil.WriteFile(scriptFile, []byte(scriptContent), 0755)
+			err = os.WriteFile(scriptFile, []byte(scriptContent), 0755)
 			So(err, ShouldBeNil)
 
 			managerChan := make(chan jobMessage, 10)
@@ -213,7 +212,7 @@ echo $TUNASYNC_WORKING_DIR
 				So(msg.status, ShouldEqual, Failed)
 
 				expectedOutput := fmt.Sprintf("%s\n", provider.WorkingDir())
-				loggedContent, err := ioutil.ReadFile(provider.LogFile())
+				loggedContent, err := os.ReadFile(provider.LogFile())
 				So(err, ShouldBeNil)
 				So(string(loggedContent), ShouldEqual, expectedOutput)
 				job.ctrlChan <- jobDisable
@@ -236,7 +235,7 @@ echo $TUNASYNC_WORKING_DIR
 					provider.WorkingDir(), provider.WorkingDir(),
 				)
 
-				loggedContent, err := ioutil.ReadFile(provider.LogFile())
+				loggedContent, err := os.ReadFile(provider.LogFile())
 				So(err, ShouldBeNil)
 				So(string(loggedContent), ShouldEqual, expectedOutput)
 				job.ctrlChan <- jobDisable
@@ -270,7 +269,7 @@ echo $TUNASYNC_WORKING_DIR
 					provider.WorkingDir(), provider.WorkingDir(),
 				)
 
-				loggedContent, err := ioutil.ReadFile(provider.LogFile())
+				loggedContent, err := os.ReadFile(provider.LogFile())
 				So(err, ShouldBeNil)
 				So(string(loggedContent), ShouldEqual, expectedOutput)
 				job.ctrlChan <- jobDisable
@@ -326,7 +325,7 @@ echo $TUNASYNC_WORKING_DIR
 					provider.WorkingDir(), provider.WorkingDir(),
 				)
 
-				loggedContent, err := ioutil.ReadFile(provider.LogFile())
+				loggedContent, err := os.ReadFile(provider.LogFile())
 				So(err, ShouldBeNil)
 				So(string(loggedContent), ShouldEqual, expectedOutput)
 
@@ -341,7 +340,7 @@ echo $TUNASYNC_WORKING_DIR
 sleep 10
 echo $TUNASYNC_WORKING_DIR
 			`
-			err = ioutil.WriteFile(scriptFile, []byte(scriptContent), 0755)
+			err = os.WriteFile(scriptFile, []byte(scriptContent), 0755)
 			So(err, ShouldBeNil)
 
 			managerChan := make(chan jobMessage, 10)
@@ -364,7 +363,7 @@ echo $TUNASYNC_WORKING_DIR
 				So(msg.status, ShouldEqual, Failed)
 
 				expectedOutput := fmt.Sprintf("%s\n", provider.WorkingDir())
-				loggedContent, err := ioutil.ReadFile(provider.LogFile())
+				loggedContent, err := os.ReadFile(provider.LogFile())
 				So(err, ShouldBeNil)
 				So(string(loggedContent), ShouldEqual, expectedOutput)
 				job.ctrlChan <- jobDisable
@@ -404,7 +403,7 @@ func TestConcurrentMirrorJobs(t *testing.T) {
 	InitLogger(true, true, false)
 
 	Convey("Concurrent MirrorJobs should work", t, func(ctx C) {
-		tmpDir, err := ioutil.TempDir("", "tunasync")
+		tmpDir, err := os.MkdirTemp("", "tunasync")
 		defer os.RemoveAll(tmpDir)
 		So(err, ShouldBeNil)
 

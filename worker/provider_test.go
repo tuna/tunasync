@@ -2,7 +2,6 @@ package worker
 
 import (
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -14,7 +13,7 @@ import (
 
 func TestRsyncProvider(t *testing.T) {
 	Convey("Rsync Provider should work", t, func() {
-		tmpDir, err := ioutil.TempDir("", "tunasync")
+		tmpDir, err := os.MkdirTemp("", "tunasync")
 		defer os.RemoveAll(tmpDir)
 		So(err, ShouldBeNil)
 		scriptFile := filepath.Join(tmpDir, "myrsync")
@@ -80,7 +79,7 @@ echo "Total file size: 1.33T bytes"
 echo "Done"
 exit 0
 			`
-			err = ioutil.WriteFile(scriptFile, []byte(scriptContent), 0755)
+			err = os.WriteFile(scriptFile, []byte(scriptContent), 0755)
 			So(err, ShouldBeNil)
 
 			targetDir, _ := filepath.EvalSymlinks(provider.WorkingDir())
@@ -100,7 +99,7 @@ exit 0
 
 			err = provider.Run(make(chan empty, 1))
 			So(err, ShouldBeNil)
-			loggedContent, err := ioutil.ReadFile(provider.LogFile())
+			loggedContent, err := os.ReadFile(provider.LogFile())
 			So(err, ShouldBeNil)
 			So(string(loggedContent), ShouldEqual, expectedOutput)
 			// fmt.Println(string(loggedContent))
@@ -109,7 +108,7 @@ exit 0
 
 	})
 	Convey("If the rsync program fails", t, func() {
-		tmpDir, err := ioutil.TempDir("", "tunasync")
+		tmpDir, err := os.MkdirTemp("", "tunasync")
 		defer os.RemoveAll(tmpDir)
 		So(err, ShouldBeNil)
 		tmpFile := filepath.Join(tmpDir, "log_file")
@@ -131,7 +130,7 @@ exit 0
 
 			err = provider.Run(make(chan empty, 1))
 			So(err, ShouldNotBeNil)
-			loggedContent, err := ioutil.ReadFile(provider.LogFile())
+			loggedContent, err := os.ReadFile(provider.LogFile())
 			So(err, ShouldBeNil)
 			So(string(loggedContent), ShouldContainSubstring, "Syntax or usage error")
 		})
@@ -140,7 +139,7 @@ exit 0
 
 func TestRsyncProviderWithAuthentication(t *testing.T) {
 	Convey("Rsync Provider with password should work", t, func() {
-		tmpDir, err := ioutil.TempDir("", "tunasync")
+		tmpDir, err := os.MkdirTemp("", "tunasync")
 		defer os.RemoveAll(tmpDir)
 		So(err, ShouldBeNil)
 		scriptFile := filepath.Join(tmpDir, "myrsync")
@@ -180,7 +179,7 @@ sleep 1
 echo "Done"
 exit 0
 			`
-			err = ioutil.WriteFile(scriptFile, []byte(scriptContent), 0755)
+			err = os.WriteFile(scriptFile, []byte(scriptContent), 0755)
 			So(err, ShouldBeNil)
 
 			targetDir, _ := filepath.EvalSymlinks(provider.WorkingDir())
@@ -200,7 +199,7 @@ exit 0
 
 			err = provider.Run(make(chan empty, 1))
 			So(err, ShouldBeNil)
-			loggedContent, err := ioutil.ReadFile(provider.LogFile())
+			loggedContent, err := os.ReadFile(provider.LogFile())
 			So(err, ShouldBeNil)
 			So(string(loggedContent), ShouldEqual, expectedOutput)
 			// fmt.Println(string(loggedContent))
@@ -211,7 +210,7 @@ exit 0
 
 func TestRsyncProviderWithOverriddenOptions(t *testing.T) {
 	Convey("Rsync Provider with overridden options should work", t, func() {
-		tmpDir, err := ioutil.TempDir("", "tunasync")
+		tmpDir, err := os.MkdirTemp("", "tunasync")
 		defer os.RemoveAll(tmpDir)
 		So(err, ShouldBeNil)
 		scriptFile := filepath.Join(tmpDir, "myrsync")
@@ -248,7 +247,7 @@ sleep 1
 echo "Done"
 exit 0
 			`
-			err = ioutil.WriteFile(scriptFile, []byte(scriptContent), 0755)
+			err = os.WriteFile(scriptFile, []byte(scriptContent), 0755)
 			So(err, ShouldBeNil)
 
 			targetDir, _ := filepath.EvalSymlinks(provider.WorkingDir())
@@ -263,7 +262,7 @@ exit 0
 
 			err = provider.Run(make(chan empty, 1))
 			So(err, ShouldBeNil)
-			loggedContent, err := ioutil.ReadFile(provider.LogFile())
+			loggedContent, err := os.ReadFile(provider.LogFile())
 			So(err, ShouldBeNil)
 			So(string(loggedContent), ShouldEqual, expectedOutput)
 			// fmt.Println(string(loggedContent))
@@ -274,7 +273,7 @@ exit 0
 
 func TestRsyncProviderWithDocker(t *testing.T) {
 	Convey("Rsync in Docker should work", t, func() {
-		tmpDir, err := ioutil.TempDir("", "tunasync")
+		tmpDir, err := os.MkdirTemp("", "tunasync")
 		defer os.RemoveAll(tmpDir)
 		So(err, ShouldBeNil)
 		scriptFile := filepath.Join(tmpDir, "myrsync")
@@ -323,9 +322,9 @@ fi
 shift
 done
 `
-		err = ioutil.WriteFile(scriptFile, []byte(cmdScriptContent), 0755)
+		err = os.WriteFile(scriptFile, []byte(cmdScriptContent), 0755)
 		So(err, ShouldBeNil)
-		err = ioutil.WriteFile(excludeFile, []byte("__some_pattern"), 0755)
+		err = os.WriteFile(excludeFile, []byte("__some_pattern"), 0755)
 		So(err, ShouldBeNil)
 
 		for _, hook := range provider.Hooks() {
@@ -338,7 +337,7 @@ done
 			err = hook.postExec()
 			So(err, ShouldBeNil)
 		}
-		loggedContent, err := ioutil.ReadFile(provider.LogFile())
+		loggedContent, err := os.ReadFile(provider.LogFile())
 		So(err, ShouldBeNil)
 		So(string(loggedContent), ShouldEqual, "__some_pattern")
 	})
@@ -346,7 +345,7 @@ done
 
 func TestCmdProvider(t *testing.T) {
 	Convey("Command Provider should work", t, func(ctx C) {
-		tmpDir, err := ioutil.TempDir("", "tunasync")
+		tmpDir, err := os.MkdirTemp("", "tunasync")
 		defer os.RemoveAll(tmpDir)
 		So(err, ShouldBeNil)
 		scriptFile := filepath.Join(tmpDir, "cmd.sh")
@@ -391,25 +390,25 @@ echo $AOSP_REPO_BIN
 				provider.LogFile(),
 				"/usr/local/bin/repo",
 			)
-			err = ioutil.WriteFile(scriptFile, []byte(scriptContent), 0755)
+			err = os.WriteFile(scriptFile, []byte(scriptContent), 0755)
 			So(err, ShouldBeNil)
-			readedScriptContent, err := ioutil.ReadFile(scriptFile)
+			readedScriptContent, err := os.ReadFile(scriptFile)
 			So(err, ShouldBeNil)
 			So(readedScriptContent, ShouldResemble, []byte(scriptContent))
 
 			err = provider.Run(make(chan empty, 1))
 			So(err, ShouldBeNil)
 
-			loggedContent, err := ioutil.ReadFile(provider.LogFile())
+			loggedContent, err := os.ReadFile(provider.LogFile())
 			So(err, ShouldBeNil)
 			So(string(loggedContent), ShouldEqual, expectedOutput)
 		})
 
 		Convey("If a command fails", func() {
 			scriptContent := `exit 1`
-			err = ioutil.WriteFile(scriptFile, []byte(scriptContent), 0755)
+			err = os.WriteFile(scriptFile, []byte(scriptContent), 0755)
 			So(err, ShouldBeNil)
-			readedScriptContent, err := ioutil.ReadFile(scriptFile)
+			readedScriptContent, err := os.ReadFile(scriptFile)
 			So(err, ShouldBeNil)
 			So(readedScriptContent, ShouldResemble, []byte(scriptContent))
 
@@ -422,7 +421,7 @@ echo $AOSP_REPO_BIN
 			scriptContent := `#!/bin/bash
 sleep 10
 			`
-			err = ioutil.WriteFile(scriptFile, []byte(scriptContent), 0755)
+			err = os.WriteFile(scriptFile, []byte(scriptContent), 0755)
 			So(err, ShouldBeNil)
 
 			started := make(chan empty, 1)
@@ -440,7 +439,7 @@ sleep 10
 		})
 	})
 	Convey("Command Provider without log file should work", t, func(ctx C) {
-		tmpDir, err := ioutil.TempDir("", "tunasync")
+		tmpDir, err := os.MkdirTemp("", "tunasync")
 		defer os.RemoveAll(tmpDir)
 		So(err, ShouldBeNil)
 
@@ -474,7 +473,7 @@ sleep 10
 		})
 	})
 	Convey("Command Provider with RegExprs should work", t, func(ctx C) {
-		tmpDir, err := ioutil.TempDir("", "tunasync")
+		tmpDir, err := os.MkdirTemp("", "tunasync")
 		defer os.RemoveAll(tmpDir)
 		So(err, ShouldBeNil)
 		tmpFile := filepath.Join(tmpDir, "log_file")
@@ -557,7 +556,7 @@ sleep 10
 
 func TestTwoStageRsyncProvider(t *testing.T) {
 	Convey("TwoStageRsync Provider should work", t, func(ctx C) {
-		tmpDir, err := ioutil.TempDir("", "tunasync")
+		tmpDir, err := os.MkdirTemp("", "tunasync")
 		defer os.RemoveAll(tmpDir)
 		So(err, ShouldBeNil)
 		scriptFile := filepath.Join(tmpDir, "myrsync")
@@ -597,7 +596,7 @@ sleep 1
 echo "Done"
 exit 0
 			`
-			err = ioutil.WriteFile(scriptFile, []byte(scriptContent), 0755)
+			err = os.WriteFile(scriptFile, []byte(scriptContent), 0755)
 			So(err, ShouldBeNil)
 
 			err = provider.Run(make(chan empty, 2))
@@ -627,7 +626,7 @@ exit 0
 				),
 			)
 
-			loggedContent, err := ioutil.ReadFile(provider.LogFile())
+			loggedContent, err := os.ReadFile(provider.LogFile())
 			So(err, ShouldBeNil)
 			So(string(loggedContent), ShouldEqual, expectedOutput)
 			// fmt.Println(string(loggedContent))
@@ -639,7 +638,7 @@ echo $@
 sleep 10
 exit 0
 			`
-			err = ioutil.WriteFile(scriptFile, []byte(scriptContent), 0755)
+			err = os.WriteFile(scriptFile, []byte(scriptContent), 0755)
 			So(err, ShouldBeNil)
 
 			started := make(chan empty, 2)
@@ -661,7 +660,7 @@ exit 0
 				provider.excludeFile, provider.upstreamURL, provider.WorkingDir(),
 			)
 
-			loggedContent, err := ioutil.ReadFile(provider.LogFile())
+			loggedContent, err := os.ReadFile(provider.LogFile())
 			So(err, ShouldBeNil)
 			So(string(loggedContent), ShouldStartWith, expectedOutput)
 			// fmt.Println(string(loggedContent))
@@ -669,7 +668,7 @@ exit 0
 	})
 
 	Convey("If the rsync program fails", t, func(ctx C) {
-		tmpDir, err := ioutil.TempDir("", "tunasync")
+		tmpDir, err := os.MkdirTemp("", "tunasync")
 		defer os.RemoveAll(tmpDir)
 		So(err, ShouldBeNil)
 		tmpFile := filepath.Join(tmpDir, "log_file")
@@ -691,7 +690,7 @@ exit 0
 
 			err = provider.Run(make(chan empty, 2))
 			So(err, ShouldNotBeNil)
-			loggedContent, err := ioutil.ReadFile(provider.LogFile())
+			loggedContent, err := os.ReadFile(provider.LogFile())
 			So(err, ShouldBeNil)
 			So(string(loggedContent), ShouldContainSubstring, "Error in socket I/O")
 

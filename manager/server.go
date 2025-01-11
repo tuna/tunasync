@@ -267,7 +267,7 @@ func (s *Manager) updateSchedulesOfWorker(c *gin.Context) {
 		if len(mirrorName) == 0 {
 			s.returnErrJSON(
 				c, http.StatusBadRequest,
-				errors.New("Mirror Name should not be empty"),
+				errors.New("mirror Name should not be empty"),
 			)
 		}
 
@@ -312,7 +312,7 @@ func (s *Manager) updateJobOfWorker(c *gin.Context) {
 	if len(mirrorName) == 0 {
 		s.returnErrJSON(
 			c, http.StatusBadRequest,
-			errors.New("Mirror Name should not be empty"),
+			errors.New("mirror Name should not be empty"),
 		)
 	}
 

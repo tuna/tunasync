@@ -3,7 +3,7 @@ package manager
 import (
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"math/rand"
 	"net/http"
 	"strings"
@@ -36,7 +36,7 @@ func TestHTTPServer(t *testing.T) {
 		So(s, ShouldNotBeNil)
 		s.setDBAdapter(&mockDBAdapter{
 			workerStore: map[string]WorkerStatus{
-				_magicBadWorkerID: WorkerStatus{
+				_magicBadWorkerID: {
 					ID: _magicBadWorkerID,
 				}},
 			statusStore: make(map[string]MirrorStatus),
@@ -48,7 +48,7 @@ func TestHTTPServer(t *testing.T) {
 		So(resp.StatusCode, ShouldEqual, http.StatusOK)
 		So(resp.Header.Get("Content-Type"), ShouldEqual, "application/json; charset=utf-8")
 		defer resp.Body.Close()
-		body, err := ioutil.ReadAll(resp.Body)
+		body, err := io.ReadAll(resp.Body)
 		So(err, ShouldBeNil)
 		var p map[string]string
 		err = json.Unmarshal(body, &p)
@@ -268,8 +268,8 @@ func TestHTTPServer(t *testing.T) {
 				Convey("Update schedule of valid mirrors", func(ctx C) {
 					msg := MirrorSchedules{
 						Schedules: []MirrorSchedule{
-							MirrorSchedule{MirrorName: "arch-sync1", NextSchedule: time.Now().Add(time.Minute * 10)},
-							MirrorSchedule{MirrorName: "arch-sync2", NextSchedule: time.Now().Add(time.Minute * 7)},
+							{MirrorName: "arch-sync1", NextSchedule: time.Now().Add(time.Minute * 10)},
+							{MirrorName: "arch-sync2", NextSchedule: time.Now().Add(time.Minute * 7)},
 						},
 					}
 
@@ -346,8 +346,8 @@ func TestHTTPServer(t *testing.T) {
 				invalidWorker := "test_worker2"
 				sch := MirrorSchedules{
 					Schedules: []MirrorSchedule{
-						MirrorSchedule{MirrorName: "arch-sync1", NextSchedule: time.Now().Add(time.Minute * 10)},
-						MirrorSchedule{MirrorName: "arch-sync2", NextSchedule: time.Now().Add(time.Minute * 7)},
+						{MirrorName: "arch-sync1", NextSchedule: time.Now().Add(time.Minute * 10)},
+						{MirrorName: "arch-sync2", NextSchedule: time.Now().Add(time.Minute * 7)},
 					},
 				}
 				resp, err := PostJSON(fmt.Sprintf("%s/workers/%s/schedules",

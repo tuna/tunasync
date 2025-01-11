@@ -2,12 +2,12 @@ package worker
 
 import (
 	"fmt"
-	"io/ioutil"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"testing"
 	"time"
+
 	units "github.com/docker/go-units"
 
 	"github.com/codeskyblue/go-sh"
@@ -40,7 +40,7 @@ func getDockerByName(name string) (string, error) {
 
 func TestDocker(t *testing.T) {
 	Convey("Docker Should Work", t, func(ctx C) {
-		tmpDir, err := ioutil.TempDir("", "tunasync")
+		tmpDir, err := os.MkdirTemp("", "tunasync")
 		defer os.RemoveAll(tmpDir)
 		So(err, ShouldBeNil)
 		cmdScript := filepath.Join(tmpDir, "cmd.sh")
@@ -64,7 +64,7 @@ func TestDocker(t *testing.T) {
 echo ${TEST_CONTENT}
 sleep 20
 `
-		err = ioutil.WriteFile(cmdScript, []byte(cmdScriptContent), 0755)
+		err = os.WriteFile(cmdScript, []byte(cmdScriptContent), 0755)
 		So(err, ShouldBeNil)
 
 		provider, err := newCmdProvider(c)
@@ -125,7 +125,7 @@ sleep 20
 		So(names, ShouldEqual, "")
 
 		// check log content
-		loggedContent, err := ioutil.ReadFile(provider.LogFile())
+		loggedContent, err := os.ReadFile(provider.LogFile())
 		So(err, ShouldBeNil)
 		So(string(loggedContent), ShouldEqual, expectedOutput+"\n")
 

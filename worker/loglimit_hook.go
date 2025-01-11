@@ -2,7 +2,6 @@ package worker
 
 import (
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"sort"
@@ -39,7 +38,7 @@ func (l *logLimiter) preExec() error {
 	}
 
 	logDir := p.LogDir()
-	files, err := ioutil.ReadDir(logDir)
+	files, err := os.ReadDir(logDir)
 	if err != nil {
 		if os.IsNotExist(err) {
 			os.MkdirAll(logDir, 0755)
@@ -50,7 +49,8 @@ func (l *logLimiter) preExec() error {
 	matchedFiles := []os.FileInfo{}
 	for _, f := range files {
 		if strings.HasPrefix(f.Name(), p.Name()) {
-			matchedFiles = append(matchedFiles, f)
+			info, _ := f.Info()
+			matchedFiles = append(matchedFiles, info)
 		}
 	}
 

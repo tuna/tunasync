@@ -2,11 +2,11 @@ package worker
 
 import (
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"testing"
 	"time"
+
 	units "github.com/docker/go-units"
 
 	. "github.com/smartystreets/goconvey/convey"
@@ -76,11 +76,11 @@ exec_on_failure = [
 	})
 
 	Convey("Everything should work on valid config file", t, func() {
-		tmpfile, err := ioutil.TempFile("", "tunasync")
+		tmpfile, err := os.CreateTemp("", "tunasync")
 		So(err, ShouldEqual, nil)
 		defer os.Remove(tmpfile.Name())
 
-		tmpDir, err := ioutil.TempDir("", "tunasync")
+		tmpDir, err := os.MkdirTemp("", "tunasync")
 		So(err, ShouldBeNil)
 		defer os.RemoveAll(tmpDir)
 
@@ -92,7 +92,7 @@ exec_on_failure = [
 
 		curCfgBlob := cfgBlob + incSection
 
-		err = ioutil.WriteFile(tmpfile.Name(), []byte(curCfgBlob), 0644)
+		err = os.WriteFile(tmpfile.Name(), []byte(curCfgBlob), 0644)
 		So(err, ShouldEqual, nil)
 		defer tmpfile.Close()
 
@@ -116,9 +116,9 @@ provider = "two-stage-rsync"
 stage1_profile = "debian"
 use_ipv6 = true
 		`
-		err = ioutil.WriteFile(filepath.Join(tmpDir, "debian.conf"), []byte(incBlob1), 0644)
+		err = os.WriteFile(filepath.Join(tmpDir, "debian.conf"), []byte(incBlob1), 0644)
 		So(err, ShouldEqual, nil)
-		err = ioutil.WriteFile(filepath.Join(tmpDir, "ubuntu.conf"), []byte(incBlob2), 0644)
+		err = os.WriteFile(filepath.Join(tmpDir, "ubuntu.conf"), []byte(incBlob2), 0644)
 		So(err, ShouldEqual, nil)
 
 		cfg, err := LoadConfig(tmpfile.Name())
@@ -145,20 +145,20 @@ use_ipv6 = true
 		So(m.Name, ShouldEqual, "debian")
 		So(m.MirrorDir, ShouldEqual, "")
 		So(m.Provider, ShouldEqual, provTwoStageRsync)
-		So(m.MemoryLimit.Value(), ShouldEqual, 256 * units.MiB)
+		So(m.MemoryLimit.Value(), ShouldEqual, 256*units.MiB)
 
 		m = cfg.Mirrors[2]
 		So(m.Name, ShouldEqual, "fedora")
 		So(m.MirrorDir, ShouldEqual, "")
 		So(m.Provider, ShouldEqual, provRsync)
 		So(m.ExcludeFile, ShouldEqual, "/etc/tunasync.d/fedora-exclude.txt")
-		So(m.MemoryLimit.Value(), ShouldEqual,  128 * units.MiB)
+		So(m.MemoryLimit.Value(), ShouldEqual, 128*units.MiB)
 
 		m = cfg.Mirrors[3]
 		So(m.Name, ShouldEqual, "debian-cd")
 		So(m.MirrorDir, ShouldEqual, "")
 		So(m.Provider, ShouldEqual, provTwoStageRsync)
-		So(m.MemoryLimit.Value(), ShouldEqual,  0)
+		So(m.MemoryLimit.Value(), ShouldEqual, 0)
 
 		m = cfg.Mirrors[4]
 		So(m.Name, ShouldEqual, "debian-security")
@@ -170,11 +170,11 @@ use_ipv6 = true
 	})
 
 	Convey("Everything should work on nested config file", t, func() {
-		tmpfile, err := ioutil.TempFile("", "tunasync")
+		tmpfile, err := os.CreateTemp("", "tunasync")
 		So(err, ShouldEqual, nil)
 		defer os.Remove(tmpfile.Name())
 
-		tmpDir, err := ioutil.TempDir("", "tunasync")
+		tmpDir, err := os.MkdirTemp("", "tunasync")
 		So(err, ShouldBeNil)
 		defer os.RemoveAll(tmpDir)
 
@@ -186,7 +186,7 @@ use_ipv6 = true
 
 		curCfgBlob := cfgBlob + incSection
 
-		err = ioutil.WriteFile(tmpfile.Name(), []byte(curCfgBlob), 0644)
+		err = os.WriteFile(tmpfile.Name(), []byte(curCfgBlob), 0644)
 		So(err, ShouldEqual, nil)
 		defer tmpfile.Close()
 
@@ -212,7 +212,7 @@ use_ipv6 = true
 	provider = "rsync"
 	upstream = "rsync://test.host3/debian-cd/"
 		`
-		err = ioutil.WriteFile(filepath.Join(tmpDir, "nest.conf"), []byte(incBlob1), 0644)
+		err = os.WriteFile(filepath.Join(tmpDir, "nest.conf"), []byte(incBlob1), 0644)
 		So(err, ShouldEqual, nil)
 
 		cfg, err := LoadConfig(tmpfile.Name())
@@ -266,11 +266,11 @@ use_ipv6 = true
 		So(len(cfg.Mirrors), ShouldEqual, 6)
 	})
 	Convey("Providers can be inited from a valid config file", t, func() {
-		tmpfile, err := ioutil.TempFile("", "tunasync")
+		tmpfile, err := os.CreateTemp("", "tunasync")
 		So(err, ShouldEqual, nil)
 		defer os.Remove(tmpfile.Name())
 
-		err = ioutil.WriteFile(tmpfile.Name(), []byte(cfgBlob), 0644)
+		err = os.WriteFile(tmpfile.Name(), []byte(cfgBlob), 0644)
 		So(err, ShouldEqual, nil)
 		defer tmpfile.Close()
 
@@ -317,7 +317,7 @@ use_ipv6 = true
 	})
 
 	Convey("MirrorSubdir should work", t, func() {
-		tmpfile, err := ioutil.TempFile("", "tunasync")
+		tmpfile, err := os.CreateTemp("", "tunasync")
 		So(err, ShouldEqual, nil)
 		defer os.Remove(tmpfile.Name())
 
@@ -363,7 +363,7 @@ use_ipv6 = true
 	provider = "rsync"
 	upstream = "rsync://test.host3/debian-cd/"
 		`
-		err = ioutil.WriteFile(tmpfile.Name(), []byte(cfgBlob1), 0644)
+		err = os.WriteFile(tmpfile.Name(), []byte(cfgBlob1), 0644)
 		So(err, ShouldEqual, nil)
 		defer tmpfile.Close()
 

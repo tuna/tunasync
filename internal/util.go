@@ -7,8 +7,9 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
+	"os"
 	"os/exec"
 	"regexp"
 	"time"
@@ -39,19 +40,19 @@ var rsyncExitValues = map[int]string{
 
 // GetTLSConfig generate tls.Config from CAFile
 func GetTLSConfig(CAFile string) (*tls.Config, error) {
-	caCert, err := ioutil.ReadFile(CAFile)
+	caCert, err := os.ReadFile(CAFile)
 	if err != nil {
 		return nil, err
 	}
 	caCertPool := x509.NewCertPool()
 	if ok := caCertPool.AppendCertsFromPEM(caCert); !ok {
-		return nil, errors.New("Failed to add CA to pool")
+		return nil, errors.New("failed to add CA to pool")
 	}
 
 	tlsConfig := &tls.Config{
 		RootCAs: caCertPool,
 	}
-	tlsConfig.BuildNameToCertificate()
+	// tlsConfig.BuildNameToCertificate()
 	return tlsConfig, nil
 }
 
@@ -104,7 +105,7 @@ func GetJSON(url string, obj interface{}, client *http.Client) (*http.Response, 
 		return resp, errors.New("HTTP status code is not 200")
 	}
 	defer resp.Body.Close()
-	body, err := ioutil.ReadAll(resp.Body)
+	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return resp, err
 	}
@@ -114,10 +115,10 @@ func GetJSON(url string, obj interface{}, client *http.Client) (*http.Response, 
 // FindAllSubmatchInFile calls re.FindAllSubmatch to find matches in given file
 func FindAllSubmatchInFile(fileName string, re *regexp.Regexp) (matches [][][]byte, err error) {
 	if fileName == "/dev/null" {
-		err = errors.New("Invalid log file")
+		err = errors.New("invalid log file")
 		return
 	}
-	if content, err := ioutil.ReadFile(fileName); err == nil {
+	if content, err := os.ReadFile(fileName); err == nil {
 		matches = re.FindAllSubmatch(content, -1)
 		// fmt.Printf("FindAllSubmatchInFile: %q\n", matches)
 	}
@@ -127,7 +128,7 @@ func FindAllSubmatchInFile(fileName string, re *regexp.Regexp) (matches [][][]by
 // ExtractSizeFromLog uses a regexp to extract the size from log files
 func ExtractSizeFromLog(logFile string, re *regexp.Regexp) string {
 	matches, _ := FindAllSubmatchInFile(logFile, re)
-	if matches == nil || len(matches) == 0 {
+	if len(matches) == 0 {
 		return ""
 	}
 	// return the first capture group of the last occurrence

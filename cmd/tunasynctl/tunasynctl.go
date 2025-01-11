@@ -3,7 +3,7 @@ package main
 import (
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"os"
 	"strconv"
@@ -122,7 +122,7 @@ func initialize(c *cli.Context) error {
 	var err error
 	client, err = tunasync.CreateHTTPClient(cfg.CACert)
 	if err != nil {
-		err = fmt.Errorf("Error initializing HTTP client: %s", err.Error())
+		err = fmt.Errorf("error initializing HTTP client: %s", err.Error())
 		// logger.Error(err.Error())
 		return err
 
@@ -292,7 +292,7 @@ func updateMirrorSize(c *cli.Context) error {
 			1)
 	}
 	defer resp.Body.Close()
-	body, _ := ioutil.ReadAll(resp.Body)
+	body, _ := io.ReadAll(resp.Body)
 	if resp.StatusCode != http.StatusOK {
 		return cli.NewExitError(
 			fmt.Sprintf("Manager failed to update mirror size: %s", body), 1,
@@ -338,7 +338,7 @@ func removeWorker(c *cli.Context) error {
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		body, err := ioutil.ReadAll(resp.Body)
+		body, err := io.ReadAll(resp.Body)
 		if err != nil {
 			return cli.NewExitError(
 				fmt.Sprintf("Failed to parse response: %s", err.Error()),
@@ -351,7 +351,7 @@ func removeWorker(c *cli.Context) error {
 	}
 
 	res := map[string]string{}
-	err = json.NewDecoder(resp.Body).Decode(&res)
+	_ = json.NewDecoder(resp.Body).Decode(&res)
 	if res["message"] == "deleted" {
 		fmt.Println("Successfully removed the worker")
 	} else {
@@ -376,7 +376,7 @@ func flushDisabledJobs(c *cli.Context) error {
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		body, err := ioutil.ReadAll(resp.Body)
+		body, err := io.ReadAll(resp.Body)
 		if err != nil {
 			return cli.NewExitError(
 				fmt.Sprintf("Failed to parse response: %s", err.Error()),
@@ -430,7 +430,7 @@ func cmdJob(cmd tunasync.CmdVerb) cli.ActionFunc {
 		defer resp.Body.Close()
 
 		if resp.StatusCode != http.StatusOK {
-			body, err := ioutil.ReadAll(resp.Body)
+			body, err := io.ReadAll(resp.Body)
 			if err != nil {
 				return cli.NewExitError(
 					fmt.Sprintf("Failed to parse response: %s", err.Error()),
@@ -468,7 +468,7 @@ func cmdWorker(cmd tunasync.CmdVerb) cli.ActionFunc {
 		defer resp.Body.Close()
 
 		if resp.StatusCode != http.StatusOK {
-			body, err := ioutil.ReadAll(resp.Body)
+			body, err := io.ReadAll(resp.Body)
 			if err != nil {
 				return cli.NewExitError(
 					fmt.Sprintf("Failed to parse response: %s", err.Error()),

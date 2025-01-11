@@ -317,7 +317,7 @@ func (w *Worker) runSchedule() {
 	schedInfo := w.schedule.GetJobs()
 	w.updateSchedInfo(schedInfo)
 
-	tick := time.Tick(5 * time.Second)
+	tick := time.NewTicker(5 * time.Second).C
 	for {
 		select {
 		case jobMsg := <-w.managerChan:

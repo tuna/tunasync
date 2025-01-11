@@ -1,7 +1,6 @@
 package worker
 
 import (
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"testing"
@@ -13,7 +12,7 @@ import (
 func TestZFSHook(t *testing.T) {
 
 	Convey("ZFS Hook should work", t, func(ctx C) {
-		tmpDir, err := ioutil.TempDir("", "tunasync")
+		tmpDir, err := os.MkdirTemp("", "tunasync")
 		tmpFile := filepath.Join(tmpDir, "log_file")
 
 		c := cmdConfig{

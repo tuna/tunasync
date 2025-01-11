@@ -141,7 +141,7 @@ func (b *kvDBAdapter) ListWorkers() (ws []WorkerStatus, err error) {
 
 func (b *kvDBAdapter) GetWorker(workerID string) (w WorkerStatus, err error) {
 	var v []byte
-	v, err = b.db.Get(_workerBucketKey, workerID)
+	v, _ = b.db.Get(_workerBucketKey, workerID)
 	if v == nil {
 		err = fmt.Errorf("invalid workerID %s", workerID)
 	} else {

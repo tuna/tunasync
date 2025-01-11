@@ -2,7 +2,6 @@ package manager
 
 import (
 	"fmt"
-	"io/ioutil"
 	"os"
 	"strings"
 	"testing"
@@ -37,11 +36,11 @@ func TestConfig(t *testing.T) {
 
 	Convey("load Config should work", t, func() {
 		Convey("create config file & cli context", func() {
-			tmpfile, err := ioutil.TempFile("", "tunasync")
+			tmpfile, err := os.CreateTemp("", "tunasync")
 			So(err, ShouldEqual, nil)
 			defer os.Remove(tmpfile.Name())
 
-			err = ioutil.WriteFile(tmpfile.Name(), []byte(cfgBlob), 0644)
+			err = os.WriteFile(tmpfile.Name(), []byte(cfgBlob), 0644)
 			So(err, ShouldEqual, nil)
 			defer tmpfile.Close()
 

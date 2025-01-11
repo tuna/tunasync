@@ -1,7 +1,6 @@
 package internal
 
 import (
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"testing"
@@ -29,11 +28,11 @@ sent 7.55M bytes  received 823.25M bytes  5.11M bytes/sec
 total size is 1.33T  speedup is 1,604.11
 `
 	Convey("Log parser should work", t, func() {
-		tmpDir, err := ioutil.TempDir("", "tunasync")
+		tmpDir, err := os.MkdirTemp("", "tunasync")
 		So(err, ShouldBeNil)
 		defer os.RemoveAll(tmpDir)
 		logFile := filepath.Join(tmpDir, "rs.log")
-		err = ioutil.WriteFile(logFile, []byte(realLogContent), 0755)
+		err = os.WriteFile(logFile, []byte(realLogContent), 0755)
 		So(err, ShouldBeNil)
 
 		res := ExtractSizeFromRsyncLog(logFile)

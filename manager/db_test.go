@@ -3,7 +3,6 @@ package manager
 import (
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"sort"
@@ -32,7 +31,7 @@ func DBAdapterTest(db dbAdapter) {
 				LastOnline:   time.Now(),
 				LastRegister: time.Now(),
 			}
-			w, err = db.CreateWorker(w)
+			_, err = db.CreateWorker(w)
 			So(err, ShouldBeNil)
 		}
 
@@ -73,7 +72,7 @@ func DBAdapterTest(db dbAdapter) {
 
 	Convey("update mirror status", func() {
 		status := []MirrorStatus{
-			MirrorStatus{
+			{
 				Name:        "arch-sync1",
 				Worker:      testWorkerIDs[0],
 				IsMaster:    true,
@@ -84,7 +83,7 @@ func DBAdapterTest(db dbAdapter) {
 				Upstream:    "mirrors.tuna.tsinghua.edu.cn",
 				Size:        "3GB",
 			},
-			MirrorStatus{
+			{
 				Name:        "arch-sync2",
 				Worker:      testWorkerIDs[1],
 				IsMaster:    true,
@@ -95,7 +94,7 @@ func DBAdapterTest(db dbAdapter) {
 				Upstream:    "mirrors.tuna.tsinghua.edu.cn",
 				Size:        "4GB",
 			},
-			MirrorStatus{
+			{
 				Name:        "arch-sync3",
 				Worker:      testWorkerIDs[1],
 				IsMaster:    true,
@@ -159,12 +158,11 @@ func DBAdapterTest(db dbAdapter) {
 		})
 
 	})
-	return
 }
 
 func TestDBAdapter(t *testing.T) {
 	Convey("boltAdapter should work", t, func() {
-		tmpDir, err := ioutil.TempDir("", "tunasync")
+		tmpDir, err := os.MkdirTemp("", "tunasync")
 		defer os.RemoveAll(tmpDir)
 		So(err, ShouldBeNil)
 
@@ -200,7 +198,7 @@ func TestDBAdapter(t *testing.T) {
 	})
 
 	Convey("badgerAdapter should work", t, func() {
-		tmpDir, err := ioutil.TempDir("", "tunasync")
+		tmpDir, err := os.MkdirTemp("", "tunasync")
 		defer os.RemoveAll(tmpDir)
 		So(err, ShouldBeNil)
 
@@ -218,7 +216,7 @@ func TestDBAdapter(t *testing.T) {
 	})
 
 	Convey("leveldbAdapter should work", t, func() {
-		tmpDir, err := ioutil.TempDir("", "tunasync")
+		tmpDir, err := os.MkdirTemp("", "tunasync")
 		defer os.RemoveAll(tmpDir)
 		So(err, ShouldBeNil)
 

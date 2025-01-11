@@ -2,7 +2,6 @@ package worker
 
 import (
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"testing"
@@ -14,8 +13,8 @@ import (
 
 func TestLogLimiter(t *testing.T) {
 	Convey("LogLimiter should work", t, func(ctx C) {
-		tmpDir, err := ioutil.TempDir("", "tunasync")
-		tmpLogDir, err := ioutil.TempDir("", "tunasync-log")
+		tmpDir, _ := os.MkdirTemp("", "tunasync")
+		tmpLogDir, err := os.MkdirTemp("", "tunasync-log")
 		defer os.RemoveAll(tmpDir)
 		defer os.RemoveAll(tmpLogDir)
 		So(err, ShouldBeNil)
@@ -58,7 +57,7 @@ echo $TUNASYNC_UPSTREAM_URL
 echo $TUNASYNC_LOG_FILE
 			`
 
-			err = ioutil.WriteFile(scriptFile, []byte(scriptContent), 0755)
+			err = os.WriteFile(scriptFile, []byte(scriptContent), 0755)
 			So(err, ShouldBeNil)
 
 			go job.Run(managerChan, semaphore)
@@ -86,7 +85,7 @@ echo $TUNASYNC_LOG_FILE
 				logFile,
 			)
 
-			loggedContent, err := ioutil.ReadFile(filepath.Join(provider.LogDir(), "latest"))
+			loggedContent, err := os.ReadFile(filepath.Join(provider.LogDir(), "latest"))
 			So(err, ShouldBeNil)
 			So(string(loggedContent), ShouldEqual, expectedOutput)
 		})
@@ -104,7 +103,7 @@ echo $TUNASYNC_LOG_FILE
 sleep 5
 			`
 
-			err = ioutil.WriteFile(scriptFile, []byte(scriptContent), 0755)
+			err = os.WriteFile(scriptFile, []byte(scriptContent), 0755)
 			So(err, ShouldBeNil)
 
 			go job.Run(managerChan, semaphore)
@@ -134,10 +133,10 @@ sleep 5
 				logFile,
 			)
 
-			loggedContent, err := ioutil.ReadFile(filepath.Join(provider.LogDir(), "latest"))
+			loggedContent, err := os.ReadFile(filepath.Join(provider.LogDir(), "latest"))
 			So(err, ShouldBeNil)
 			So(string(loggedContent), ShouldEqual, expectedOutput)
-			loggedContent, err = ioutil.ReadFile(logFile + ".fail")
+			loggedContent, err = os.ReadFile(logFile + ".fail")
 			So(err, ShouldBeNil)
 			So(string(loggedContent), ShouldEqual, expectedOutput)
 		})
