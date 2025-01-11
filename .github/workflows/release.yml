@@ -1,46 +1,37 @@
 name: release
 on:
   push:
-    # Sequence of patterns matched against refs/tags
     tags:
-    - 'v*' # Push events to matching v*, i.e. v1.0, v20.15.10
+    - 'v*'
+  workflow_dispatch:
 
 jobs:
 
   build:
     name: Build
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     steps:
-
     - name: Check out code into the Go module directory
       uses: actions/checkout@v4
-
     - name: Set up Go
       uses: actions/setup-go@v5
       with:
         go-version: '^1.22'
       id: go
-
     - name: Build
       run: |
         for i in linux-amd64 linux-arm64 linux-riscv64 linux-loong64; do
           make ARCH=$i all
           tar -cz --numeric-owner --owner root --group root -f tunasync-$i-bin.tar.gz -C build-$i tunasync tunasynctl
         done
-
     - name: Create Release
-      id: create_release
-      uses: actions/create-release@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      uses: softprops/action-gh-release@v2
       with:
-        tag_name: ${{ github.ref }}
-        release_name: Release ${{ github.ref }}
-        draft: false
+        token: ${{ secrets.GITHUB_TOKEN }}
+        tag_name: ${{ github.ref_name }}
+        name: Release ${{ github.ref_name }}
         prerelease: false
-    - name: Upload Release Assets
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        TAG_NAME: ${{ github.ref }}
-      run: |
-        hub release edit $(find . -type f -name "tunasync-*.tar.gz" -printf "-a %p ") -m "" "${TAG_NAME##*/}"
+        files: |
+          tunasync-*.tar.gz
