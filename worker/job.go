@@ -87,10 +87,12 @@ func (m *mirrorJob) SetProvider(provider mirrorProvider) error {
 
 // runMirrorJob is the goroutine where syncing job runs in
 // arguments:
-//    provider: mirror provider object
-//    ctrlChan: receives messages from the manager
-//    managerChan: push messages to the manager, this channel should have a larger buffer
-//    sempaphore: make sure the concurrent running syncing job won't explode
+//
+//	provider: mirror provider object
+//	ctrlChan: receives messages from the manager
+//	managerChan: push messages to the manager, this channel should have a larger buffer
+//	sempaphore: make sure the concurrent running syncing job won't explode
+//
 // TODO: message struct for managerChan
 func (m *mirrorJob) Run(managerChan chan<- jobMessage, semaphore chan empty) error {
 	jobsDone.Add(1)

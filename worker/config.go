@@ -6,10 +6,10 @@ import (
 	"path/filepath"
 
 	"github.com/BurntSushi/toml"
-	"github.com/imdario/mergo"
-	units "github.com/docker/go-units"
 	cgv1 "github.com/containerd/cgroups"
 	cgv2 "github.com/containerd/cgroups/v2"
+	units "github.com/docker/go-units"
+	"github.com/imdario/mergo"
 )
 
 type providerEnum uint8
