@@ -22,4 +22,7 @@ test:
 build-test-worker:
 	go test -c -covermode=count ./worker
 
-.PHONY: all test $(BUILDBIN) build-test-worker
+clean:
+	rm -rf build-$(ARCH)
+
+.PHONY: all test $(BUILDBIN) build-test-worker clean
