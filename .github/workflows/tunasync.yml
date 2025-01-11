@@ -59,17 +59,10 @@ jobs:
         go-version: '^1.22'
       id: go
 
-    - name: Run Unit tests.
-      run: |
-        go install github.com/wadey/gocovmerge@latest
-        sudo systemd-run --service-type=oneshot --uid="$(id --user)" --pipe --wait \
-          --property=Delegate=yes --setenv=USECURCGROUP=1 \
-          --setenv=TERM=xterm-256color --same-dir \
-          make test
-
     - name: Run Additional Unit tests.
       run: |
         make build-test-worker
+        readelf --dyn-syms -W worker.test
         sudo mkdir /sys/fs/cgroup/tunasync
         sudo ./worker.test -test.v=true -test.coverprofile profile2.cov -test.run TestCgroup
         sudo rmdir /sys/fs/cgroup/tunasync
@@ -195,6 +188,9 @@ jobs:
           lssubsys -am
           cgcreate -a "$CUSER" -t "$CUSER" -g cpu:tunasync
           cgcreate -a "$CUSER" -t "$CUSER" -g memory:tunasync
+          ls -la /sys/fs/cgroup/cpuacct
+          ls -la /sys/fs/cgroup/cpu,cpuacct
+          ls -la /sys/fs/cgroup/memory
           TERM=xterm-256color ./worker.test -test.v=true -test.coverprofile \
             profile3.cov -test.run TestCgroup
           cgexec -g "*:/" bash -c "echo 0 > /sys/fs/cgroup/systemd/tasks; exec sudo -u $CUSER env USECURCGROUP=1 TERM=xterm-256color cgexec -g cpu,memory:tunasync ./worker.test -test.v=true -test.coverprofile profile4.cov -test.run TestCgroup"
