@@ -190,6 +190,7 @@ jobs:
       run: |
         CUSER="$(id --user --name)"
         sudo rsh 254.255.255.2 bash --noprofile --norc -eo pipefail << EOF
+          exec 2>&1
           cd "/home/${CUSER}"
           lssubsys -am
           cgcreate -a "$CUSER" -t "$CUSER" -g cpu:tunasync
