@@ -1,6 +1,6 @@
 name: tunasync
 
-on: [push]
+on: [push, pull_request, workflow_dispatch]
 
 jobs:
 
@@ -12,10 +12,10 @@ jobs:
     - name: Check out code into the Go module directory
       uses: actions/checkout@v4
 
-    - name: Set up Go 1.18
+    - name: Set up Go
       uses: actions/setup-go@v5
       with:
-        go-version: 1.18
+        go-version: 'stable'
       id: go
 
     - name: Get dependencies
@@ -53,10 +53,10 @@ jobs:
     - name: Check out code into the Go module directory
       uses: actions/checkout@v4
 
-    - name: Set up Go 1.18
+    - name: Set up Go
       uses: actions/setup-go@v5
       with:
-        go-version: 1.18
+        go-version: 'stable'
       id: go
 
     - name: Run Unit tests.
