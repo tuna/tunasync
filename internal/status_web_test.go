@@ -71,8 +71,7 @@ func TestStatus(t *testing.T) {
 			Size:        "4GB",
 		}
 
-		var m2 WebMirrorStatus
-		m2 = BuildWebMirrorStatus(m)
+		var m2 WebMirrorStatus = BuildWebMirrorStatus(m)
 		// fmt.Printf("%#v", m2)
 		So(m2.Name, ShouldEqual, m.Name)
 		So(m2.Status, ShouldEqual, m.Status)
