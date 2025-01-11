@@ -11,7 +11,7 @@ import (
 	"time"
 
 	"github.com/codeskyblue/go-sh"
-	cgv1 "github.com/containerd/cgroups"
+	cgv1 "github.com/containerd/cgroups/v3/cgroup1"
 	"github.com/moby/moby/pkg/reexec"
 	"golang.org/x/sys/unix"
 )

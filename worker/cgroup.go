@@ -12,8 +12,9 @@ import (
 
 	"golang.org/x/sys/unix"
 
-	cgv1 "github.com/containerd/cgroups"
-	cgv2 "github.com/containerd/cgroups/v2"
+	cgroups "github.com/containerd/cgroups/v3"
+	cgv1 "github.com/containerd/cgroups/v3/cgroup1"
+	cgv2 "github.com/containerd/cgroups/v3/cgroup2"
 	"github.com/moby/moby/pkg/reexec"
 	contspecs "github.com/opencontainers/runtime-spec/specs-go"
 )
@@ -83,7 +84,7 @@ func initCgroup(cfg *cgroupConfig) error {
 		baseGroup = filepath.Join("/", baseGroup)
 	}
 
-	cfg.isUnified = cgv1.Mode() == cgv1.Unified
+	cfg.isUnified = cgroups.Mode() == cgroups.Unified
 
 	if cfg.isUnified {
 		logger.Debugf("Cgroup V2 detected")
@@ -98,7 +99,7 @@ func initCgroup(cfg *cgroupConfig) error {
 		logger.Infof("Using cgroup path: %s", g)
 
 		var err error
-		if cfg.cgMgrV2, err = cgv2.LoadManager("/sys/fs/cgroup", g); err != nil {
+		if cfg.cgMgrV2, err = cgv2.Load(g); err != nil {
 			return err
 		}
 		if baseGroup == "" {
@@ -167,7 +168,7 @@ func initCgroup(cfg *cgroupConfig) error {
 		}
 		logger.Infof("Loading cgroup")
 		var err error
-		if cfg.cgMgrV1, err = cgv1.Load(cgv1.V1, pather, func(cfg *cgv1.InitConfig) error {
+		if cfg.cgMgrV1, err = cgv1.Load(pather, func(cfg *cgv1.InitConfig) error {
 			cfg.InitCheck = cgv1.AllowAny
 			return nil
 		}); err != nil {
