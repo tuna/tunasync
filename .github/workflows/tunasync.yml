@@ -227,7 +227,7 @@ jobs:
     - name: Combine coverage files
       run : |
         CUSER="$(id --user --name)"
-        "${HOME}/go/bin/gocovmerge" profile.cov profile2.gcov \
+        "${HOME}/go/bin/gocovmerge" profile.gcov profile2.gcov \
           "umlrootfs/home/${CUSER}/profile3.gcov" \
           "umlrootfs/home/${CUSER}/profile4.gcov" \
           profile5_*.gcov > merged.gcov
