@@ -230,7 +230,9 @@ jobs:
         "${HOME}/go/bin/gocovmerge" profile.cov profile2.gcov \
           "umlrootfs/home/${CUSER}/profile3.gcov" \
           "umlrootfs/home/${CUSER}/profile4.gcov" \
-          profile5_*.gcov > profile-all.gcov
+          profile5_*.gcov > merged.gcov
+        # remove cmdline tools from coverage statistics
+        grep -v "cmd/.*\.go" merged.gcov > profile-all.gcov
 
     - name: Convert coverage to lcov
       uses: jandelgado/gcov2lcov-action@v1
