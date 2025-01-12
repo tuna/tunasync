@@ -1,6 +1,11 @@
 name: tunasync
 
-on: [push, pull_request, workflow_dispatch]
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+  workflow_dispatch:
 
 jobs:
 
@@ -71,7 +76,7 @@ jobs:
       run: |
         make build-test-worker
         sudo mkdir /sys/fs/cgroup/tunasync
-        sudo ./worker.test -test.v=true -test.coverprofile profile2.cov -test.run TestCgroup
+        sudo ./worker.test -test.v=true -test.coverprofile profile2.gcov -test.run TestCgroup
         sudo rmdir /sys/fs/cgroup/tunasync
         touch /tmp/dummy_exec
         chmod +x /tmp/dummy_exec
@@ -80,7 +85,7 @@ jobs:
           shift
           argv0="$1"
           shift
-          (TESTREEXEC="$case" TERM=xterm-256color exec -a "$argv0" ./worker.test -test.v=true -test.coverprofile "profile5_$case.cov" -test.run TestReexec -- "$@")
+          (TESTREEXEC="$case" TERM=xterm-256color exec -a "$argv0" ./worker.test -test.v=true -test.coverprofile "profile5_$case.gcov" -test.run TestReexec -- "$@")
         }
         run_test_reexec 1 tunasync-exec __dummy__
         run_test_reexec 2 tunasync-exec /tmp/dummy_exec
@@ -190,13 +195,14 @@ jobs:
       run: |
         CUSER="$(id --user --name)"
         sudo rsh 254.255.255.2 bash --noprofile --norc -eo pipefail << EOF
+          exec 2>&1
           cd "/home/${CUSER}"
           lssubsys -am
           cgcreate -a "$CUSER" -t "$CUSER" -g cpu:tunasync
           cgcreate -a "$CUSER" -t "$CUSER" -g memory:tunasync
           TERM=xterm-256color ./worker.test -test.v=true -test.coverprofile \
-            profile3.cov -test.run TestCgroup
-          cgexec -g "*:/" bash -c "echo 0 > /sys/fs/cgroup/systemd/tasks; exec sudo -u $CUSER env USECURCGROUP=1 TERM=xterm-256color cgexec -g cpu,memory:tunasync ./worker.test -test.v=true -test.coverprofile profile4.cov -test.run TestCgroup"
+            profile3.gcov -test.run TestCgroup
+          cgexec -g "*:/" bash -c "echo 0 > /sys/fs/cgroup/systemd/tasks; exec sudo -u $CUSER env USECURCGROUP=1 TERM=xterm-256color cgexec -g cpu,memory:tunasync ./worker.test -test.v=true -test.coverprofile profile4.gcov -test.run TestCgroup"
         EOF
 
     - name: Stop Uml
@@ -221,15 +227,17 @@ jobs:
     - name: Combine coverage files
       run : |
         CUSER="$(id --user --name)"
-        "${HOME}/go/bin/gocovmerge" profile.cov profile2.cov \
-          "umlrootfs/home/${CUSER}/profile3.cov" \
-          "umlrootfs/home/${CUSER}/profile4.cov" \
-          profile5_*.cov > profile-all.cov
+        "${HOME}/go/bin/gocovmerge" profile.gcov profile2.gcov \
+          "umlrootfs/home/${CUSER}/profile3.gcov" \
+          "umlrootfs/home/${CUSER}/profile4.gcov" \
+          profile5_*.gcov > merged.gcov
+        # remove cmdline tools from coverage statistics
+        grep -v "cmd/.*\.go" merged.gcov > profile-all.gcov
 
     - name: Convert coverage to lcov
       uses: jandelgado/gcov2lcov-action@v1
       with:
-          infile: profile-all.cov
+          infile: profile-all.gcov
           outfile: coverage.lcov
 
     - name: Coveralls

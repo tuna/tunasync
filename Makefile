@@ -14,13 +14,13 @@ $(BUILDBIN): % : build-$(ARCH) build-$(ARCH)/%
 
 $(BUILDBIN:%=build-$(ARCH)/%) : build-$(ARCH)/% : cmd/%
 	GOOS=$(GOOS) GOARCH=$(GOARCH) go get ./$<
-	GOOS=$(GOOS) GOARCH=$(GOARCH) go build -o $@ -ldflags ${LDFLAGS} github.com/tuna/tunasync/$<
+	GOOS=$(GOOS) GOARCH=$(GOARCH) CGO_ENABLED=0 go build -o $@ -ldflags ${LDFLAGS} github.com/tuna/tunasync/$<
 
 test:
-	go test -v -covermode=count -coverprofile=profile.cov ./...
+	go test -v -covermode=count -coverprofile=profile.gcov ./...
 
 build-test-worker:
-	go test -c -covermode=count ./worker
+	CGO_ENABLED=0 go test -c -covermode=count github.com/tuna/tunasync/worker
 
 clean:
 	rm -rf build-$(ARCH)

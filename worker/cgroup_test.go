@@ -11,8 +11,8 @@ import (
 	"testing"
 	"time"
 
-	cgv1 "github.com/containerd/cgroups"
-	cgv2 "github.com/containerd/cgroups/v2"
+	cgv1 "github.com/containerd/cgroups/v3/cgroup1"
+	cgv2 "github.com/containerd/cgroups/v3/cgroup2"
 	units "github.com/docker/go-units"
 	"github.com/moby/moby/pkg/reexec"
 
@@ -250,7 +250,7 @@ sleep 30
 				if cgcf.Group == "" {
 					wkrg, err := cgv2.NestedGroupPath("")
 					So(err, ShouldBeNil)
-					wkrMgr, err := cgv2.LoadManager("/sys/fs/cgroup", wkrg)
+					wkrMgr, err := cgv2.Load(wkrg)
 					allCtrls, err := wkrMgr.Controllers()
 					So(err, ShouldBeNil)
 					err = wkrMgr.ToggleControllers(allCtrls, cgv2.Disable)
@@ -290,7 +290,7 @@ sleep 30
 							return path, err
 						}
 					})(cgv1.NestedPath(""))
-					wkrMgr, err := cgv1.Load(cgv1.V1, pather, func(cfg *cgv1.InitConfig) error {
+					wkrMgr, err := cgv1.Load(pather, func(cfg *cgv1.InitConfig) error {
 						cfg.InitCheck = cgv1.AllowAny
 						return nil
 					})
