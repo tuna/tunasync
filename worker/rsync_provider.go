@@ -14,6 +14,7 @@ type rsyncConfig struct {
 	rsyncCmd                                     string
 	upstreamURL, username, password, excludeFile string
 	extraOptions                                 []string
+	globalOptions                                []string
 	overriddenOptions                            []string
 	useOverrideOnly                              bool
 	rsyncNeverTimeout                            bool
@@ -80,6 +81,7 @@ func newRsyncProvider(c rsyncConfig) (*rsyncProvider, error) {
 		if c.overriddenOptions == nil {
 			return nil, errors.New("rsync_override_only is set but no rsync_override provided")
 		}
+		// use overridden options only
 	} else {
 		if !c.rsyncNeverTimeout {
 			timeo := 120
@@ -97,6 +99,10 @@ func newRsyncProvider(c rsyncConfig) (*rsyncProvider, error) {
 
 		if c.excludeFile != "" {
 			options = append(options, "--exclude-from", c.excludeFile)
+		}
+
+		if c.globalOptions != nil {
+			options = append(options, c.globalOptions...)
 		}
 		if c.extraOptions != nil {
 			options = append(options, c.extraOptions...)
