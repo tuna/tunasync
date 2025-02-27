@@ -147,7 +147,7 @@ func TestWorker(t *testing.T) {
 		})
 		Convey("with one job", func(ctx C) {
 			workerCfg.Mirrors = []mirrorConfig{
-				mirrorConfig{
+				{
 					Name:     "job-ls",
 					Provider: provCommand,
 					Command:  "ls",
@@ -194,17 +194,17 @@ func TestWorker(t *testing.T) {
 		})
 		Convey("with several jobs", func(ctx C) {
 			workerCfg.Mirrors = []mirrorConfig{
-				mirrorConfig{
+				{
 					Name:     "job-ls-1",
 					Provider: provCommand,
 					Command:  "ls",
 				},
-				mirrorConfig{
+				{
 					Name:     "job-fail",
 					Provider: provCommand,
 					Command:  "non-existent-command-xxxx",
 				},
-				mirrorConfig{
+				{
 					Name:     "job-ls-2",
 					Provider: provCommand,
 					Command:  "ls",

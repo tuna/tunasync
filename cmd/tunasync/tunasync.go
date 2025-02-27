@@ -9,7 +9,7 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
-	"github.com/moby/moby/pkg/reexec"
+	"github.com/moby/sys/reexec"
 	"github.com/pkg/profile"
 	"github.com/urfave/cli"
 	"gopkg.in/op/go-logging.v1"

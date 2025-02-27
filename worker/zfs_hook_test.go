@@ -12,7 +12,7 @@ import (
 func TestZFSHook(t *testing.T) {
 
 	Convey("ZFS Hook should work", t, func(ctx C) {
-		tmpDir, err := os.MkdirTemp("", "tunasync")
+		tmpDir, _ := os.MkdirTemp("", "tunasync")
 		tmpFile := filepath.Join(tmpDir, "log_file")
 
 		c := cmdConfig{

@@ -12,7 +12,7 @@ import (
 
 	"github.com/codeskyblue/go-sh"
 	cgv1 "github.com/containerd/cgroups/v3/cgroup1"
-	"github.com/moby/moby/pkg/reexec"
+	"github.com/moby/sys/reexec"
 	"golang.org/x/sys/unix"
 )
 

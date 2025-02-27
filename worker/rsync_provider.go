@@ -77,7 +77,7 @@ func newRsyncProvider(c rsyncConfig) (*rsyncProvider, error) {
 		options = c.overriddenOptions
 	}
 
-	if c.useOverrideOnly == true {
+	if c.useOverrideOnly {
 		if c.overriddenOptions == nil {
 			return nil, errors.New("rsync_override_only is set but no rsync_override provided")
 		}

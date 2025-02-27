@@ -15,7 +15,7 @@ import (
 	cgroups "github.com/containerd/cgroups/v3"
 	cgv1 "github.com/containerd/cgroups/v3/cgroup1"
 	cgv2 "github.com/containerd/cgroups/v3/cgroup2"
-	"github.com/moby/moby/pkg/reexec"
+	"github.com/moby/sys/reexec"
 	contspecs "github.com/opencontainers/runtime-spec/specs-go"
 )
 
