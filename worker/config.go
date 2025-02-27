@@ -166,19 +166,20 @@ type mirrorConfig struct {
 	ExecOnSuccessExtra []string `toml:"exec_on_success_extra"`
 	ExecOnFailureExtra []string `toml:"exec_on_failure_extra"`
 
-	Command       string   `toml:"command"`
-	FailOnMatch   string   `toml:"fail_on_match"`
-	SizePattern   string   `toml:"size_pattern"`
-	UseIPv6       bool     `toml:"use_ipv6"`
-	UseIPv4       bool     `toml:"use_ipv4"`
-	ExcludeFile   string   `toml:"exclude_file"`
-	Username      string   `toml:"username"`
-	Password      string   `toml:"password"`
-	RsyncNoTimeo  bool     `toml:"rsync_no_timeout"`
-	RsyncTimeout  int      `toml:"rsync_timeout"`
-	RsyncOptions  []string `toml:"rsync_options"`
-	RsyncOverride []string `toml:"rsync_override"`
-	Stage1Profile string   `toml:"stage1_profile"`
+	Command           string   `toml:"command"`
+	FailOnMatch       string   `toml:"fail_on_match"`
+	SizePattern       string   `toml:"size_pattern"`
+	UseIPv6           bool     `toml:"use_ipv6"`
+	UseIPv4           bool     `toml:"use_ipv4"`
+	ExcludeFile       string   `toml:"exclude_file"`
+	Username          string   `toml:"username"`
+	Password          string   `toml:"password"`
+	RsyncNoTimeo      bool     `toml:"rsync_no_timeout"`
+	RsyncTimeout      int      `toml:"rsync_timeout"`
+	RsyncOptions      []string `toml:"rsync_options"`
+	RsyncOverride     []string `toml:"rsync_override"`
+	RsyncOverrideOnly bool     `toml:"rsync_override_only"` // only use provided overridden options if true
+	Stage1Profile     string   `toml:"stage1_profile"`
 
 	MemoryLimit MemBytes `toml:"memory_limit"`
 

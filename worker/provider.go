@@ -143,6 +143,7 @@ func newMirrorProvider(mirror mirrorConfig, cfg *Config) mirrorProvider {
 			rsyncNeverTimeout: mirror.RsyncNoTimeo,
 			rsyncTimeoutValue: mirror.RsyncTimeout,
 			overriddenOptions: mirror.RsyncOverride,
+			useOverrideOnly:   mirror.RsyncOverrideOnly,
 			rsyncEnv:          mirror.Env,
 			workingDir:        mirrorDir,
 			logDir:            logDir,
