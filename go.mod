@@ -19,7 +19,7 @@ require (
 	github.com/imdario/mergo v0.3.16
 	github.com/moby/moby v28.0.1+incompatible
 	github.com/moby/sys/reexec v0.1.0
-	github.com/opencontainers/runtime-spec v1.2.0
+	github.com/opencontainers/runtime-spec v1.2.1
 	github.com/pkg/errors v0.9.1
 	github.com/pkg/profile v1.7.0
 	github.com/ryszard/goskiplist v0.0.0-20150312221310-2dfbae5fcf46
