@@ -63,6 +63,9 @@ type globalConfig struct {
 
 	ExecOnSuccess []string `toml:"exec_on_success"`
 	ExecOnFailure []string `toml:"exec_on_failure"`
+
+	// merged with mirror-specific options. make sure you know what you are doing!
+	SuccessExitCodes []int `toml:"dangerous_global_success_exit_codes"`
 }
 
 type managerConfig struct {
@@ -168,6 +171,9 @@ type mirrorConfig struct {
 	// These two options are appended to the global options
 	ExecOnSuccessExtra []string `toml:"exec_on_success_extra"`
 	ExecOnFailureExtra []string `toml:"exec_on_failure_extra"`
+
+	// will be merged with global option
+	SuccessExitCodes []int `toml:"success_exit_codes"`
 
 	Command           string   `toml:"command"`
 	FailOnMatch       string   `toml:"fail_on_match"`
