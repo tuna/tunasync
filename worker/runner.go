@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"slices"
 	"strings"
 	"sync"
 	"syscall"
@@ -171,9 +172,18 @@ func (c *cmdJob) Wait() error {
 		return c.retErr
 	default:
 		err := c.cmd.Wait()
-		c.retErr = err
 		close(c.finished)
-		return err
+		if err != nil {
+			code := err.(*exec.ExitError).ExitCode()
+			allowedCodes := c.provider.GetSuccessExitCodes()
+			if slices.Contains(allowedCodes, code) {
+				// process exited with non-success status
+				logger.Infof("Command %s exited with code %d: treated as success (allowed: %v)", c.cmd.Args, code, allowedCodes)
+			} else {
+				c.retErr = err
+			}
+		}
+		return c.retErr
 	}
 }
 

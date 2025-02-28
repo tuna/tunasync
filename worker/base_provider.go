@@ -19,9 +19,10 @@ type baseProvider struct {
 	timeout  time.Duration
 	isMaster bool
 
-	cmd       *cmdJob
-	logFileFd *os.File
-	isRunning atomic.Value
+	cmd              *cmdJob
+	logFileFd        *os.File
+	isRunning        atomic.Value
+	successExitCodes []int
 
 	cgroup *cgroupHook
 	zfs    *zfsHook
@@ -185,4 +186,19 @@ func (p *baseProvider) Terminate() error {
 
 func (p *baseProvider) DataSize() string {
 	return ""
+}
+
+func (p *baseProvider) SetSuccessExitCodes(codes []int) {
+	if codes == nil {
+		p.successExitCodes = []int{}
+	} else {
+		p.successExitCodes = codes
+	}
+}
+
+func (p *baseProvider) GetSuccessExitCodes() []int {
+	if p.successExitCodes == nil {
+		return []int{}
+	}
+	return p.successExitCodes
 }

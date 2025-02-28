@@ -60,6 +60,10 @@ type mirrorProvider interface {
 	ExitContext() *Context
 	// return context
 	Context() *Context
+
+	// set in newMirrorProvider, used by cmdJob.Wait
+	SetSuccessExitCodes(codes []int)
+	GetSuccessExitCodes() []int
 }
 
 // newProvider creates a mirrorProvider instance
@@ -248,6 +252,18 @@ func newMirrorProvider(mirror mirrorConfig, cfg *Config) mirrorProvider {
 		addHookFromCmdList(cfg.Global.ExecOnFailure, execOnFailure)
 	}
 	addHookFromCmdList(mirror.ExecOnFailureExtra, execOnFailure)
+
+	successExitCodes := []int{}
+	if cfg.Global.SuccessExitCodes != nil {
+		successExitCodes = append(successExitCodes, cfg.Global.SuccessExitCodes...)
+	}
+	if mirror.SuccessExitCodes != nil {
+		successExitCodes = append(successExitCodes, mirror.SuccessExitCodes...)
+	}
+	if len(successExitCodes) > 0 {
+		logger.Infof("Non-zero success exit codes set for mirror %s: %v", mirror.Name, successExitCodes)
+		provider.SetSuccessExitCodes(successExitCodes)
+	}
 
 	return provider
 }
