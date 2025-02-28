@@ -552,6 +552,59 @@ sleep 10
 			So(provider.DataSize(), ShouldBeEmpty)
 		})
 	})
+	Convey("Command Provider with successExitCodes should work", t, func(ctx C) {
+		tmpDir, err := os.MkdirTemp("", "tunasync")
+		defer os.RemoveAll(tmpDir)
+		So(err, ShouldBeNil)
+		scriptFile := filepath.Join(tmpDir, "cmd.sh")
+		tmpFile := filepath.Join(tmpDir, "log_file")
+
+		c := cmdConfig{
+			name:        "tuna-cmd",
+			upstreamURL: "http://mirrors.tuna.moe/",
+			command:     "bash " + scriptFile,
+			workingDir:  tmpDir,
+			logDir:      tmpDir,
+			logFile:     tmpFile,
+			interval:    600 * time.Second,
+		}
+
+		provider, err := newCmdProvider(c)
+		provider.SetSuccessExitCodes([]int{199, 200})
+		So(err, ShouldBeNil)
+
+		So(provider.Type(), ShouldEqual, provCommand)
+		So(provider.Name(), ShouldEqual, c.name)
+		So(provider.WorkingDir(), ShouldEqual, c.workingDir)
+		So(provider.LogDir(), ShouldEqual, c.logDir)
+		So(provider.LogFile(), ShouldEqual, c.logFile)
+		So(provider.Interval(), ShouldEqual, c.interval)
+		So(provider.GetSuccessExitCodes(), ShouldResemble, []int{199, 200})
+
+		Convey("Command exits with configured successExitCodes", func() {
+			scriptContent := `exit 199`
+			err = os.WriteFile(scriptFile, []byte(scriptContent), 0755)
+			So(err, ShouldBeNil)
+			readedScriptContent, err := os.ReadFile(scriptFile)
+			So(err, ShouldBeNil)
+			So(readedScriptContent, ShouldResemble, []byte(scriptContent))
+
+			err = provider.Run(make(chan empty, 1))
+			So(err, ShouldBeNil)
+		})
+
+		Convey("Command exits with unknown exit code", func() {
+			scriptContent := `exit 201`
+			err = os.WriteFile(scriptFile, []byte(scriptContent), 0755)
+			So(err, ShouldBeNil)
+			readedScriptContent, err := os.ReadFile(scriptFile)
+			So(err, ShouldBeNil)
+			So(readedScriptContent, ShouldResemble, []byte(scriptContent))
+
+			err = provider.Run(make(chan empty, 1))
+			So(err, ShouldNotBeNil)
+		})
+	})
 }
 
 func TestTwoStageRsyncProvider(t *testing.T) {

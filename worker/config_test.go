@@ -521,4 +521,60 @@ rsync_options = ["--local"]
 			"--local",       // from mirror.rsync_options
 		})
 	})
+
+	Convey("success_exit_codes should work globally and per mirror", t, func() {
+		tmpfile, err := os.CreateTemp("", "tunasync")
+		So(err, ShouldEqual, nil)
+		defer os.Remove(tmpfile.Name())
+
+		cfgBlob1 := `
+[global]
+name = "test_worker"
+log_dir = "/var/log/tunasync/{{.Name}}"
+mirror_dir = "/data/mirrors"
+concurrent = 10
+interval = 240
+retry = 3
+timeout = 86400
+dangerous_global_success_exit_codes = [10, 20]
+
+[manager]
+api_base = "https://127.0.0.1:5000"
+token = "some_token"
+
+[server]
+hostname = "worker1.example.com"
+listen_addr = "127.0.0.1"
+listen_port = 6000
+ssl_cert = "/etc/tunasync.d/worker1.cert"
+ssl_key = "/etc/tunasync.d/worker1.key"
+
+[[mirrors]]
+name = "foo"
+provider = "rsync"
+upstream = "rsync://foo.bar/"
+interval = 720
+retry = 2
+timeout = 3600
+mirror_dir = "/data/foo"
+success_exit_codes = [30, 40]
+`
+
+		err = os.WriteFile(tmpfile.Name(), []byte(cfgBlob1), 0644)
+		So(err, ShouldEqual, nil)
+		defer tmpfile.Close()
+
+		cfg, err := LoadConfig(tmpfile.Name())
+		So(err, ShouldBeNil)
+
+		providers := map[string]mirrorProvider{}
+		for _, m := range cfg.Mirrors {
+			p := newMirrorProvider(m, cfg)
+			providers[p.Name()] = p
+		}
+
+		p, ok := providers["foo"].(*rsyncProvider)
+		So(ok, ShouldBeTrue)
+		So(p.successExitCodes, ShouldResemble, []int{10, 20, 30, 40})
+	})
 }
