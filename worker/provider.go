@@ -276,6 +276,19 @@ func newMirrorProvider(mirror mirrorConfig, cfg *Config) mirrorProvider {
 		)
 	}
 
+	if len(successExitCodes) > 1 {
+		seen := map[int]struct{}{}
+		deduplicatedCodes := make([]int, 0, len(successExitCodes))
+		for _, code := range successExitCodes {
+			if _, ok := seen[code]; ok {
+				continue
+			}
+			seen[code] = struct{}{}
+			deduplicatedCodes = append(deduplicatedCodes, code)
+		}
+		successExitCodes = deduplicatedCodes
+	}
+
 	if len(successExitCodes) > 0 {
 		logger.Infof("Non-zero success exit codes set for mirror %s: %v", mirror.Name, successExitCodes)
 		provider.SetSuccessExitCodes(successExitCodes)
