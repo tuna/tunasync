@@ -577,4 +577,79 @@ success_exit_codes = [30, 40]
 		So(ok, ShouldBeTrue)
 		So(p.successExitCodes, ShouldResemble, []int{10, 20, 30, 40})
 	})
+
+	Convey("rsync_success_exit_codes should be merged for rsync providers", t, func() {
+		tmpfile, err := os.CreateTemp("", "tunasync")
+		So(err, ShouldEqual, nil)
+		defer os.Remove(tmpfile.Name())
+
+		cfgBlob1 := `
+[global]
+name = "test_worker"
+log_dir = "/var/log/tunasync/{{.Name}}"
+mirror_dir = "/data/mirrors"
+concurrent = 10
+interval = 240
+retry = 3
+timeout = 86400
+dangerous_global_success_exit_codes = [10]
+dangerous_global_rsync_success_exit_codes = [23, 24]
+
+[manager]
+api_base = "https://127.0.0.1:5000"
+
+[server]
+hostname = "worker1.example.com"
+listen_addr = "127.0.0.1"
+listen_port = 6000
+
+[[mirrors]]
+name = "foo"
+provider = "rsync"
+upstream = "rsync://foo.bar/"
+success_exit_codes = [20]
+rsync_success_exit_codes = [25]
+
+[[mirrors]]
+name = "bar"
+provider = "two-stage-rsync"
+stage1_profile = "debian"
+upstream = "rsync://foo.bar/debian/"
+success_exit_codes = [30]
+rsync_success_exit_codes = [26]
+
+[[mirrors]]
+name = "cmd"
+provider = "command"
+upstream = "https://example.com/"
+command = "true"
+success_exit_codes = [40]
+rsync_success_exit_codes = [99]
+`
+
+		err = os.WriteFile(tmpfile.Name(), []byte(cfgBlob1), 0644)
+		So(err, ShouldEqual, nil)
+		defer tmpfile.Close()
+
+		cfg, err := LoadConfig(tmpfile.Name())
+		So(err, ShouldBeNil)
+
+		providers := map[string]mirrorProvider{}
+		for _, m := range cfg.Mirrors {
+			p := newMirrorProvider(m, cfg)
+			providers[p.Name()] = p
+		}
+
+		rp, ok := providers["foo"].(*rsyncProvider)
+		So(ok, ShouldBeTrue)
+		So(rp.successExitCodes, ShouldResemble, []int{10, 20, 23, 24, 25})
+
+		tp, ok := providers["bar"].(*twoStageRsyncProvider)
+		So(ok, ShouldBeTrue)
+		So(tp.successExitCodes, ShouldResemble, []int{10, 30, 23, 24, 26})
+
+		cp, ok := providers["cmd"].(*cmdProvider)
+		So(ok, ShouldBeTrue)
+		So(cp.successExitCodes, ShouldResemble, []int{10, 40})
+	})
 }

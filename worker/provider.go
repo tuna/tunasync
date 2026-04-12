@@ -260,6 +260,22 @@ func newMirrorProvider(mirror mirrorConfig, cfg *Config) mirrorProvider {
 	if mirror.SuccessExitCodes != nil {
 		successExitCodes = append(successExitCodes, mirror.SuccessExitCodes...)
 	}
+
+	isRsyncProvider := mirror.Provider == provRsync || mirror.Provider == provTwoStageRsync
+	if isRsyncProvider {
+		if cfg.Global.RsyncSuccessExitCodes != nil {
+			successExitCodes = append(successExitCodes, cfg.Global.RsyncSuccessExitCodes...)
+		}
+		if mirror.RsyncSuccessExitCodes != nil {
+			successExitCodes = append(successExitCodes, mirror.RsyncSuccessExitCodes...)
+		}
+	} else if mirror.RsyncSuccessExitCodes != nil {
+		logger.Warningf(
+			"Mirror %s config item rsync_success_exit_codes is ignored for non-rsync provider",
+			mirror.Name,
+		)
+	}
+
 	if len(successExitCodes) > 0 {
 		logger.Infof("Non-zero success exit codes set for mirror %s: %v", mirror.Name, successExitCodes)
 		provider.SetSuccessExitCodes(successExitCodes)
