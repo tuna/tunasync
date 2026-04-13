@@ -17,7 +17,8 @@ $(BUILDBIN:%=build-$(ARCH)/%) : build-$(ARCH)/% : cmd/%
 	GOOS=$(GOOS) GOARCH=$(GOARCH) CGO_ENABLED=0 go build -o $@ -ldflags ${LDFLAGS} github.com/tuna/tunasync/$<
 
 test:
-	go test -v -covermode=count -coverprofile=profile.gcov ./...
+# see: https://stackoverflow.com/questions/79780882/go-no-such-tool-covdata-in-go-1-25
+	GOTOOLCHAIN=go1.26.2+auto go test -v -covermode=count -coverprofile=profile.gcov ./...
 
 build-test-worker:
 	CGO_ENABLED=0 go test -c -covermode=count github.com/tuna/tunasync/worker
