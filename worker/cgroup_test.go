@@ -53,8 +53,13 @@ func TestReexec(t *testing.T) {
 					return errors.New("pipe is nil")
 				} else {
 					_, err := pipe.Stat()
-					return err
+					if err != nil {
+						return err
+					}
 				}
+				pipe.Close()
+				_, err := pipe.Stat()
+				return err
 			})(), ShouldNotBeNil)
 			So(func() {
 				reexec.Init()
