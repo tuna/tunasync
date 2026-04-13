@@ -65,20 +65,23 @@ upstream = "rsync://rsync.elv.sh/elvish/"
 use_ipv6 = false
 
 # 仅对 rsync / two-stage-rsync 生效
-# 与 dangerous_global_success_exit_codes / success_exit_codes 追加合并
+# 与 dangerous_global_success_exit_codes /
+# dangerous_global_rsync_success_exit_codes /
+# success_exit_codes 追加合并
 rsync_success_exit_codes = [23, 24]
 ```
 
 如果你想对所有 rsync 镜像统一放行某些 rsync 退出码，可在 `[global]` 里设置：
 
 ```conf
+[global]
 dangerous_global_rsync_success_exit_codes = [23, 24]
 ```
 
 说明：
 
 - `rsync_success_exit_codes` 仅对 `provider = "rsync"` 或 `provider = "two-stage-rsync"` 生效。
-- 和 `dangerous_global_success_exit_codes`、`success_exit_codes` 一样，采用“全局 + 镜像追加合并”语义。
+- 和 `dangerous_global_success_exit_codes`、`dangerous_global_rsync_success_exit_codes`、`success_exit_codes` 一样，采用“全局 + 镜像追加合并”语义。
 - 推荐只放行 `23`、`24` 这类“同步完成但有部分文件问题”的退出码。
 
 编辑 `~/tunasync_demo/manager.conf`:
