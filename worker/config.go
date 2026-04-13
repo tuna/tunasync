@@ -66,6 +66,8 @@ type globalConfig struct {
 
 	// merged with mirror-specific options. make sure you know what you are doing!
 	SuccessExitCodes []int `toml:"dangerous_global_success_exit_codes"`
+	// rsync-only extension of dangerous_global_success_exit_codes
+	RsyncSuccessExitCodes []int `toml:"dangerous_global_rsync_success_exit_codes"`
 }
 
 type managerConfig struct {
@@ -174,6 +176,8 @@ type mirrorConfig struct {
 
 	// will be merged with global option
 	SuccessExitCodes []int `toml:"success_exit_codes"`
+	// only effective for rsync and two-stage-rsync providers
+	RsyncSuccessExitCodes []int `toml:"rsync_success_exit_codes"`
 
 	Command           string   `toml:"command"`
 	FailOnMatch       string   `toml:"fail_on_match"`
