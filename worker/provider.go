@@ -280,11 +280,10 @@ func newMirrorProvider(mirror mirrorConfig, cfg *Config) mirrorProvider {
 		seen := map[int]struct{}{}
 		deduplicatedCodes := make([]int, 0, len(successExitCodes))
 		for _, code := range successExitCodes {
-			if _, ok := seen[code]; ok {
-				continue
+			if _, ok := seen[code]; !ok {
+				seen[code] = struct{}{}
+				deduplicatedCodes = append(deduplicatedCodes, code)
 			}
-			seen[code] = struct{}{}
-			deduplicatedCodes = append(deduplicatedCodes, code)
 		}
 		successExitCodes = deduplicatedCodes
 	}
