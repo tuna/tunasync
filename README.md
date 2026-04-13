@@ -51,7 +51,7 @@ PreSyncing                           Syncing                               Succe
 
 ## Building
 
-Go version: 1.22
+Go version: 1.26
 
 ```shell
 # for native arch
