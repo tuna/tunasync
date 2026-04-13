@@ -74,7 +74,7 @@ sleep 20
 			emptyHook: emptyHook{
 				provider: provider,
 			},
-			image: "alpine:3.8",
+			image: "alpine:3.23",
 			volumes: []string{
 				fmt.Sprintf("%s:%s", cmdScript, "/bin/cmd.sh"),
 			},

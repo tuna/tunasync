@@ -297,7 +297,7 @@ func TestRsyncProviderWithDocker(t *testing.T) {
 			Upstream:    "rsync://rsync.tuna.moe/tuna/",
 			Command:     "/bin/myrsync",
 			ExcludeFile: excludeFile,
-			DockerImage: "alpine:3.8",
+			DockerImage: "alpine:3.23",
 			LogDir:      tmpDir,
 			MirrorDir:   tmpDir,
 			UseIPv6:     true,
