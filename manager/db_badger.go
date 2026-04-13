@@ -1,7 +1,7 @@
 package manager
 
 import (
-	"github.com/dgraph-io/badger/v2"
+	"github.com/dgraph-io/badger/v4"
 )
 
 // implement kv interface backed by badger

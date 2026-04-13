@@ -1,7 +1,7 @@
 package manager
 
 import (
-	"gopkg.in/op/go-logging.v1"
+	tunasync "github.com/tuna/tunasync/internal"
 )
 
-var logger = logging.MustGetLogger("tunasync")
+var logger = tunasync.MustGetLogger("tunasync")

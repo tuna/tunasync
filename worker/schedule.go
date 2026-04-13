@@ -75,7 +75,7 @@ func (q *scheduleQueue) Pop() *mirrorJob {
 		job := first.Value().(*mirrorJob)
 		q.list.Delete(first.Key())
 		delete(q.jobs, job.Name())
-		logger.Debug("Popped out job %s @%v", job.Name(), t)
+		logger.Debugf("Popped out job %s @%v", job.Name(), t)
 		return job
 	}
 	return nil

@@ -22,7 +22,7 @@ func cmdRun(p string, args []string) {
 		logger.Debugf("cmdRun failed %s", err)
 		return
 	}
-	logger.Debugf("cmdRun: ", string(out))
+	logger.Debugf("cmdRun: %s", string(out))
 }
 
 func getDockerByName(name string) (string, error) {

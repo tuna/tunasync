@@ -172,7 +172,7 @@ sleep 30
 			daemonPidBytes, err := os.ReadFile(bgPidfile)
 			So(err, ShouldBeNil)
 			daemonPid := strings.Trim(string(daemonPidBytes), " \n")
-			logger.Debug("daemon pid: %s", daemonPid)
+			logger.Debugf("daemon pid: %s", daemonPid)
 			procDir := filepath.Join("/proc", daemonPid)
 			_, err = os.Stat(procDir)
 			So(err, ShouldBeNil)
@@ -266,7 +266,7 @@ sleep 30
 						for _, p := range procs {
 							if err := origMgr.AddProc(p); err != nil {
 								if errors.Is(err, syscall.ESRCH) {
-									logger.Debugf("Write pid %d to sub group failed: process vanished, ignoring")
+									logger.Debugf("Write pid %d to sub group failed: process vanished, ignoring", p)
 								} else {
 									So(err, ShouldBeNil)
 								}
@@ -306,7 +306,7 @@ sleep 30
 							for _, proc := range procs {
 								if err := origMgr.Add(proc); err != nil {
 									if errors.Is(err, syscall.ESRCH) {
-										logger.Debugf("Write pid %d to sub group failed: process vanished, ignoring")
+										logger.Debugf("Write pid %d to sub group failed: process vanished, ignoring", proc.Pid)
 									} else {
 										So(err, ShouldBeNil)
 									}

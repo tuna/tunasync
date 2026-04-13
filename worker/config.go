@@ -213,20 +213,20 @@ func LoadConfig(cfgFile string) (*Config, error) {
 
 	cfg := new(Config)
 	if _, err := toml.DecodeFile(cfgFile, cfg); err != nil {
-		logger.Errorf(err.Error())
+		logger.Error(err.Error())
 		return nil, err
 	}
 
 	if cfg.Include.IncludeMirrors != "" {
 		includedFiles, err := filepath.Glob(cfg.Include.IncludeMirrors)
 		if err != nil {
-			logger.Errorf(err.Error())
+			logger.Error(err.Error())
 			return nil, err
 		}
 		for _, f := range includedFiles {
 			var incMirCfg includedMirrorConfig
 			if _, err := toml.DecodeFile(f, &incMirCfg); err != nil {
-				logger.Errorf(err.Error())
+				logger.Error(err.Error())
 				return nil, err
 			}
 			cfg.MirrorsConf = append(cfg.MirrorsConf, incMirCfg.Mirrors...)

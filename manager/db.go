@@ -6,11 +6,11 @@ import (
 	"strings"
 	"time"
 
-	bolt "github.com/boltdb/bolt"
-	"github.com/dgraph-io/badger/v2"
-	"github.com/go-redis/redis/v8"
+	"github.com/dgraph-io/badger/v4"
 	"github.com/pkg/errors"
+	"github.com/redis/go-redis/v9"
 	"github.com/syndtr/goleveldb/leveldb"
+	bolt "go.etcd.io/bbolt"
 
 	. "github.com/tuna/tunasync/internal"
 )

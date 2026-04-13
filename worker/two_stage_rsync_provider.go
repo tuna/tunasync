@@ -197,7 +197,7 @@ func (p *twoStageRsyncProvider) Run(started chan empty) error {
 		if err != nil {
 			code, msg := internal.TranslateRsyncErrorCode(err)
 			if code != 0 {
-				logger.Debug("Rsync exitcode %d (%s)", code, msg)
+				logger.Debugf("Rsync exitcode %d (%s)", code, msg)
 				if p.logFileFd != nil {
 					p.logFileFd.WriteString(msg + "\n")
 				}

@@ -121,7 +121,7 @@ func initCgroup(cfg *cgroupConfig) error {
 				for _, p := range procs {
 					if err := wkrMgr.AddProc(p); err != nil {
 						if errors.Is(err, syscall.ESRCH) {
-							logger.Debugf("Write pid %d to sub group failed: process vanished, ignoring")
+							logger.Debugf("Write pid %d to sub group failed: process vanished, ignoring", p)
 						} else {
 							return err
 						}
@@ -206,7 +206,7 @@ func initCgroup(cfg *cgroupConfig) error {
 					for _, proc := range procs {
 						if err := wkrMgr.Add(proc); err != nil {
 							if errors.Is(err, syscall.ESRCH) {
-								logger.Debugf("Write pid %d to sub group failed: process vanished, ignoring")
+								logger.Debugf("Write pid %d to sub group failed: process vanished, ignoring", proc.Pid)
 							} else {
 								return err
 							}
