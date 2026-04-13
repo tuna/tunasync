@@ -105,7 +105,7 @@ func (p *cmdProvider) Run(started chan empty) error {
 			return err
 		}
 		if len(matches) != 0 {
-			logger.Debug("Fail-on-match: %r", matches)
+			logger.Debugf("Fail-on-match: %v", matches)
 			return fmt.Errorf("Fail-on-match regexp found %d matches", len(matches))
 		}
 	}

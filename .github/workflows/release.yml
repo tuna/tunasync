@@ -14,11 +14,11 @@ jobs:
       contents: write
     steps:
     - name: Check out code into the Go module directory
-      uses: actions/checkout@v4
+      uses: actions/checkout@v6
     - name: Set up Go
-      uses: actions/setup-go@v5
+      uses: actions/setup-go@v6
       with:
-        go-version: '^1.23'
+        go-version-file: go.mod
       id: go
     - name: Build
       run: |
@@ -28,7 +28,7 @@ jobs:
           tar -cz --numeric-owner --owner root --group root -f tunasync-${TAG}-$i-bin.tar.gz -C build-$i tunasync tunasynctl
         done
     - name: Create Release
-      uses: softprops/action-gh-release@v2
+      uses: softprops/action-gh-release@v3
       with:
         token: ${{ secrets.GITHUB_TOKEN }}
         tag_name: ${{ github.ref_name }}

@@ -2,7 +2,7 @@ package manager
 
 import (
 	"github.com/BurntSushi/toml"
-	"github.com/urfave/cli"
+	"github.com/urfave/cli/v2"
 )
 
 // A Config is the top-level toml-serializaible config struct
@@ -42,7 +42,7 @@ func LoadConfig(cfgFile string, c *cli.Context) (*Config, error) {
 
 	if cfgFile != "" {
 		if _, err := toml.DecodeFile(cfgFile, cfg); err != nil {
-			logger.Errorf(err.Error())
+			logger.Error(err.Error())
 			return nil, err
 		}
 	}
@@ -68,7 +68,7 @@ func LoadConfig(cfgFile string, c *cli.Context) (*Config, error) {
 		cfg.Files.DBFile = c.String("db-file")
 	}
 	if c.String("db-type") != "" {
-		cfg.Files.DBFile = c.String("db-type")
+		cfg.Files.DBType = c.String("db-type")
 	}
 
 	return cfg, nil

@@ -5,11 +5,11 @@ import (
 	"os"
 	"path/filepath"
 
+	"dario.cat/mergo"
 	"github.com/BurntSushi/toml"
 	cgv1 "github.com/containerd/cgroups/v3/cgroup1"
 	cgv2 "github.com/containerd/cgroups/v3/cgroup2"
 	units "github.com/docker/go-units"
-	"github.com/imdario/mergo"
 )
 
 type providerEnum uint8
@@ -213,20 +213,20 @@ func LoadConfig(cfgFile string) (*Config, error) {
 
 	cfg := new(Config)
 	if _, err := toml.DecodeFile(cfgFile, cfg); err != nil {
-		logger.Errorf(err.Error())
+		logger.Error(err.Error())
 		return nil, err
 	}
 
 	if cfg.Include.IncludeMirrors != "" {
 		includedFiles, err := filepath.Glob(cfg.Include.IncludeMirrors)
 		if err != nil {
-			logger.Errorf(err.Error())
+			logger.Error(err.Error())
 			return nil, err
 		}
 		for _, f := range includedFiles {
 			var incMirCfg includedMirrorConfig
 			if _, err := toml.DecodeFile(f, &incMirCfg); err != nil {
-				logger.Errorf(err.Error())
+				logger.Error(err.Error())
 				return nil, err
 			}
 			cfg.MirrorsConf = append(cfg.MirrorsConf, incMirCfg.Mirrors...)

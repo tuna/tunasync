@@ -142,7 +142,7 @@ func (c *cmdJob) Start() error {
 		if cg.cgCfg.isUnified {
 			if err := cg.cgMgrV2.AddProc(uint64(pid)); err != nil {
 				if errors.Is(err, syscall.ESRCH) {
-					logger.Infof("Write pid %d to cgroup failed: process vanished, ignoring")
+					logger.Infof("Write pid %d to cgroup failed: process vanished, ignoring", pid)
 				} else {
 					return err
 				}
@@ -150,7 +150,7 @@ func (c *cmdJob) Start() error {
 		} else {
 			if err := cg.cgMgrV1.Add(cgv1.Process{Pid: pid}); err != nil {
 				if errors.Is(err, syscall.ESRCH) {
-					logger.Infof("Write pid %d to cgroup failed: process vanished, ignoring")
+					logger.Infof("Write pid %d to cgroup failed: process vanished, ignoring", pid)
 				} else {
 					return err
 				}

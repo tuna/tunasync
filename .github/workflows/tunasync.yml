@@ -15,12 +15,12 @@ jobs:
     steps:
 
     - name: Check out code into the Go module directory
-      uses: actions/checkout@v4
+      uses: actions/checkout@v6
 
     - name: Set up Go
-      uses: actions/setup-go@v5
+      uses: actions/setup-go@v6
       with:
-        go-version: '^1.23'
+        go-version-file: go.mod
       id: go
 
     - name: Get dependencies
@@ -34,7 +34,7 @@ jobs:
         make tunasynctl
 
     - name: Keep artifacts
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v7
       with:
         name: tunasync-bin
         path: build-linux-amd64/
@@ -53,15 +53,15 @@ jobs:
       run: |
         sudo apt-get update
         sudo apt-get install -y cgroup-tools
-        docker pull alpine:3.8
+        docker pull alpine:3.23
 
     - name: Check out code into the Go module directory
-      uses: actions/checkout@v4
+      uses: actions/checkout@v6
 
     - name: Set up Go
-      uses: actions/setup-go@v5
+      uses: actions/setup-go@v6
       with:
-        go-version: '^1.22'
+        go-version-file: go.mod
       id: go
 
     - name: Run Unit tests.
@@ -88,17 +88,17 @@ jobs:
           (TESTREEXEC="$case" TERM=xterm-256color exec -a "$argv0" ./worker.test -test.v=true -test.coverprofile "profile5_$case.gcov" -test.run TestReexec -- "$@")
         }
         run_test_reexec 1 tunasync-exec __dummy__
-        run_test_reexec 2 tunasync-exec /tmp/dummy_exec
+        run_test_reexec 2 tunasync-exec /tmp/dummy_exec 3< /dev/null
         run_test_reexec 3 tunasync-exec /tmp/dummy_exec 3< <(echo -n "abrt")
         run_test_reexec 4 tunasync-exec /tmp/dummy_exec 3< <(echo -n "cont")
         run_test_reexec 5 tunasync-exec2
 
     - name: Set up Docker Buildx
-      uses: docker/setup-buildx-action@v3
+      uses: docker/setup-buildx-action@v4
       with:
         driver-opts: network=host
     - name: Cache Docker layers
-      uses: actions/cache@v4
+      uses: actions/cache@v5
       if: github.event_name == 'push'
       with:
         path: /tmp/.buildx-cache
@@ -106,7 +106,7 @@ jobs:
         restore-keys: |
           ${{ runner.os }}-buildx-
     - name: Cache Docker layers
-      uses: actions/cache@v4
+      uses: actions/cache@v5
       if: github.event_name == 'pull_request'
       with:
         path: /tmp/.buildx-cache
@@ -125,7 +125,7 @@ jobs:
         mkdir -p /tmp/.buildx-cache
 
     - name: Build Docker image for uml rootfs
-      uses: docker/build-push-action@v6
+      uses: docker/build-push-action@v7
       with:
         context: .umlrootfs
         file: .umlrootfs/Dockerfile

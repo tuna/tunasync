@@ -11,8 +11,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/moby/sys/reexec"
 	"github.com/pkg/profile"
-	"github.com/urfave/cli"
-	"gopkg.in/op/go-logging.v1"
+	"github.com/urfave/cli/v2"
 
 	tunasync "github.com/tuna/tunasync/internal"
 	"github.com/tuna/tunasync/manager"
@@ -24,7 +23,7 @@ var (
 	githash    = "No githash provided"
 )
 
-var logger = logging.MustGetLogger("tunasync")
+var logger = tunasync.MustGetLogger("tunasync")
 
 func startManager(c *cli.Context) error {
 	tunasync.InitLogger(c.Bool("verbose"), c.Bool("debug"), c.Bool("with-systemd"))
@@ -140,54 +139,56 @@ func main() {
 	app.Usage = "tunasync mirror job management tool"
 	app.EnableBashCompletion = true
 	app.Version = tunasync.Version
-	app.Commands = []cli.Command{
+	app.Commands = []*cli.Command{
 		{
 			Name:    "manager",
 			Aliases: []string{"m"},
 			Usage:   "start the tunasync manager",
 			Action:  startManager,
 			Flags: []cli.Flag{
-				cli.StringFlag{
-					Name:  "config, c",
-					Usage: "Load manager configurations from `FILE`",
+				&cli.StringFlag{
+					Name:    "config",
+					Aliases: []string{"c"},
+					Usage:   "Load manager configurations from `FILE`",
 				},
-				cli.StringFlag{
+				&cli.StringFlag{
 					Name:  "addr",
 					Usage: "The manager will listen on `ADDR`",
 				},
-				cli.StringFlag{
+				&cli.IntFlag{
 					Name:  "port",
 					Usage: "The manager will bind to `PORT`",
 				},
-				cli.StringFlag{
+				&cli.StringFlag{
 					Name:  "cert",
 					Usage: "Use SSL certificate from `FILE`",
 				},
-				cli.StringFlag{
+				&cli.StringFlag{
 					Name:  "key",
 					Usage: "Use SSL key from `FILE`",
 				},
-				cli.StringFlag{
+				&cli.StringFlag{
 					Name:  "db-file",
 					Usage: "Use `FILE` as the database file",
 				},
-				cli.StringFlag{
+				&cli.StringFlag{
 					Name:  "db-type",
 					Usage: "Use database type `TYPE`",
 				},
-				cli.BoolFlag{
-					Name:  "verbose, v",
-					Usage: "Enable verbose logging",
+				&cli.BoolFlag{
+					Name:    "verbose",
+					Aliases: []string{"v"},
+					Usage:   "Enable verbose logging",
 				},
-				cli.BoolFlag{
+				&cli.BoolFlag{
 					Name:  "debug",
 					Usage: "Run manager in debug mode",
 				},
-				cli.BoolFlag{
+				&cli.BoolFlag{
 					Name:  "with-systemd",
 					Usage: "Enable systemd-compatible logging",
 				},
-				cli.StringFlag{
+				&cli.StringFlag{
 					Name:  "pidfile",
 					Value: "/run/tunasync/tunasync.manager.pid",
 					Usage: "The pid file of the manager process",
@@ -200,28 +201,30 @@ func main() {
 			Usage:   "start the tunasync worker",
 			Action:  startWorker,
 			Flags: []cli.Flag{
-				cli.StringFlag{
-					Name:  "config, c",
-					Usage: "Load worker configurations from `FILE`",
+				&cli.StringFlag{
+					Name:    "config",
+					Aliases: []string{"c"},
+					Usage:   "Load worker configurations from `FILE`",
 				},
-				cli.BoolFlag{
-					Name:  "verbose, v",
-					Usage: "Enable verbose logging",
+				&cli.BoolFlag{
+					Name:    "verbose",
+					Aliases: []string{"v"},
+					Usage:   "Enable verbose logging",
 				},
-				cli.BoolFlag{
+				&cli.BoolFlag{
 					Name:  "debug",
 					Usage: "Run worker in debug mode",
 				},
-				cli.BoolFlag{
+				&cli.BoolFlag{
 					Name:  "with-systemd",
 					Usage: "Enable systemd-compatible logging",
 				},
-				cli.StringFlag{
+				&cli.StringFlag{
 					Name:  "pidfile",
 					Value: "/run/tunasync/tunasync.worker.pid",
 					Usage: "The pid file of the worker process",
 				},
-				cli.StringFlag{
+				&cli.StringFlag{
 					Name:  "prof-path",
 					Value: "",
 					Usage: "Go profiling file path",

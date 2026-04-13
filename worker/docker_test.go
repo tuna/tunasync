@@ -22,7 +22,7 @@ func cmdRun(p string, args []string) {
 		logger.Debugf("cmdRun failed %s", err)
 		return
 	}
-	logger.Debugf("cmdRun: ", string(out))
+	logger.Debugf("cmdRun: %s", string(out))
 }
 
 func getDockerByName(name string) (string, error) {
@@ -74,7 +74,7 @@ sleep 20
 			emptyHook: emptyHook{
 				provider: provider,
 			},
-			image: "alpine:3.8",
+			image: "alpine:3.23",
 			volumes: []string{
 				fmt.Sprintf("%s:%s", cmdScript, "/bin/cmd.sh"),
 			},

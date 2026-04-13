@@ -12,8 +12,7 @@ import (
 	"time"
 
 	"github.com/BurntSushi/toml"
-	"github.com/urfave/cli"
-	"gopkg.in/op/go-logging.v1"
+	"github.com/urfave/cli/v2"
 
 	tunasync "github.com/tuna/tunasync/internal"
 )
@@ -33,7 +32,7 @@ const (
 	userCfgFile   = "$HOME/.config/tunasync/ctl.conf" // user-specific conf
 )
 
-var logger = logging.MustGetLogger("tunasynctl")
+var logger = tunasync.MustGetLogger("tunasynctl")
 
 var baseURL string
 var client *http.Client
@@ -42,7 +41,7 @@ func initializeWrapper(handler cli.ActionFunc) cli.ActionFunc {
 	return func(c *cli.Context) error {
 		err := initialize(c)
 		if err != nil {
-			return cli.NewExitError(err.Error(), 1)
+			return cli.Exit(err.Error(), 1)
 		}
 		return handler(c)
 	}
@@ -83,7 +82,7 @@ func initialize(c *cli.Context) error {
 			return err
 		}
 	}
-	logger.Debug("user config file: %s", os.ExpandEnv(userCfgFile))
+	logger.Debugf("user config file: %s", os.ExpandEnv(userCfgFile))
 	if _, err := os.Stat(os.ExpandEnv(userCfgFile)); err == nil {
 		err = loadConfig(os.ExpandEnv(userCfgFile), cfg)
 		if err != nil {
@@ -134,14 +133,14 @@ func listWorkers(c *cli.Context) error {
 	var workers []tunasync.WorkerStatus
 	_, err := tunasync.GetJSON(baseURL+listWorkersPath, &workers, client)
 	if err != nil {
-		return cli.NewExitError(
+		return cli.Exit(
 			fmt.Sprintf("Filed to correctly get informations from"+
 				"manager server: %s", err.Error()), 1)
 	}
 
 	b, err := json.MarshalIndent(workers, "", "  ")
 	if err != nil {
-		return cli.NewExitError(
+		return cli.Exit(
 			fmt.Sprintf("Error printing out informations: %s",
 				err.Error()),
 			1)
@@ -156,7 +155,7 @@ func listJobs(c *cli.Context) error {
 		var jobs []tunasync.WebMirrorStatus
 		_, err := tunasync.GetJSON(baseURL+listJobsPath, &jobs, client)
 		if err != nil {
-			return cli.NewExitError(
+			return cli.Exit(
 				fmt.Sprintf("Failed to correctly get information "+
 					"of all jobs from manager server: %s", err.Error()),
 				1)
@@ -168,7 +167,7 @@ func listJobs(c *cli.Context) error {
 				var status tunasync.SyncStatus
 				err = status.UnmarshalJSON([]byte("\"" + strings.TrimSpace(s) + "\""))
 				if err != nil {
-					return cli.NewExitError(
+					return cli.Exit(
 						fmt.Sprintf("Error parsing status: %s", err.Error()),
 						1)
 				}
@@ -188,9 +187,9 @@ func listJobs(c *cli.Context) error {
 		}
 	} else {
 		var jobs []tunasync.MirrorStatus
-		args := c.Args()
+		args := c.Args().Slice()
 		if len(args) == 0 {
-			return cli.NewExitError(
+			return cli.Exit(
 				fmt.Sprintf("Usage Error: jobs command need at"+
 					" least one arguments or \"--all\" flag."), 1)
 		}
@@ -210,7 +209,7 @@ func listJobs(c *cli.Context) error {
 		for range args {
 			job := <-ans
 			if job == nil {
-				return cli.NewExitError(
+				return cli.Exit(
 					fmt.Sprintf("Failed to correctly get information "+
 						"of jobs from at least one manager"),
 					1)
@@ -224,7 +223,7 @@ func listJobs(c *cli.Context) error {
 		tpl := template.New("")
 		_, err := tpl.Parse(format)
 		if err != nil {
-			return cli.NewExitError(
+			return cli.Exit(
 				fmt.Sprintf("Error parsing format template: %s", err.Error()),
 				1)
 		}
@@ -233,7 +232,7 @@ func listJobs(c *cli.Context) error {
 			for _, job := range jobs {
 				err = tpl.Execute(os.Stdout, job)
 				if err != nil {
-					return cli.NewExitError(
+					return cli.Exit(
 						fmt.Sprintf("Error printing out information: %s", err.Error()),
 						1)
 				}
@@ -243,7 +242,7 @@ func listJobs(c *cli.Context) error {
 			for _, job := range jobs {
 				err = tpl.Execute(os.Stdout, job)
 				if err != nil {
-					return cli.NewExitError(
+					return cli.Exit(
 						fmt.Sprintf("Error printing out information: %s", err.Error()),
 						1)
 				}
@@ -253,7 +252,7 @@ func listJobs(c *cli.Context) error {
 	} else {
 		b, err := json.MarshalIndent(genericJobs, "", "  ")
 		if err != nil {
-			return cli.NewExitError(
+			return cli.Exit(
 				fmt.Sprintf("Error printing out information: %s", err.Error()),
 				1)
 		}
@@ -264,13 +263,13 @@ func listJobs(c *cli.Context) error {
 }
 
 func updateMirrorSize(c *cli.Context) error {
-	args := c.Args()
+	args := c.Args().Slice()
 	if len(args) != 2 {
-		return cli.NewExitError("Usage: tunasynctl set-size -w <worker-id> <mirror> <size>", 1)
+		return cli.Exit("Usage: tunasynctl set-size -w <worker-id> <mirror> <size>", 1)
 	}
 	workerID := c.String("worker")
-	mirrorID := args.Get(0)
-	mirrorSize := args.Get(1)
+	mirrorID := args[0]
+	mirrorSize := args[1]
 
 	msg := struct {
 		Name string `json:"name"`
@@ -286,7 +285,7 @@ func updateMirrorSize(c *cli.Context) error {
 
 	resp, err := tunasync.PostJSON(url, msg, client)
 	if err != nil {
-		return cli.NewExitError(
+		return cli.Exit(
 			fmt.Sprintf("Failed to send request to manager: %s",
 				err.Error()),
 			1)
@@ -294,7 +293,7 @@ func updateMirrorSize(c *cli.Context) error {
 	defer resp.Body.Close()
 	body, _ := io.ReadAll(resp.Body)
 	if resp.StatusCode != http.StatusOK {
-		return cli.NewExitError(
+		return cli.Exit(
 			fmt.Sprintf("Manager failed to update mirror size: %s", body), 1,
 		)
 	}
@@ -302,7 +301,7 @@ func updateMirrorSize(c *cli.Context) error {
 	var status tunasync.MirrorStatus
 	json.Unmarshal(body, &status)
 	if status.Size != mirrorSize {
-		return cli.NewExitError(
+		return cli.Exit(
 			fmt.Sprintf(
 				"Mirror size error, expecting %s, manager returned %s",
 				mirrorSize, status.Size,
@@ -315,13 +314,13 @@ func updateMirrorSize(c *cli.Context) error {
 }
 
 func removeWorker(c *cli.Context) error {
-	args := c.Args()
+	args := c.Args().Slice()
 	if len(args) != 0 {
-		return cli.NewExitError("Usage: tunasynctl -w <worker-id>", 1)
+		return cli.Exit("Usage: tunasynctl -w <worker-id>", 1)
 	}
 	workerID := c.String("worker")
 	if len(workerID) == 0 {
-		return cli.NewExitError("Please specify the <worker-id>", 1)
+		return cli.Exit("Please specify the <worker-id>", 1)
 	}
 	url := fmt.Sprintf("%s/workers/%s", baseURL, workerID)
 
@@ -332,7 +331,7 @@ func removeWorker(c *cli.Context) error {
 	resp, err := client.Do(req)
 
 	if err != nil {
-		return cli.NewExitError(
+		return cli.Exit(
 			fmt.Sprintf("Failed to send request to manager: %s", err.Error()), 1)
 	}
 	defer resp.Body.Close()
@@ -340,12 +339,12 @@ func removeWorker(c *cli.Context) error {
 	if resp.StatusCode != http.StatusOK {
 		body, err := io.ReadAll(resp.Body)
 		if err != nil {
-			return cli.NewExitError(
+			return cli.Exit(
 				fmt.Sprintf("Failed to parse response: %s", err.Error()),
 				1)
 		}
 
-		return cli.NewExitError(fmt.Sprintf("Failed to correctly send"+
+		return cli.Exit(fmt.Sprintf("Failed to correctly send"+
 			" command: HTTP status code is not 200: %s", body),
 			1)
 	}
@@ -355,7 +354,7 @@ func removeWorker(c *cli.Context) error {
 	if res["message"] == "deleted" {
 		fmt.Println("Successfully removed the worker")
 	} else {
-		return cli.NewExitError("Failed to remove the worker", 1)
+		return cli.Exit("Failed to remove the worker", 1)
 	}
 	return nil
 }
@@ -368,7 +367,7 @@ func flushDisabledJobs(c *cli.Context) error {
 	resp, err := client.Do(req)
 
 	if err != nil {
-		return cli.NewExitError(
+		return cli.Exit(
 			fmt.Sprintf("Failed to send request to manager: %s",
 				err.Error()),
 			1)
@@ -378,12 +377,12 @@ func flushDisabledJobs(c *cli.Context) error {
 	if resp.StatusCode != http.StatusOK {
 		body, err := io.ReadAll(resp.Body)
 		if err != nil {
-			return cli.NewExitError(
+			return cli.Exit(
 				fmt.Sprintf("Failed to parse response: %s", err.Error()),
 				1)
 		}
 
-		return cli.NewExitError(fmt.Sprintf("Failed to correctly send"+
+		return cli.Exit(fmt.Sprintf("Failed to correctly send"+
 			" command: HTTP status code is not 200: %s", body),
 			1)
 	}
@@ -396,15 +395,16 @@ func cmdJob(cmd tunasync.CmdVerb) cli.ActionFunc {
 	return func(c *cli.Context) error {
 		var mirrorID string
 		var argsList []string
-		if len(c.Args()) == 1 {
-			mirrorID = c.Args()[0]
-		} else if len(c.Args()) == 2 {
-			mirrorID = c.Args()[0]
-			for _, arg := range strings.Split(c.Args()[1], ",") {
+		args := c.Args().Slice()
+		if len(args) == 1 {
+			mirrorID = args[0]
+		} else if len(args) == 2 {
+			mirrorID = args[0]
+			for _, arg := range strings.Split(args[1], ",") {
 				argsList = append(argsList, strings.TrimSpace(arg))
 			}
 		} else {
-			return cli.NewExitError("Usage Error: cmd command receive just "+
+			return cli.Exit("Usage Error: cmd command receive just "+
 				"1 required positional argument MIRROR and 1 optional "+
 				"argument WORKER", 1)
 		}
@@ -422,7 +422,7 @@ func cmdJob(cmd tunasync.CmdVerb) cli.ActionFunc {
 		}
 		resp, err := tunasync.PostJSON(baseURL+cmdPath, cmd, client)
 		if err != nil {
-			return cli.NewExitError(
+			return cli.Exit(
 				fmt.Sprintf("Failed to correctly send command: %s",
 					err.Error()),
 				1)
@@ -432,12 +432,12 @@ func cmdJob(cmd tunasync.CmdVerb) cli.ActionFunc {
 		if resp.StatusCode != http.StatusOK {
 			body, err := io.ReadAll(resp.Body)
 			if err != nil {
-				return cli.NewExitError(
+				return cli.Exit(
 					fmt.Sprintf("Failed to parse response: %s", err.Error()),
 					1)
 			}
 
-			return cli.NewExitError(fmt.Sprintf("Failed to correctly send"+
+			return cli.Exit(fmt.Sprintf("Failed to correctly send"+
 				" command: HTTP status code is not 200: %s", body),
 				1)
 		}
@@ -451,7 +451,7 @@ func cmdWorker(cmd tunasync.CmdVerb) cli.ActionFunc {
 	return func(c *cli.Context) error {
 
 		if c.String("worker") == "" {
-			return cli.NewExitError("Please specify the worker with -w <worker-id>", 1)
+			return cli.Exit("Please specify the worker with -w <worker-id>", 1)
 		}
 
 		cmd := tunasync.ClientCmd{
@@ -460,7 +460,7 @@ func cmdWorker(cmd tunasync.CmdVerb) cli.ActionFunc {
 		}
 		resp, err := tunasync.PostJSON(baseURL+cmdPath, cmd, client)
 		if err != nil {
-			return cli.NewExitError(
+			return cli.Exit(
 				fmt.Sprintf("Failed to correctly send command: %s",
 					err.Error()),
 				1)
@@ -470,12 +470,12 @@ func cmdWorker(cmd tunasync.CmdVerb) cli.ActionFunc {
 		if resp.StatusCode != http.StatusOK {
 			body, err := io.ReadAll(resp.Body)
 			if err != nil {
-				return cli.NewExitError(
+				return cli.Exit(
 					fmt.Sprintf("Failed to parse response: %s", err.Error()),
 					1)
 			}
 
-			return cli.NewExitError(fmt.Sprintf("Failed to correctly send"+
+			return cli.Exit(fmt.Sprintf("Failed to correctly send"+
 				" command: HTTP status code is not 200: %s", body),
 				1)
 		}
@@ -514,62 +514,71 @@ func main() {
 	app.Usage = "control client for tunasync manager"
 
 	commonFlags := []cli.Flag{
-		cli.StringFlag{
-			Name: "config, c",
+		&cli.StringFlag{
+			Name:    "config",
+			Aliases: []string{"c"},
 			Usage: "Read configuration from `FILE` rather than" +
 				" ~/.config/tunasync/ctl.conf and /etc/tunasync/ctl.conf",
 		},
-		cli.StringFlag{
-			Name:  "manager, m",
-			Usage: "The manager server address",
+		&cli.StringFlag{
+			Name:    "manager",
+			Aliases: []string{"m"},
+			Usage:   "The manager server address",
 		},
-		cli.StringFlag{
-			Name:  "port, p",
-			Usage: "The manager server port",
+		&cli.IntFlag{
+			Name:    "port",
+			Aliases: []string{"p"},
+			Usage:   "The manager server port",
 		},
-		cli.StringFlag{
+		&cli.StringFlag{
 			Name:  "ca-cert",
 			Usage: "Trust root CA cert file `CERT`",
 		},
 
-		cli.BoolFlag{
-			Name:  "verbose, v",
-			Usage: "Enable verbosely logging",
+		&cli.BoolFlag{
+			Name:    "verbose",
+			Aliases: []string{"v"},
+			Usage:   "Enable verbosely logging",
 		},
-		cli.BoolFlag{
+		&cli.BoolFlag{
 			Name:  "debug",
 			Usage: "Enable debugging logging",
 		},
 	}
 	cmdFlags := []cli.Flag{
-		cli.StringFlag{
-			Name:  "worker, w",
-			Usage: "Send the command to `WORKER`",
+		&cli.StringFlag{
+			Name:    "worker",
+			Aliases: []string{"w"},
+			Usage:   "Send the command to `WORKER`",
 		},
 	}
 
-	forceStartFlag := cli.BoolFlag{
-		Name:  "force, f",
-		Usage: "Override the concurrent limit",
+	forceStartFlag := &cli.BoolFlag{
+		Name:    "force",
+		Aliases: []string{"f"},
+		Usage:   "Override the concurrent limit",
 	}
 
-	app.Commands = []cli.Command{
+	app.Commands = []*cli.Command{
 		{
 			Name:  "list",
 			Usage: "List jobs of workers",
 			Flags: append(commonFlags,
 				[]cli.Flag{
-					cli.BoolFlag{
-						Name:  "all, a",
-						Usage: "List all jobs of all workers",
+					&cli.BoolFlag{
+						Name:    "all",
+						Aliases: []string{"a"},
+						Usage:   "List all jobs of all workers",
 					},
-					cli.StringFlag{
-						Name:  "status, s",
-						Usage: "Filter output based on status provided",
+					&cli.StringFlag{
+						Name:    "status",
+						Aliases: []string{"s"},
+						Usage:   "Filter output based on status provided",
 					},
-					cli.StringFlag{
-						Name:  "format, f",
-						Usage: "Pretty-print containers using a Go template",
+					&cli.StringFlag{
+						Name:    "format",
+						Aliases: []string{"f"},
+						Usage:   "Pretty-print containers using a Go template",
 					},
 				}...),
 			Action: initializeWrapper(listJobs),
@@ -591,9 +600,10 @@ func main() {
 			Usage: "Remove a worker",
 			Flags: append(
 				commonFlags,
-				cli.StringFlag{
-					Name:  "worker, w",
-					Usage: "worker-id of the worker to be removed",
+				&cli.StringFlag{
+					Name:    "worker",
+					Aliases: []string{"w"},
+					Usage:   "worker-id of the worker to be removed",
 				},
 			),
 			Action: initializeWrapper(removeWorker),
@@ -603,9 +613,10 @@ func main() {
 			Usage: "Set mirror size",
 			Flags: append(
 				commonFlags,
-				cli.StringFlag{
-					Name:  "worker, w",
-					Usage: "specify worker-id of the mirror job",
+				&cli.StringFlag{
+					Name:    "worker",
+					Aliases: []string{"w"},
+					Usage:   "specify worker-id of the mirror job",
 				},
 			),
 			Action: initializeWrapper(updateMirrorSize),
