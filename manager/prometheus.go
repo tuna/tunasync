@@ -248,10 +248,10 @@ func (c *prometheusCollector) Collect(ch chan<- prometheus.Metric) {
 		statusCount[m.Status]++
 	}
 
-	// Aggregated status counts
+	// Aggregated status counts - all known statuses are always emitted (0 if no mirrors)
 	c.mirrorsByStatus.Reset()
-	for status, count := range statusCount {
-		c.mirrorsByStatus.WithLabelValues(status.String()).Set(float64(count))
+	for status := range statusValue {
+		c.mirrorsByStatus.WithLabelValues(status.String()).Set(float64(statusCount[status]))
 	}
 
 	c.totalMirrors.Set(float64(len(mirrors)))
