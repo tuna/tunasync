@@ -14,10 +14,11 @@ type Config struct {
 
 // A ServerConfig represents the configuration for HTTP server
 type ServerConfig struct {
-	Addr    string `toml:"addr"`
-	Port    int    `toml:"port"`
-	SSLCert string `toml:"ssl_cert"`
-	SSLKey  string `toml:"ssl_key"`
+	Addr         string `toml:"addr"`
+	Port         int    `toml:"port"`
+	SSLCert      string `toml:"ssl_cert"`
+	SSLKey       string `toml:"ssl_key"`
+	EnableMetrics bool   `toml:"enable_metrics"`
 }
 
 // A FileConfig contains paths to special files

@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 
 	. "github.com/tuna/tunasync/internal"
 )
@@ -26,6 +27,7 @@ type Manager struct {
 	adapter    dbAdapter
 	rwmu       sync.RWMutex
 	httpClient *http.Client
+	prom       *prometheusCollector
 }
 
 // GetTUNASyncManager returns the manager from config
@@ -67,6 +69,12 @@ func GetTUNASyncManager(cfg *Config) *Manager {
 		s.setDBAdapter(adapter)
 	}
 
+	// Initialize Prometheus metrics collector if enabled
+	if cfg.Server.EnableMetrics {
+		s.prom = newPrometheusCollector(s, nil)
+		s.prom.init()
+	}
+
 	// common log middleware
 	s.engine.Use(contextErrorLogger)
 
@@ -77,6 +85,10 @@ func GetTUNASyncManager(cfg *Config) *Manager {
 	s.engine.GET("/jobs", s.listAllJobs)
 	// flush disabled jobs
 	s.engine.DELETE("/jobs/disabled", s.flushDisabledJobs)
+	// Prometheus metrics endpoint (if enabled)
+	if cfg.Server.EnableMetrics {
+		s.engine.GET("/metrics", gin.WrapH(promhttp.HandlerFor(s.prom.Registry(), promhttp.HandlerOpts{})))
+	}
 
 	// list workers
 	s.engine.GET("/workers", s.listWorkers)
