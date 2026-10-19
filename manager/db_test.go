@@ -233,3 +233,27 @@ func TestDBAdapter(t *testing.T) {
 		DBAdapterTest(leveldbDB)
 	})
 }
+
+func TestBoltValuesOutliveTx(t *testing.T) {
+	Convey("bolt values stay valid after the transaction", t, func() {
+		tmpDir, err := os.MkdirTemp("", "tunasync")
+		defer os.RemoveAll(tmpDir)
+		So(err, ShouldBeNil)
+
+		db, err := makeDBAdapter("bolt", filepath.Join(tmpDir, "bolt.db"))
+		So(err, ShouldBeNil)
+		kv := db.(*kvDBAdapter).db
+		So(kv.Put(_statusBucketKey, "debian", []byte("synced")), ShouldBeNil)
+		// Too big to stay inline, so reads point into the mmap.
+		So(kv.Put(_statusBucketKey, "pad", make([]byte, 4096)), ShouldBeNil)
+		one, err := kv.Get(_statusBucketKey, "debian")
+		So(err, ShouldBeNil)
+		all, err := kv.GetAll(_statusBucketKey)
+		So(err, ShouldBeNil)
+
+		// Closing unmaps the file, as a remap under concurrent writes does.
+		So(db.Close(), ShouldBeNil)
+		So(string(one), ShouldEqual, "synced")
+		So(string(all["debian"]), ShouldEqual, "synced")
+	})
+}
