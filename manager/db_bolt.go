@@ -1,6 +1,7 @@
 package manager
 
 import (
+	"bytes"
 	"fmt"
 
 	bolt "go.etcd.io/bbolt"
@@ -24,7 +25,8 @@ func (b *boltAdapter) InitBucket(bucket string) (err error) {
 func (b *boltAdapter) Get(bucket string, key string) (v []byte, err error) {
 	err = b.db.View(func(tx *bolt.Tx) error {
 		bucket := tx.Bucket([]byte(bucket))
-		v = bucket.Get([]byte(key))
+		// bolt values are only valid inside the transaction
+		v = bytes.Clone(bucket.Get([]byte(key)))
 		return nil
 	})
 	return
@@ -36,7 +38,7 @@ func (b *boltAdapter) GetAll(bucket string) (m map[string][]byte, err error) {
 		c := bucket.Cursor()
 		m = make(map[string][]byte)
 		for k, v := c.First(); k != nil; k, v = c.Next() {
-			m[string(k)] = v
+			m[string(k)] = bytes.Clone(v)
 		}
 		return nil
 	})
