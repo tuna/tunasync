@@ -41,7 +41,7 @@ jobs:
 
   test:
     name: Test
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     services:
       registry:
         image: registry:2
@@ -139,10 +139,12 @@ jobs:
         sudo apt-get update
         sudo apt-get install -y debian-archive-keyring
         sudo ln -sf /usr/share/keyrings/debian-archive-keyring.gpg /etc/apt/trusted.gpg.d/
-        echo "deb http://deb.debian.org/debian bullseye main" | sudo tee /etc/apt/sources.list.d/bullseye.list
+        # Add bookworm repository temporarily to download user-mode-linux package for 6.1,
+        # because memory cgroup v1 support is not enabled in 6.12 on trixie
+        echo "deb http://deb.debian.org/debian bookworm main" | sudo tee /etc/apt/sources.list.d/bookworm.list
         sudo apt-get update
-        apt-get download user-mode-linux/bullseye
-        sudo rm /etc/apt/sources.list.d/bullseye.list
+        apt-get download user-mode-linux/bookworm
+        sudo rm /etc/apt/sources.list.d/bookworm.list
         sudo apt-get update
         sudo mv user-mode-linux_*.deb /tmp/uml.deb
         sudo apt-get install --no-install-recommends -y /tmp/uml.deb
@@ -154,6 +156,7 @@ jobs:
         docker container create --name umlrootfs localhost:5000/umlrootfs
         sudo mkdir -p umlrootfs
         docker container export umlrootfs | sudo tar -xv -C umlrootfs
+        sudo rm -f umlrootfs/.dockerenv
         docker container rm umlrootfs
         sudo cp -a --target-directory=umlrootfs/lib/ /usr/lib/uml/modules
         /bin/echo -e "127.0.0.1       localhost\n254.255.255.1 host" | sudo tee umlrootfs/etc/hosts
@@ -164,7 +167,7 @@ jobs:
     - name: Start Uml
       run: |
         start_uml () {
-          sudo bash -c 'linux root=/dev/root rootflags=/ rw rootfstype=hostfs mem=2G eth0=tuntap,umltap hostfs="$PWD/umlrootfs" con1=pts systemd.unified_cgroup_hierarchy=0 & pid=$!; echo "UMLINUX_PID=$pid" >> '"$GITHUB_ENV"
+          sudo bash -c 'linux root=/dev/root rootflags=/ rw rootfstype=hostfs mem=2G eth0=tuntap,umltap hostfs="$PWD/umlrootfs" con1=pts systemd.unified_cgroup_hierarchy=0 SYSTEMD_CGROUP_ENABLE_LEGACY_FORCE=1 & pid=$!; echo "UMLINUX_PID=$pid" >> '"$GITHUB_ENV"
         }
         ( start_uml )
         started=0
