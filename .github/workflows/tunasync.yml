@@ -99,7 +99,7 @@ jobs:
         driver-opts: network=host
     - name: Cache Docker layers
       uses: actions/cache@v5
-      if: github.event_name == 'push'
+      if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
       with:
         path: /tmp/.buildx-cache
         key: ${{ runner.os }}-buildx-${{ github.sha }}
@@ -115,7 +115,7 @@ jobs:
           ${{ runner.os }}-pr-${{ github.event.pull_request.head.user.login }}-buildx-
           ${{ runner.os }}-buildx-
     - name: Cache Docker layers
-      if: github.event_name != 'push' && github.event_name != 'pull_request'
+      if: github.event_name != 'push' && github.event_name != 'pull_request' && github.event_name != 'workflow_dispatch'
       run: |
         echo "I do not know how to setup cache"
         exit -1
