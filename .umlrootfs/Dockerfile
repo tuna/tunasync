@@ -1,4 +1,10 @@
-FROM debian:bullseye
+FROM debian:bookworm
+# Prevent from bumping the base image version to later than trixie,
+# because systemd in later versions of Debian removed the support for legacy
+# cgroup hierarchy
+# Prevent from bumping the base image version to later than bookworm,
+# because rsh-server is not available in later versions of Debian
+
 RUN apt-get update && apt-get install -y systemd rsh-redone-server ifupdown sudo kmod cgroup-tools systemd-sysv
 RUN echo "host" > /root/.rhosts && \
     chmod 600 /root/.rhosts && \

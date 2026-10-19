@@ -41,7 +41,7 @@ jobs:
 
   test:
     name: Test
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     services:
       registry:
         image: registry:2
@@ -139,10 +139,10 @@ jobs:
         sudo apt-get update
         sudo apt-get install -y debian-archive-keyring
         sudo ln -sf /usr/share/keyrings/debian-archive-keyring.gpg /etc/apt/trusted.gpg.d/
-        echo "deb http://deb.debian.org/debian bullseye main" | sudo tee /etc/apt/sources.list.d/bullseye.list
+        echo "deb http://deb.debian.org/debian trixie main" | sudo tee /etc/apt/sources.list.d/trixie.list
         sudo apt-get update
-        apt-get download user-mode-linux/bullseye
-        sudo rm /etc/apt/sources.list.d/bullseye.list
+        apt-get download user-mode-linux/trixie
+        sudo rm /etc/apt/sources.list.d/trixie.list
         sudo apt-get update
         sudo mv user-mode-linux_*.deb /tmp/uml.deb
         sudo apt-get install --no-install-recommends -y /tmp/uml.deb
