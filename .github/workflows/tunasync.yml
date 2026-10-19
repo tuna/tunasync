@@ -41,7 +41,7 @@ jobs:
 
   test:
     name: Test
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-latest
     services:
       registry:
         image: registry:2
@@ -149,7 +149,6 @@ jobs:
         sudo mv user-mode-linux_*.deb /tmp/uml.deb
         sudo apt-get install --no-install-recommends -y /tmp/uml.deb
         sudo rm /tmp/uml.deb
-        sudo apt-get install --no-install-recommends -y rsh-redone-client
 
     - name: Prepare uml environment
       run: |
@@ -192,13 +191,15 @@ jobs:
           useradd --create-home --home-dir "/home/${CUSER}" --gid "${CGID?}" \
             --uid "${CUID?}" --shell "\$(which bash)" "${CUSER?}"
         EOF
+        ssh-keygen -t rsa -f /tmp/tmp_ssh_key -N ""
+        sudo mkdir -p "umlrootfs/root/.ssh"
+        sudo cp /tmp/tmp_ssh_key.pub "umlrootfs/root/.ssh/authorized_keys"
         ln ./worker.test "umlrootfs/home/${CUSER}/worker.test"
 
     - name: Run Tests in Cgroupv1
       run: |
         CUSER="$(id --user --name)"
-        sudo rsh 254.255.255.2 bash --noprofile --norc -eo pipefail << EOF
-          exec 2>&1
+        ssh -i /tmp/tmp_ssh_key -o StrictHostKeyChecking=no root@254.255.255.2 bash --noprofile --norc -eo pipefail << EOF
           cd "/home/${CUSER}"
           lssubsys -am
           cgcreate -a "$CUSER" -t "$CUSER" -g cpu:tunasync
@@ -210,7 +211,7 @@ jobs:
 
     - name: Stop Uml
       run: |
-        sudo rsh 254.255.255.2 systemctl poweroff
+        ssh -i /tmp/tmp_ssh_key -o StrictHostKeyChecking=no root@254.255.255.2 systemctl poweroff || true
         sleep 10
         if [ -e "/proc/$UMLINUX_PID" ]; then
           sleep 10
